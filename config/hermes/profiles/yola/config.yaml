@@ -30,7 +30,7 @@ tools:
       - ~/projects
       - ~/apps
 discord:
-  home_channel: 'REPLACE'
+  home_channel: '1531031722064478279'
 gateway:
   systemd_watchdog_seconds: 120
 onboarding:

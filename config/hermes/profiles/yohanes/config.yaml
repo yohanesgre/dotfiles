@@ -35,22 +35,22 @@ discord:
   history_backfill: true
   reactions: true
   group_sessions_per_user: true
-  home_channel: 'REPLACE'
+  home_channel: '1531032701371682896'
 gateway:
   systemd_watchdog_seconds: 120
   multiplex_profiles: true
   profile_routes:
     - name: yohanes
       platform: discord
-      chat_id: 'REPLACE'
+      chat_id: '1531032701371682896'
       profile: yohanes
     - name: game-dev
       platform: discord
-      chat_id: 'REPLACE'
+      chat_id: '1531032272118091786'
       profile: game-dev-team
     - name: casual
       platform: discord
-      chat_id: 'REPLACE'
+      chat_id: '1531031722064478279'
       profile: yola
 onboarding:
   seen:
