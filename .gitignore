@@ -1,0 +1,22 @@
+# Editor
+*.swp
+*~
+.vscode/
+
+# macOS
+.DS_Store
+
+# chezmoi local config (machine-specific)
+.chezmoi.toml
+
+# Private / local env — never commit secrets (TOML only)
+.env.toml
+.env.toml.local
+*.env.toml.local
+config/private/
+
+# Nix
+result
+result-*
+.direnv/
+

@@ -1,0 +1,85 @@
+model:
+  provider: deepseek
+  base_url: https://api.deepseek.com/v1
+  default: deepseek-v4-flash
+  api_mode: chat_completions
+  reasoning: medium
+agent:
+  max_turns: 150
+web:
+  backend: ddgs
+  use_gateway: false
+browser:
+  cloud_provider: local
+  use_gateway: false
+display:
+  show_cost: true
+  tool_progress: all
+tts:
+  use_gateway: false
+skills:
+  external_dirs:
+    - ~/.agents/skills
+  creation_nudge_interval: 15
+security:
+  redact_secrets: true
+tools:
+  opencode:
+    enabled: true
+    workdirs:
+      - ~/projects
+      - ~/apps
+discord:
+  home_channel: 'REPLACE'
+gateway:
+  systemd_watchdog_seconds: 120
+onboarding:
+  seen:
+    openclaw_residue_cleanup: true
+    busy_input_prompt: true
+updates:
+  pre_update_backup: full
+  backup_keep: 5
+_config_version: 33
+session_reset:
+  mode: none
+platform_toolsets:
+  cli:
+    - browser
+    - clarify
+    - code_execution
+    - computer_use
+    - context_engine
+    - cronjob
+    - delegation
+    - file
+    - memory
+    - session_search
+    - skills
+    - terminal
+    - todo
+    - tts
+    - vision
+    - web
+  discord:
+    - browser
+    - clarify
+    - code_execution
+    - computer_use
+    - context_engine
+    - cronjob
+    - delegation
+    - file
+    - memory
+    - session_search
+    - skills
+    - terminal
+    - todo
+    - tts
+    - vision
+    - web
+known_plugin_toolsets:
+  cli:
+    - spotify
+  discord:
+    - spotify

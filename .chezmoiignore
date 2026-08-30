@@ -1,0 +1,12 @@
+scripts
+.gitignore
+.chezmoiignore
+README.md
+config
+home
+flake.nix
+flake.lock
+.githooks
+.github
+docs
+tmux-cachyos-setup.md

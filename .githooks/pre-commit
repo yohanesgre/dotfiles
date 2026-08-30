@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Pre-commit hook: validate dotfiles before committing
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SCRIPT="$ROOT_DIR/scripts/validate.sh"
+
+if [ ! -f "$SCRIPT" ]; then
+    echo "⚠  validate.sh not found at $SCRIPT — skipping validation"
+    exit 0
+fi
+
+echo "🔍 Running dotfiles validation..."
+if ! bash "$SCRIPT" --ci; then
+    echo ""
+    echo "❌ Validation failed. Fix the issues above before committing."
+    echo "   To bypass: git commit --no-verify"
+    exit 1
+fi
+echo "✅ Validation passed"
+
+# Nix flake check (hint / non-blocking if nix absent)
+if command -v nix >/dev/null 2>&1; then
+    echo "❄️  Running nix flake check --no-build..."
+    if nix flake check --no-build --show-trace; then
+        echo "✅ nix flake check passed"
+    else
+        echo ""
+        echo "❌ nix flake check failed. Fix flake errors before committing."
+        echo "   To bypass: git commit --no-verify"
+        exit 1
+    fi
+else
+    echo "ℹ️  nix not found — skipping flake check (hint: nix flake check --no-build)"
+fi

@@ -1,0 +1,104 @@
+model:
+  provider: deepseek
+  base_url: https://api.deepseek.com/v1
+  default: deepseek-v4-flash
+  api_mode: chat_completions
+  reasoning: medium
+agent:
+  max_turns: 150
+web:
+  backend: ddgs
+  use_gateway: false
+browser:
+  cloud_provider: local
+  use_gateway: false
+display:
+  show_cost: true
+  tool_progress: all
+tts:
+  use_gateway: false
+skills:
+  external_dirs:
+    - ~/.agents/skills
+  creation_nudge_interval: 15
+security:
+  redact_secrets: true
+tools:
+  opencode:
+    enabled: true
+    workdirs:
+      - ~/projects
+      - ~/apps
+discord:
+  require_mention: true
+  auto_thread: true
+  history_backfill: true
+  reactions: true
+  group_sessions_per_user: true
+  home_channel: 'REPLACE'
+gateway:
+  systemd_watchdog_seconds: 120
+  multiplex_profiles: true
+  profile_routes:
+    - name: yohanes
+      platform: discord
+      chat_id: 'REPLACE'
+      profile: yohanes
+    - name: game-dev
+      platform: discord
+      chat_id: 'REPLACE'
+      profile: game-dev-team
+    - name: casual
+      platform: discord
+      chat_id: 'REPLACE'
+      profile: yola
+onboarding:
+  seen:
+    openclaw_residue_cleanup: true
+    busy_input_prompt: true
+updates:
+  pre_update_backup: full
+  backup_keep: 5
+_config_version: 33
+session_reset:
+  mode: none
+platform_toolsets:
+  cli:
+    - browser
+    - clarify
+    - code_execution
+    - computer_use
+    - context_engine
+    - cronjob
+    - delegation
+    - file
+    - memory
+    - session_search
+    - skills
+    - terminal
+    - todo
+    - tts
+    - vision
+    - web
+  discord:
+    - browser
+    - clarify
+    - code_execution
+    - computer_use
+    - context_engine
+    - cronjob
+    - delegation
+    - file
+    - memory
+    - session_search
+    - skills
+    - terminal
+    - todo
+    - tts
+    - vision
+    - web
+known_plugin_toolsets:
+  cli:
+    - spotify
+  discord:
+    - spotify

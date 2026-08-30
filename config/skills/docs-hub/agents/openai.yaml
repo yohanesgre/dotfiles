@@ -1,0 +1,4 @@
+interface:
+  display_name: "Docs Hub"
+  short_description: "List docs, create project folders, add docs to ~/docs-hub"
+  default_prompt: "List the docs in ~/docs-hub, or create a project folder and add a markdown document to it."

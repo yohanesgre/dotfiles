@@ -1,0 +1,115 @@
+{
+  "$schema": "https://unpkg.com/oh-my-opencode-slim@latest/oh-my-opencode-slim.schema.json",
+  "preset": "opencode-go",
+  "presets": {
+    "opencode-go": {
+      "orchestrator": {
+        "model": "opencode-go/muse-spark-1.2-contributor",
+        "variant": "xhigh",
+        "skills": [
+          "*"
+        ],
+        "mcps": [
+          "*",
+          "!context7"
+        ]
+      },
+      "oracle": {
+        "model": "opencode-go/muse-spark-1.2-contributor",
+        "variant": "xhigh",
+        "skills": [
+          "simplify"
+        ],
+        "mcps": []
+      },
+      "explorer": {
+        "model": "opencode-go/muse-spark-1.2-contributor",
+        "skills": [],
+        "mcps": [],
+        "variant": "medium"
+      },
+      "librarian": {
+        "model": "opencode-go/muse-spark-1.2-contributor",
+        "skills": [],
+        "mcps": [
+          "context7",
+          "gh_grep"
+        ],
+        "variant": "medium"
+      },
+      "designer": {
+        "model": "opencode-go/muse-spark-1.2-contributor",
+        "variant": "xhigh",
+        "skills": [],
+        "mcps": []
+      },
+      "fixer": {
+        "model": "opencode-go/muse-spark-1.2-contributor",
+        "skills": [],
+        "mcps": [],
+        "variant": "high"
+      },
+      "observer": {
+        "model": "opencode-go/muse-spark-1.2-contributor",
+        "skills": [],
+        "mcps": [],
+        "variant": "medium"
+      }
+    },
+    "gmicloud": {
+      "orchestrator": {
+        "model": "gmicloud/MiniMaxAI/MiniMax-M3",
+        "variant": "thinking",
+        "skills": [
+          "*"
+        ],
+        "mcps": [
+          "*",
+          "!context7"
+        ]
+      },
+      "oracle": {
+        "model": "gmicloud/MiniMaxAI/MiniMax-M3",
+        "variant": "thinking",
+        "skills": [
+          "simplify"
+        ],
+        "mcps": []
+      },
+      "explorer": {
+        "model": "gmicloud/MiniMaxAI/MiniMax-M2.7",
+        "skills": [],
+        "mcps": []
+      },
+      "librarian": {
+        "model": "gmicloud/MiniMaxAI/MiniMax-M2.7",
+        "skills": [],
+        "mcps": [
+          "context7",
+          "gh_grep"
+        ]
+      },
+      "designer": {
+        "model": "gmicloud/MiniMaxAI/MiniMax-M3",
+        "variant": "thinking",
+        "skills": [],
+        "mcps": []
+      },
+      "fixer": {
+        "model": "gmicloud/MiniMaxAI/MiniMax-M2.7",
+        "skills": [],
+        "mcps": []
+      },
+      "observer": {
+        "model": "gmicloud/MiniMaxAI/MiniMax-M2.7",
+        "skills": [],
+        "mcps": []
+      }
+    }
+  },
+  "disabled_agents": [],
+  "multiplexer": {
+    "type": "herdr",
+    "layout": "main-vertical"
+  }
+}
