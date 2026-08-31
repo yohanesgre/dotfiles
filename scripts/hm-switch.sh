@@ -16,10 +16,11 @@ HOST="${1:-}"
 # auto-detect if no arg: use hostname, fallback to dell-xps13
 if [ -z "$HOST" ]; then
     HOST="$(hostname 2>/dev/null || echo dell-xps13)"
-    # normalize: full hostname -> short dell-xps13
+    # normalize: full hostname -> short dell-xps13, homestation -> desktop
     case "$HOST" in
         dell-xps13-cachyos) HOST="dell-xps13" ;;
         dell-xps13*) HOST="dell-xps13" ;;
+        homestation|desktop) HOST="desktop" ;;
         desktop|laptop|dell-xps13) ;;
         *) echo "Unknown hostname $HOST, fallback to dell-xps13" >&2; HOST="dell-xps13" ;;
     esac
@@ -49,15 +50,18 @@ export PATH="$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$PATH"
 unset _nix_profile
 
 case "$HOST" in
-    desktop|laptop|dell-xps13|dell-xps13-cachyos) ;;
+    desktop|homestation|laptop|dell-xps13|dell-xps13-cachyos) ;;
     *)
         echo "Unknown host: $HOST (expected desktop|laptop|dell-xps13|dell-xps13-cachyos)" >&2
         exit 1
         ;;
 esac
-# normalize alias dell-xps13-cachyos -> dell-xps13 (canonical short)
+# normalize alias dell-xps13-cachyos -> dell-xps13 (canonical short), homestation -> desktop
 if [ "$HOST" = "dell-xps13-cachyos" ]; then
     HOST="dell-xps13"
+fi
+if [ "$HOST" = "homestation" ]; then
+    HOST="desktop"
 fi
 
 # Resolve flake ref: local repo vs remote github (no clone)
