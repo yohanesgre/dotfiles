@@ -8,7 +8,7 @@
 
     oh-my-zsh = {
       enable = true;
-      plugins = [ "git" "fzf" "extract" "tmux" ];
+      plugins = [ "git" "fzf" "extract" ];
       custom = "$HOME/.oh-my-zsh/custom";
     };
 
@@ -19,10 +19,8 @@
           source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
         fi
 
-        # oh-my-zsh tmux plugin settings (must be before omz loads)
-        ZSH_TMUX_AUTOSTART=false
-        ZSH_TMUX_AUTOQUIT=false
-        ZSH_TMUX_DEFAULT_SESSION_NAME=main
+        # Ensure nix profile in PATH before oh-my-zsh plugins (fixes tmux not found + p10k warning)
+        export PATH="$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$HOME/.local/bin:$HOME/.bun/bin:$PATH"
       '')
       (builtins.readFile ../../../config/zsh/extra.zsh)
     ];
