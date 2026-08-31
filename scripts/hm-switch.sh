@@ -62,16 +62,7 @@ fi
 
 # Resolve flake ref: local repo vs remote github (no clone)
 if [ "$REMOTE" = true ]; then
-    # remote: if dell-xps13 not yet pushed, fallback to laptop (same config)
-    REMOTE_HOST="$HOST"
-    if [ "$HOST" = "dell-xps13" ] || [ "$HOST" = "dell-xps13-cachyos" ]; then
-        # check if remote has dell-xps13? assume not until pushed — use laptop
-        # we try to keep dell-xps13 first, but if flake doesn't have it, nix will error
-        # so we fallback to laptop for now
-        echo "→ remote: $HOST -> yohanes@laptop (remote fallback, same config)" >&2
-        REMOTE_HOST="laptop"
-    fi
-    FLAKE_REF="github:yohanesgre/dotfiles#yohanes@$REMOTE_HOST"
+    FLAKE_REF="github:yohanesgre/dotfiles#yohanes@$HOST"
 else
     SCRIPT_SRC="${BASH_SOURCE[0]}"
     if [ -L "$SCRIPT_SRC" ]; then
