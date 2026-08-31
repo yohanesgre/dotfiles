@@ -10,14 +10,26 @@
     warn() { echo "manualInstall: $*" >&2; }
     info() { echo "manualInstall: $*"; }
 
-    # engram: not in nixpkgs, upstream go install broken (repo has no go.mod at root, 2026-08-31)
-    # was: go install github.com/engramhq/engram@latest -> fails "does not contain package"
-    # keep as manual stub, skip auto-install until upstream provides installable package
+    # engram: Gentleman-Programming/engram (Go, not in nixpkgs)
     if [ ! -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
-      warn "engram not in nixpkgs and go install path invalid (github.com/engramhq/engram has no go.mod) — skipping auto-install"
-      warn "install manually if needed: check https://github.com/engramhq/engram or ~/projects/dotfiles/config/engram/"
+      info "installing engram (Gentleman-Programming)..."
+      if [ -x "${pkgs.go}/bin/go" ]; then
+        ${pkgs.go}/bin/go install github.com/Gentleman-Programming/engram/cmd/engram@latest 2>&1 || warn "go install engram failed (continuing)"
+        if [ -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
+          ln -sf "$HOME/go/bin/engram" "$HOME/.local/bin/engram" 2>/dev/null || true
+        fi
+      else
+        warn "go not found at ${pkgs.go}/bin/go — skipping"
+      fi
+      if [ ! -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
+        warn "engram still missing after go install — check https://github.com/Gentleman-Programming/engram"
+      fi
     else
       info "engram already installed"
+      # ensure symlink
+      if [ -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
+        ln -sf "$HOME/go/bin/engram" "$HOME/.local/bin/engram" 2>/dev/null || true
+      fi
     fi
 
     # codebase-memory-mcp, rtk, opencode, herdr now via nixpkgs home.packages (migrated 2026-08-31)
