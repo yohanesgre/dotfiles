@@ -29,6 +29,16 @@ tools:
     workdirs:
       - ~/projects
       - ~/apps
+plugins:
+  enabled:
+    - model-switcher
+    - whisper-model
+  disabled: []
+  entries:
+    model-switcher:
+      allow_tool_override: false
+    whisper-model:
+      allow_tool_override: false
 discord:
   home_channel: '1531031722064478279'
 gateway:

@@ -29,6 +29,16 @@ tools:
     workdirs:
       - ~/projects
       - ~/apps
+plugins:
+  enabled:
+    - model-switcher
+    - whisper-model
+  disabled: []
+  entries:
+    model-switcher:
+      allow_tool_override: false
+    whisper-model:
+      allow_tool_override: false
 discord:
   require_mention: true
   auto_thread: true
