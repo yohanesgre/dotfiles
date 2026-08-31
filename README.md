@@ -1,35 +1,52 @@
 # yohanes dotfiles — Nix flake + home-manager
 
-Reproducible dotfiles for **CachyOS `x86_64-linux`** (desktop + laptop). **Nix flakes + home-manager** primary. Public: https://github.com/yohanesgre/dotfiles
+Reproducible dotfiles for **CachyOS `x86_64-linux`** (desktop + `dell-xps13` + `laptop` alias). **Nix flakes + home-manager** primary. Public: https://github.com/yohanesgre/dotfiles
 
-## Quick Start
+## Quick Start — Clean Machine (no clone)
 
 ```bash
-# 1. Install Nix (daemon, multi-user)
-sh <(curl -fsLS https://nixos.org/nix/install) --daemon
-# then restart shell or: source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+# No clone: direct from GitHub flake
+sh <(curl -fsLS https://nixos.org/nix/install) --no-daemon  # or --daemon (needs sudo)
+source ~/.nix-profile/etc/profile.d/nix.sh
+nix run github:nix-community/home-manager -- switch --flake github:yohanesgre/dotfiles#yohanes@dell-xps13 -b backup
+# or: nix run github:nix-community/home-manager -- switch --flake github:yohanesgre/dotfiles#yohanes@laptop -b backup
+# or: nix run github:nix-community/home-manager -- switch --flake github:yohanesgre/dotfiles#yohanes@desktop -b backup
+```
 
-# 2. Clone
+## Quick Start — With Clone (dev)
+
+```bash
+# 1. Clone (or bootstrap auto-clones)
 git clone https://github.com/yohanesgre/dotfiles.git ~/projects/dotfiles
 cd ~/projects/dotfiles
 
-# 3. Apply (pick host)
-bash scripts/hm-switch.sh desktop   # or: laptop
-# -> home-manager switch --flake .#yohanes@desktop -b backup
+# 2. Bootstrap (one-shot: nopasswd + Nix + hm-switch)
+bash scripts/bootstrap.sh --host dell-xps13 --full  # or laptop/desktop, --remote for no-clone
+# -> setup-nopasswd-sudo --enable --full + install-nix.sh --no-sudo + hm-switch.sh
 
-# 4. Verify
+# Or manual:
+bash scripts/install-nix.sh --no-sudo  # --daemon for multi-user, --no-daemon/--no-sudo for single-user
+bash scripts/hm-switch.sh dell-xps13   # auto-detect if no arg, alias laptop->dell-xps13
+# -> home-manager switch --flake .#yohanes@dell-xps13 -b backup
+
+# 3. Verify
 nix flake check --no-build
 bash scripts/validate.sh --ci
 ```
 
+One-liner bootstrap without local clone (curl):
+```bash
+curl -fsSL https://raw.githubusercontent.com/yohanesgre/dotfiles/main/scripts/bootstrap.sh | bash -s -- --remote --host dell-xps13 --full
+```
+
 Manual binaries auto-install via `home.activation.manualInstall` (`home/modules/manual`):
-`engram` (`go install` — not in nixpkgs) stays manual. `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` now in `home.packages`.
+`engram` skipped (upstream `github.com/engramhq/engram` has no `go.mod`, no installable package). `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` now in `home.packages`.
 
 ## Prerequisites
 
-- **Nix 2.35+** with flakes enabled (daemon install above enables `nix-command` + `flakes`)
+- **Nix 2.35+** with flakes enabled (`experimental-features = nix-command flakes`)
 - `git`, `curl`
-- CachyOS/Arch `x86_64-linux` (targets `yohanes@desktop` / `yohanes@laptop`)
+- CachyOS/Arch `x86_64-linux` (targets `yohanes@desktop` / `yohanes@laptop` / `yohanes@dell-xps13` + alias `yohanes@dell-xps13-cachyos`)
 
 ## Structure
 
@@ -37,17 +54,20 @@ Manual binaries auto-install via `home.activation.manualInstall` (`home/modules/
 flake.nix                   # inputs: nixpkgs/nixos-unstable, home-manager
 flake.lock                  # pinned
 home/common.nix             # username/homeDirectory/stateVersion + imports
-home/hosts/desktop.nix      # desktop host overrides
-home/hosts/laptop.nix       # laptop host overrides
+home/hosts/desktop.nix      # desktop (imports hermes)
+home/hosts/laptop.nix       # laptop/dell-xps13 (shared, minimal)
 home/modules/packages.nix   # CLI allowlist (home.packages)
-home/modules/manual/        # home.activation.manualInstall — engram fallback
-home/modules/shell/zsh.nix  # zsh
+home/modules/manual/        # home.activation.manualInstall — engram stub (skipped)
+home/modules/shell/zsh.nix  # zsh (force zsh + p10k + oh-my-zsh, removes tmux plugin)
 home/modules/opencode/      # opencode config
 home/modules/engram/        # engram
 home/modules/skills/        # skills
 config/                     # raw configs symlinked via xdg.configFile (zsh/p10k/opencode/hermes/engram/skills)
 docs/migration/             # migration notes inc. packages-boundary.md
-scripts/hm-switch.sh        # switch wrapper: nix run home-manager switch --flake .#yohanes@$HOST -b backup
+scripts/bootstrap.sh        # one-shot clean-machine: nopasswd + install-nix + hm-switch (--remote for no-clone)
+scripts/install-nix.sh      # Nix installer: --daemon/--no-daemon/--no-sudo toggle + flakes
+scripts/setup-nopasswd-sudo.sh  # sudo NOPASSWD toggle: --enable --full/--nix-only, --disable, --toggle
+scripts/hm-switch.sh        # switch wrapper: auto host, --remote for github:yohanesgre/dotfiles
 scripts/validate.sh         # repo validation
 ```
 
@@ -73,10 +93,15 @@ Chezmoi purged — `chezmoi managed` shows 0 entries, `dot_config/` removed, no 
 ## Daily Workflow
 
 ```bash
+# Local dev (with clone)
 git pull
-bash scripts/hm-switch.sh desktop   # apply
+bash scripts/hm-switch.sh dell-xps13  # or desktop, auto if no arg
 nix flake update                    # bump inputs (commits flake.lock)
 nix flake check --no-build          # validate
+
+# Clean install without clone (any machine)
+bash scripts/bootstrap.sh --remote --host dell-xps13 --full
+# or: hm-switch --remote dell-xps13
 ```
 
 ## Validation
