@@ -1,7 +1,6 @@
 // Version: 1.0.1
 
 import { tool } from "@opencode-ai/plugin"
-import sharp from "sharp"
 import path from "path"
 import { readFile, writeFile } from "fs/promises"
 
@@ -21,7 +20,13 @@ async function convertToPng(imagePath: string): Promise<string> {
   }
 
   const buffer = await readFile(imagePath)
-  const pngBuffer = await sharp(buffer).png().toBuffer()
+  let pngBuffer: Buffer
+  try {
+    const sharp = (await import("sharp")).default
+    pngBuffer = await sharp(buffer).png().toBuffer()
+  } catch (e: any) {
+    throw new Error(`sharp not available: ${e?.message || e}`)
+  }
   const randomName = generateRandomFilename()
   const tempPath = path.join(path.dirname(imagePath), `opencode_image_${randomName}.png`)
   await writeFile(tempPath, pngBuffer)

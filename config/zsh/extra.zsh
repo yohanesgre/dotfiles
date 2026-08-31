@@ -1,6 +1,13 @@
 # extra.zsh — minimal extras (sourced via home/modules/shell/zsh.nix)
 
-[[ -f /usr/share/cachyos-zsh-config/cachyos-config.zsh ]] && source /usr/share/cachyos-zsh-config/cachyos-config.zsh
+# CachyOS config provides extra aliases but clobbers HM's oh-my-zsh — save HM vars
+local _HM_ZSH="$ZSH" _HM_ZSH_CUSTOM="$ZSH_CUSTOM"
+if [[ -f /usr/share/cachyos-zsh-config/cachyos-config.zsh ]]; then
+  source /usr/share/cachyos-zsh-config/cachyos-config.zsh
+  export ZSH="$_HM_ZSH"
+  export ZSH_CUSTOM="$_HM_ZSH_CUSTOM"
+fi
+unset _HM_ZSH _HM_ZSH_CUSTOM
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
 export PATH="$HOME/go/bin:$HOME/.bun/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
