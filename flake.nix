@@ -7,10 +7,6 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    omp = {
-      url = "github:can1357/oh-my-pi";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
   };
 
   outputs =
@@ -18,7 +14,6 @@
       self,
       nixpkgs,
       home-manager,
-      omp,
       ...
     }:
     let
@@ -29,7 +24,6 @@
       homeConfigurations."yohanes@desktop" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         modules = [
-          omp.homeManagerModules.default
           ./home/common.nix
           ./home/hosts/desktop.nix
         ];
@@ -37,7 +31,6 @@
       homeConfigurations."yohanes@laptop" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         modules = [
-          omp.homeManagerModules.default
           ./home/common.nix
           ./home/hosts/laptop.nix
         ];

@@ -23,6 +23,5 @@
   ];
 
   # engram not in nixpkgs: kept manual via home/modules/manual (go install).
-  # omp via flake inputs.omp (programs.omp), not nixpkgs.
   # GUI/GPU stays pacman: browsers, nvidia/mesa, DE, steam — not in Nix (avoid nixGL mismatch).
 }

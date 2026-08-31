@@ -12,7 +12,6 @@
     ./modules/manual
     ./modules/shell/zsh.nix
     ./modules/env
-    ./modules/omp
     ./modules/opencode
     ./modules/engram
     ./modules/skills

@@ -37,7 +37,7 @@ Allowlist = 19 entries, all CLI/headless (verified `grep` shows no GUI string in
 | opencode | `opencode` | 1.18.21 — migrated from manual curl (2026-08-31) |
 | herdr | `herdr` | 0.8.2 — newly added via nixpkgs (2026-08-31, lag 2-3d acceptable) |
 
-Extra Nix packages pulled implicitly (not allowlist, via modules): `zsh`, `nix-zsh-completions`, `oh-my-zsh`, `shared-mime-info`, `man-db`, `omp` (oh-my-pi binary via `inputs.omp` flake), etc. — visible in `nix eval .#homeConfigurations."yohanes@desktop".config.home.packages` but owned by `common.nix` imports (`zsh`, `omp` flake `programs.omp`, `opencode`, …). Migrated 2026-08-31: `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` moved from `home/modules/manual` + `scripts/install-manual.sh` to `home.packages` (nixpkgs unstable) — `engram` stays manual (not in nixpkgs), `omp` stays flake.
+Extra Nix packages pulled implicitly (not allowlist, via modules): `zsh`, `nix-zsh-completions`, `oh-my-zsh`, `shared-mime-info`, `man-db`, etc. — visible in `nix eval .#homeConfigurations."yohanes@desktop".config.home.packages` but owned by `common.nix` imports (`zsh`, `opencode`, …). Migrated 2026-08-31: `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` moved from `home/modules/manual` + `scripts/install-manual.sh` to `home.packages` (nixpkgs unstable) — `engram` stays manual (not in nixpkgs). Removed 2026-08-31: `omp` (oh-my-pi via `inputs.omp`) deleted — unused.
 
 `home.packages` grep verification (2026-08-31):
 
@@ -90,14 +90,13 @@ Full explicit list includes additionally (not in grep but pacman-owned, never Ni
 | `rtk` / `rtk-mcp` | nixpkgs `rtk` 0.45.0 | **Migrated to Nix 2026-08-31** (was `~/.local/bin/rtk` curl) | `home.packages` — `nixpkgs#rtk` |
 | `opencode` | nixpkgs `opencode` 1.18.21 | **Migrated to Nix 2026-08-31** (was `~/.opencode/bin` curl) | `home.packages` — `nixpkgs#opencode` |
 | `herdr` | nixpkgs `herdr` 0.8.2 | **New via Nix 2026-08-31** (lag 2-3d acceptable) | `home.packages` — `nixpkgs#herdr` |
-| `omp` | flake `inputs.omp` `github:can1357/oh-my-pi` | **Nix flake, not manual** | `omp.homeManagerModules.default` + `programs.omp` |
 | systemd user units | `dot_config/systemd/user/` → `~/.config/systemd/user/` via chezmoi | Phase 7 deferred | `chezmoi apply`; `systemctl --user daemon-reload` |
 | `bun`/`node` shims | pacman `bun 1.4.0`, `nodejs-lts-krypton 24.19.0` also present system-wide | Nix provides `bun`+`nodejs_22` but pacman copies remain until Phase 7 | — |
 | Chezmoi dotfiles | `dot_*`, `dot_config/opencode`, `dot_config/hermes`, `.chezmoiignore` | Purge deferred to Phase 7 | `chezmoi managed` / `chezmoi diff` |
 
-Comment in `packages.nix` now: `# engram not in nixpkgs: kept manual via home/modules/manual (go install). omp via flake inputs.omp`.
+Comment in `packages.nix` now: `# engram not in nixpkgs: kept manual via home/modules/manual (go install).`.
 
-> `omp` (oh-my-pi) — **Nix flake, not manual**: `inputs.omp.url = "github:can1357/oh-my-pi"` (`inputs.nixpkgs.follows`) + `omp.homeManagerModules.default` imported in `flake.nix` `homeConfigurations` + `programs.omp = { enable = true; settings.startup.quiet = true; }` in `home/modules/omp/default.nix`. Replaces former `config/omp/.keep` placeholder (`xdg.configFile` removed). Config generated at `~/.omp/agent/config.yml` via `programs.omp.settings`. Verify: `nix eval .#homeConfigurations."yohanes@desktop".config.programs.omp --apply x: x.enable` → `true`. Fallback `curl https://omp.sh/install | sh` not used — Nix flake pinned via `flake.lock` per hybrid policy (Nix flake > curl > pacman).
+> `omp` (oh-my-pi) — **Removed 2026-08-31**: former `inputs.omp.url = "github:can1357/oh-my-pi"` + `omp.homeManagerModules.default` + `home/modules/omp/default.nix` (`programs.omp`) deleted — unused, DNS npm build failures. Manual fallback `curl https://omp.sh/install | sh` not adopted; reinstall via flake if needed.
 
 ## Host Split + Bring-up (Phase 6)
 
@@ -115,7 +114,7 @@ home/modules/packages.nix  (allowlist, shared)
 
 Stubs intentionally minimal — host overrides go there when needed (e.g., `programs.*.enable` per-host, extra packages). No GUI packages ever added there.
 
-`home/common.nix` imports: `packages.nix`, `shell/zsh.nix`, `omp` (Nix flake `github:can1357/oh-my-pi` via `inputs.omp` + `omp.homeManagerModules.default` → `programs.omp` in `home/modules/omp/default.nix`), `opencode`, `hermes`, `engram`, `skills`.
+`home/common.nix` imports: `packages.nix`, `shell/zsh.nix`, `opencode`, `hermes`, `engram`, `skills` (former `omp` flake removed 2026-08-31).
 
 ### Verification (Nix 2.35.2, 2026-08-31)
 
@@ -173,7 +172,7 @@ bash scripts/hm-switch.sh laptop
 # 6. Manual binaries — engram only (others migrated to Nix)
 # home.activation.manualInstall (home/modules/manual) runs on switch — engram only:
 # engram:       go install github.com/engramhq/engram@latest
-# codebase-memory-mcp/rtk/opencode/herdr now via home.packages (nixpkgs), omp via flake
+# codebase-memory-mcp/rtk/opencode/herdr now via home.packages (nixpkgs); omp removed
 # verify: ls ~/go/bin/engram; which codebase-memory-mcp rtk opencode herdr
 # fallback (standalone): bash scripts/install-manual.sh  # engram only
 

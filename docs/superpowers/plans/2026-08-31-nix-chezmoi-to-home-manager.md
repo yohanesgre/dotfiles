@@ -50,9 +50,9 @@
 - Unpinned clone URLs updated to `yohanesgre/dotfiles`
 - Verify: `nix flake check; nix flake show; home-manager build --flake .#yohanes@desktop --dry-run`
 
-### Phase 3: Core Shell (zsh, p10k, omp, engram)
-- From: `dot_zshrc.tmpl` 4K (per-OS branch cachyos/darwin -> both CachyOS jadi hapus), `dot_p10k.zsh` 89K, `dot_config/omp`, `dot_engram/config.json`
-- To: `home/modules/shell/zsh.nix` (`programs.zsh` + `oh-my-zsh` plugins git/fzf/extract/tmux, `initExtraFirst` p10k instant prompt, `initExtra = readFile ../../config/zsh/extra.zsh`), `config/p10k.zsh`, `config/zsh/extra.zsh` (PATH go/bun/local/cargo, aliases ld/dc/dps/bao/rsudo, tmuxhelp fn, gcloud, cachyos-config guard `[[ -f /usr/share/cachyos-zsh-config/cachyos-config.zsh ]]`), omp/engram modules via `xdg.configFile`
+### Phase 3: Core Shell (zsh, p10k, engram)
+- From: `dot_zshrc.tmpl` 4K (per-OS branch cachyos/darwin -> both CachyOS jadi hapus), `dot_p10k.zsh` 89K, `dot_engram/config.json` (former `dot_config/omp` removed 2026-08-31)
+- To: `home/modules/shell/zsh.nix` (`programs.zsh` + `oh-my-zsh` plugins git/fzf/extract/tmux, `initExtraFirst` p10k instant prompt, `initExtra = readFile ../../config/zsh/extra.zsh`), `config/p10k.zsh`, `config/zsh/extra.zsh` (PATH go/bun/local/cargo, aliases ld/dc/dps/bao/rsudo, tmuxhelp fn, gcloud, cachyos-config guard `[[ -f /usr/share/cachyos-zsh-config/cachyos-config.zsh ]]`), engram module via `xdg.configFile` (omp removed)
 - Verify: `home-manager switch --flake .#yohanes@desktop -b backup; ls -l ~/.zshrc ~/.p10k.zsh; zsh -ic 'typeset -f tmuxhelp | head'`
 
 ### Phase 4: Heavy Dotfiles (opencode, skills 150, hermes, systemd)

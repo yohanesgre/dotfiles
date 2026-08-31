@@ -23,7 +23,7 @@ bash scripts/validate.sh --ci
 ```
 
 Manual binaries auto-install via `home.activation.manualInstall` (`home/modules/manual`):
-`engram` (`go install` — not in nixpkgs) stays manual. `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` now in `home.packages`; `omp` via flake input `github:can1357/oh-my-pi`.
+`engram` (`go install` — not in nixpkgs) stays manual. `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` now in `home.packages`.
 
 ## Prerequisites
 
@@ -34,7 +34,7 @@ Manual binaries auto-install via `home.activation.manualInstall` (`home/modules/
 ## Structure
 
 ```
-flake.nix                   # inputs: nixpkgs/nixos-unstable, home-manager, omp
+flake.nix                   # inputs: nixpkgs/nixos-unstable, home-manager
 flake.lock                  # pinned
 home/common.nix             # username/homeDirectory/stateVersion + imports
 home/hosts/desktop.nix      # desktop host overrides
@@ -42,7 +42,6 @@ home/hosts/laptop.nix       # laptop host overrides
 home/modules/packages.nix   # CLI allowlist (home.packages)
 home/modules/manual/        # home.activation.manualInstall — engram fallback
 home/modules/shell/zsh.nix  # zsh
-home/modules/omp/           # programs.omp (oh-my-pi flake)
 home/modules/opencode/      # opencode config
 home/modules/engram/        # engram
 home/modules/skills/        # skills

@@ -17,6 +17,5 @@ else
 fi
 
 # codebase-memory-mcp, rtk, opencode, herdr now via nixpkgs (home/modules/packages.nix)
-# omp via flake inputs.omp — not manual. No curl fallback needed.
 
 info "done"

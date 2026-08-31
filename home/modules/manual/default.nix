@@ -20,7 +20,6 @@
     fi
 
     # codebase-memory-mcp, rtk, opencode, herdr now via nixpkgs home.packages (migrated 2026-08-31)
-    # omp via flake inputs.omp (programs.omp) — not manual
 
     # never block switch
     true
