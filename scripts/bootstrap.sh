@@ -92,11 +92,77 @@ if [ "$USE_REMOTE" = false ]; then
         fi
         echo ""
     else
-        # repo exists, pull optional?
         if [ -d "$HOME/projects/dotfiles/.git" ]; then
             echo -e "  ${CYAN}→ repo exists: ~/projects/dotfiles (use git pull to update)${NC}"
+            # if SSH key exists but remote is https, suggest/switch to ssh for easy push
+            if [ -f "$HOME/.ssh/id_ed25519" ] || [ -f "$HOME/.ssh/id_rsa" ]; then
+                _remote_url="$(git -C "$HOME/projects/dotfiles" remote get-url origin 2>/dev/null || echo "")"
+                if [[ "$_remote_url" == https://* ]]; then
+                    echo -e "  ${CYAN}→ SSH key exists, switching remote to ssh for push: git@github.com:yohanesgre/dotfiles.git${NC}"
+                    git -C "$HOME/projects/dotfiles" remote set-url origin git@github.com:yohanesgre/dotfiles.git 2>&1 || true
+                fi
+                unset _remote_url
+            fi
         fi
     fi
+fi
+
+# 0.5 Ensure .env.toml (private, gitignored) — auto-create from example for easy bootstrap
+if [ ! -f "$HOME/projects/dotfiles/.env.toml" ] && [ ! -f "$HOME/.env.toml" ]; then
+    echo -e "${BOLD}Step 0.5: .env.toml (private)${NC}"
+    EXAMPLE=""
+    if [ -f "$HOME/projects/dotfiles/.env.toml.example" ]; then
+        EXAMPLE="$HOME/projects/dotfiles/.env.toml.example"
+    elif [ -f "./.env.toml.example" ]; then
+        EXAMPLE="./.env.toml.example"
+    fi
+    DEST="$HOME/.env.toml"
+    # for LOCAL mode, prefer dotfiles dir if it exists
+    if [ "$USE_REMOTE" = false ] && [ -d "$HOME/projects/dotfiles" ]; then
+        DEST="$HOME/projects/dotfiles/.env.toml"
+    fi
+    if [ -n "$EXAMPLE" ]; then
+        echo -e "  ${CYAN}→ cp $EXAMPLE -> $DEST${NC}"
+        cp "$EXAMPLE" "$DEST" 2>&1 && echo -e "  ${GREEN}✓ created $DEST (edit to fill secrets)${NC}" || echo -e "  ${YELLOW}⚠ copy failed${NC}"
+    else
+        echo -e "  ${CYAN}→ curl .env.toml.example -> $DEST${NC}"
+        if curl -fsSL https://raw.githubusercontent.com/yohanesgre/dotfiles/main/.env.toml.example -o "$DEST" 2>&1; then
+            echo -e "  ${GREEN}✓ created $DEST (edit to fill secrets)${NC}"
+        else
+            echo -e "  ${YELLOW}⚠ curl failed, create manually: cp .env.toml.example .env.toml${NC}"
+        fi
+    fi
+    echo -e "  ${YELLOW}→ Edit $DEST to fill DISCORD_BOT_TOKEN / API keys, then: ${CYAN}exec \$SHELL -l${NC}${NC}"
+    echo ""
+else
+    if [ -f "$HOME/projects/dotfiles/.env.toml" ]; then
+        echo -e "  ${CYAN}→ .env.toml exists: ~/projects/dotfiles/.env.toml${NC}"
+    elif [ -f "$HOME/.env.toml" ]; then
+        echo -e "  ${CYAN}→ .env.toml exists: ~/.env.toml${NC}"
+    fi
+fi
+
+# 0.6 Ensure SSH key for git push (dev)
+if [ ! -f "$HOME/.ssh/id_ed25519" ] && [ ! -f "$HOME/.ssh/id_rsa" ]; then
+    echo -e "${BOLD}Step 0.6: SSH key (for git push)${NC}"
+    if command -v ssh-keygen >/dev/null 2>&1; then
+        HOST_SHORT="$(hostname | cut -d. -f1)"
+        echo -e "  ${CYAN}→ ssh-keygen -t ed25519 -C \"$HOST_SHORT\" -f ~/.ssh/id_ed25519 -N ''${NC}"
+        mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+        if ssh-keygen -t ed25519 -C "$HOST_SHORT" -f "$HOME/.ssh/id_ed25519" -N "" 2>&1 | head -5; then
+            echo -e "  ${GREEN}✓ created ~/.ssh/id_ed25519.pub${NC}"
+            echo -e "  ${YELLOW}→ Add to GitHub: https://github.com/settings/keys -> New SSH key, paste:${NC}"
+            cat "$HOME/.ssh/id_ed25519.pub" 2>&1 | sed 's/^/    /'
+            # known_hosts
+            mkdir -p "$HOME/.ssh" && ssh-keyscan -t ed25519 github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+            ssh-keyscan -t rsa github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null
+            chmod 600 "$HOME/.ssh/known_hosts" 2>/dev/null || true
+            echo -e "  ${CYAN}→ after Add, test: ssh -T git@github.com${NC}"
+        fi
+    else
+        echo -e "  ${YELLOW}⚠ ssh-keygen not found, skip${NC}"
+    fi
+    echo ""
 fi
 
 # 1. NOPASSWD setup (biar clean machine cepat, 1x password aja)
