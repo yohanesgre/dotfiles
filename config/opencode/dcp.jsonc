@@ -17,13 +17,23 @@
     "nudgeFrequency": 3,
     "iterationNudgeThreshold": 10,
     "nudgeForce": "soft",
-    "protectedTools": ["task", "skill", "todowrite", "todoread"],
+    "protectedTools": [
+      "task",
+      "skill",
+      "todowrite",
+      "todoread"
+    ],
     "protectUserMessages": false
   },
   "strategies": {
     "deduplication": {
       "enabled": true,
-      "protectedTools": ["task", "skill", "todowrite", "todoread"]
+      "protectedTools": [
+        "task",
+        "skill",
+        "todowrite",
+        "todoread"
+      ]
     },
     "purgeErrors": {
       "enabled": true,
