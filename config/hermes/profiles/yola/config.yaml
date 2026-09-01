@@ -25,7 +25,7 @@ security:
   redact_secrets: true
 tools:
   opencode:
-    enabled: false
+    enabled: true
     workdirs:
       - ~/projects
       - ~/apps
@@ -52,7 +52,6 @@ onboarding:
   seen:
     openclaw_residue_cleanup: true
     busy_input_prompt: true
-    profile_build_offered: true
 updates:
   pre_update_backup: full
   backup_keep: 5
@@ -63,6 +62,8 @@ platform_toolsets:
   cli:
     - browser
     - clarify
+    - code_execution
+    - computer_use
     - context_engine
     - cronjob
     - delegation
@@ -70,24 +71,30 @@ platform_toolsets:
     - memory
     - session_search
     - skills
+    - terminal
     - todo
     - tts
     - vision
     - web
   discord:
-  require_mention: true
-  auto_thread: true
-  history_backfill: true
-  reactions: true
-  group_sessions_per_user: true
-  home_channel: '1531031722064478279'
+    - browser
+    - clarify
+    - code_execution
+    - computer_use
+    - context_engine
+    - cronjob
+    - delegation
+    - file
+    - memory
+    - session_search
+    - skills
+    - terminal
+    - todo
+    - tts
+    - vision
+    - web
 known_plugin_toolsets:
   cli:
     - spotify
   discord:
-  require_mention: true
-  auto_thread: true
-  history_backfill: true
-  reactions: true
-  group_sessions_per_user: true
-  home_channel: '1531031722064478279'
+    - spotify
