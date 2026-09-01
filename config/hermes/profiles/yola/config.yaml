@@ -40,6 +40,11 @@ plugins:
     whisper-model:
       allow_tool_override: false
 discord:
+  require_mention: true
+  auto_thread: true
+  history_backfill: true
+  reactions: true
+  group_sessions_per_user: true
   home_channel: '1531031722064478279'
 gateway:
   systemd_watchdog_seconds: 120
