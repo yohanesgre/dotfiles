@@ -65,12 +65,11 @@ PY
       fi
     done
 
-    # Hermes per-profile: TOML only
-    for _hf in "$HOME/apps/hermes/profiles"/*/.env.toml; do
-      [ -f "$_hf" ] && _load_toml "$_hf"
-    done
+    # Hermes per-profile .env.toml NOT loaded globally — each gateway reads its
+    # own profile's .env.toml via hermes_cli/env_loader (HERMES_HOME). Loading them
+    # here would collide DISCORD_BOT_TOKEN (yola overwrites yohanes).
 
-    unset _py _out _keys _toml_file _base _hf
+    unset _py _out _keys _toml_file _base
     unset -f _load_toml 2>/dev/null || true
   '';
 }

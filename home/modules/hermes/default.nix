@@ -95,7 +95,7 @@ PY
 )
       if [ -n "$_yola_token" ]; then
         mkdir -p "$HOME/apps/hermes/profiles/$_yola_profile"
-        $DRY_RUN_CMD bash -c 'printf "DISCORD_BOT_TOKEN = \"%s\"\nOWNER_DISCORD_USER_ID = \"%s\"\n" "$1" "$2" > "$HOME/apps/hermes/profiles/$3/.env.toml"' -- "$_yola_token" "$_yola_owner" "$_yola_profile"
+        $DRY_RUN_CMD bash -c 'printf "DISCORD_BOT_TOKEN = \"%s\"\nOWNER_DISCORD_USER_ID = \"%s\"\nDISCORD_ALLOWED_USERS = \"%s\"\n" "$1" "$2" "$2" > "$HOME/apps/hermes/profiles/$3/.env.toml"' -- "$_yola_token" "$_yola_owner" "$_yola_profile"
         $DRY_RUN_CMD ${pkgs.python3}/bin/python3 - "$_yola_token" "$_yola_owner" "$_yola_profile" <<'PY'
 import sys, pathlib
 token, owner, prof = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -104,7 +104,7 @@ lines = []
 if p.exists():
     lines = p.read_text(encoding="utf-8", errors="ignore").splitlines()
 out = []
-has_token = has_owner = False
+has_token = has_owner = has_allowed = False
 for l in lines:
     if l.startswith("DISCORD_BOT_TOKEN="):
         out.append(f"DISCORD_BOT_TOKEN={token}")
@@ -112,19 +112,24 @@ for l in lines:
     elif l.startswith("OWNER_DISCORD_USER_ID="):
         out.append(f"OWNER_DISCORD_USER_ID={owner}")
         has_owner = True
+    elif l.startswith("DISCORD_ALLOWED_USERS="):
+        out.append(f"DISCORD_ALLOWED_USERS={owner}")
+        has_allowed = True
     else:
         out.append(l)
 if not has_token:
     out.append(f"DISCORD_BOT_TOKEN={token}")
 if not has_owner:
     out.append(f"OWNER_DISCORD_USER_ID={owner}")
+if not has_allowed:
+    out.append(f"DISCORD_ALLOWED_USERS={owner}")
 p.write_text("\n".join(out) + "\n", encoding="utf-8")
 PY
         $DRY_RUN_CMD chmod 600 "$HOME/apps/hermes/profiles/$_yola_profile/.env.toml" "$HOME/apps/hermes/profiles/$_yola_profile/.env" 2>/dev/null || true
       fi
       if [ -n "$_gdev_token" ]; then
         mkdir -p "$HOME/apps/hermes/profiles/$_gdev_profile"
-        $DRY_RUN_CMD bash -c 'printf "DISCORD_BOT_TOKEN = \"%s\"\nOWNER_DISCORD_USER_ID = \"%s\"\n" "$1" "$2" > "$HOME/apps/hermes/profiles/$3/.env.toml"' -- "$_gdev_token" "$_gdev_owner" "$_gdev_profile"
+        $DRY_RUN_CMD bash -c 'printf "DISCORD_BOT_TOKEN = \"%s\"\nOWNER_DISCORD_USER_ID = \"%s\"\nDISCORD_ALLOWED_USERS = \"%s\"\n" "$1" "$2" "$2" > "$HOME/apps/hermes/profiles/$3/.env.toml"' -- "$_gdev_token" "$_gdev_owner" "$_gdev_profile"
         $DRY_RUN_CMD ${pkgs.python3}/bin/python3 - "$_gdev_token" "$_gdev_owner" "$_gdev_profile" <<'PY'
 import sys, pathlib
 token, owner, prof = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -133,7 +138,7 @@ lines = []
 if p.exists():
     lines = p.read_text(encoding="utf-8", errors="ignore").splitlines()
 out = []
-has_token = has_owner = False
+has_token = has_owner = has_allowed = False
 for l in lines:
     if l.startswith("DISCORD_BOT_TOKEN="):
         out.append(f"DISCORD_BOT_TOKEN={token}")
@@ -141,12 +146,17 @@ for l in lines:
     elif l.startswith("OWNER_DISCORD_USER_ID="):
         out.append(f"OWNER_DISCORD_USER_ID={owner}")
         has_owner = True
+    elif l.startswith("DISCORD_ALLOWED_USERS="):
+        out.append(f"DISCORD_ALLOWED_USERS={owner}")
+        has_allowed = True
     else:
         out.append(l)
 if not has_token:
     out.append(f"DISCORD_BOT_TOKEN={token}")
 if not has_owner:
     out.append(f"OWNER_DISCORD_USER_ID={owner}")
+if not has_allowed:
+    out.append(f"DISCORD_ALLOWED_USERS={owner}")
 p.write_text("\n".join(out) + "\n", encoding="utf-8")
 PY
         $DRY_RUN_CMD chmod 600 "$HOME/apps/hermes/profiles/$_gdev_profile/.env.toml" "$HOME/apps/hermes/profiles/$_gdev_profile/.env" 2>/dev/null || true

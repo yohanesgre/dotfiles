@@ -49,6 +49,10 @@ discord:
 gateway:
   systemd_watchdog_seconds: 120
   multiplex_profiles: true
+  multiplex_profile_allowlist:
+    - yohanes
+    - game-dev-team
+    - default
   profile_routes:
     - name: yohanes
       platform: discord
