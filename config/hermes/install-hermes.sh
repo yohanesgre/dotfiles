@@ -10,7 +10,7 @@ HERMES_HOME="${HERMES_HOME:-$HOME/apps/hermes}"
 HERMES_REPO="https://github.com/NousResearch/hermes-agent.git"
 HERMES_CODE="$HERMES_HOME/hermes-agent"
 HERMES_BIN="$HOME/.local/bin/hermes"
-DOTFILES="$HOME/projects/dotfiles/dot_config/hermes"
+DOTFILES="$HOME/projects/dotfiles/config/hermes"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

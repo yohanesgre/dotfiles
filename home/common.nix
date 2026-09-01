@@ -15,5 +15,6 @@
     ./modules/opencode
     ./modules/engram
     ./modules/skills
+    ./modules/hermes
   ];
 }

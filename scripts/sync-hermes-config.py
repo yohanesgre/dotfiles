@@ -6,7 +6,7 @@ Strategy:
   - Reads all three profile configs from ~/apps/hermes/profiles/<name>/config.yaml
   - "Common" keys (shared across all profiles) are taken from the yohanes (primary) profile
   - Profile-specific keys (discord, gateway, etc.) are preserved per-profile
-  - Writes back to ~/projects/dotfiles/dot_config/hermes/profiles/<name>/config.yaml
+   - Writes back to ~/projects/dotfiles/config/hermes/profiles/<name>/config.yaml
   - Auto-commits if changes detected
 """
 
@@ -23,9 +23,10 @@ DOTFILES_REPO = HOME / "projects/dotfiles"
 PROFILES = ["yohanes", "game-dev-team", "yola"]
 
 # Keys that are SHARED across all profiles (from yohanes primary)
+# Includes all top-level keys except PROFILE_KEYS; explicitly list known common keys
 COMMON_KEYS = {
-    "model", "agent", "web", "browser", "display", "tts",
-    "skills", "security", "tools", "onboarding", "updates",
+    "model", "fallback_model", "fallback", "agent", "web", "browser", "display", "tts",
+    "skills", "security", "tools", "plugins", "approvals", "onboarding", "updates",
     "session_reset", "platform_toolsets", "known_plugin_toolsets",
     "_config_version",
 }
@@ -138,8 +139,8 @@ def sync_configs(profiles: list[str], dry_run: bool = False) -> bool:
 
         # Maintain a sensible ordering
         desired_order = [
-            "model", "agent", "web", "browser", "display", "tts",
-            "skills", "security", "tools",
+            "model", "fallback_model", "fallback", "agent", "web", "browser", "display", "tts",
+            "skills", "security", "tools", "plugins", "approvals",
             "discord", "gateway",
             "onboarding", "updates", "_config_version",
             "session_reset", "platform_toolsets", "known_plugin_toolsets",
@@ -187,8 +188,8 @@ def git_commit(dry_run: bool = False) -> bool:
         if dry_run:
             return True
 
-        # Stage hermes config changes (Nix: config/hermes, legacy: dot_config/hermes)
-        for pattern in ["config/hermes/profiles/*/config.yaml", "dot_config/hermes/profiles/*/config.yaml"]:
+        # Stage hermes config changes (config/hermes)
+        for pattern in ["config/hermes/profiles/*/config.yaml"]:
             subprocess.run(
                 ["git", "add", pattern],
                 cwd=DOTFILES_REPO,
