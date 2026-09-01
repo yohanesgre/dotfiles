@@ -58,10 +58,6 @@ gateway:
       platform: discord
       chat_id: '1531032272118091786'
       profile: game-dev-team
-    - name: casual
-      platform: discord
-      chat_id: '1531031722064478279'
-      profile: yola
 onboarding:
   seen:
     openclaw_residue_cleanup: true
