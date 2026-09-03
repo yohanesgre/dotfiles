@@ -15,6 +15,11 @@
 *.env.toml.local
 config/private/
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
 # Nix
 result
 result-*
