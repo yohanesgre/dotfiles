@@ -32,7 +32,8 @@
       fi
     fi
 
-    # codebase-memory-mcp, rtk, opencode, herdr now via nixpkgs home.packages (migrated 2026-08-31)
+    # codebase-memory-mcp, rtk, herdr now via nixpkgs home.packages (migrated 2026-08-31)
+    # opencode moved to bun (opencode-ai) via home/modules/opencode (nixpkgs lags behind)
 
     # never block switch
     true

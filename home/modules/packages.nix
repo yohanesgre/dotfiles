@@ -18,10 +18,10 @@
     tmux
     codebase-memory-mcp
     rtk
-    opencode
     herdr
   ];
 
+  # opencode via bun (opencode-ai) — nixpkgs lags behind, manual install in home/modules/opencode
   # engram not in nixpkgs: kept manual via home/modules/manual (go install).
   # GUI/GPU stays pacman: browsers, nvidia/mesa, DE, steam — not in Nix (avoid nixGL mismatch).
 

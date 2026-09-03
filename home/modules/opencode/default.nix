@@ -15,6 +15,25 @@
   # DO NOT set home.sessionVariables.LD_LIBRARY_PATH globally — breaks KDE (libstdc++ mismatch).
   home.packages = with pkgs; [ stdenv.cc.cc.lib ];
 
+  home.activation.opencodeBunInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    export PATH="${pkgs.bun}/bin:$HOME/.bun/bin:$PATH"
+    if ! ${pkgs.bun}/bin/bun pm -g ls 2>/dev/null | grep -q "opencode-ai"; then
+      echo "opencode: installing opencode-ai via bun (global)..."
+      ${pkgs.bun}/bin/bun add -g opencode-ai || echo "opencode: bun add -g failed (continuing)"
+      # bun blocks postinstall by default — ensure native binary is built
+      if [ -f "$HOME/.bun/install/global/node_modules/opencode-ai/postinstall.mjs" ]; then
+        node "$HOME/.bun/install/global/node_modules/opencode-ai/postinstall.mjs" 2>/dev/null || true
+      fi
+    else
+      echo "opencode: opencode-ai already installed via bun"
+      # ensure postinstall was run (fixes --ignore-scripts or blocked postinstall)
+      if [ ! -x "$HOME/.bun/install/global/node_modules/opencode-ai/bin/opencode.exe" ] && [ -f "$HOME/.bun/install/global/node_modules/opencode-ai/postinstall.mjs" ]; then
+        node "$HOME/.bun/install/global/node_modules/opencode-ai/postinstall.mjs" 2>/dev/null || true
+      fi
+    fi
+    mkdir -p "$HOME/.bun/bin"
+  '';
+
   home.activation.opencodeFixPlugins = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     # Fix plugin/tool symlinks -> real files so bun can resolve node_modules
     for p in "$HOME/.config/opencode/plugins" "$HOME/.config/opencode/tools"; do
