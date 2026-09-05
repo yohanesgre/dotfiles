@@ -1,6 +1,6 @@
 # OpenCode Configuration
 
-> Last updated: 2026-08-22
+> Last updated: 2026-09-05
 
 ## Stack Overview
 
@@ -140,3 +140,7 @@ Prompt overrides (2026-08-22): `~/.config/opencode/oh-my-opencode-slim/opencode-
 - Skills installed globally only; never vendored in repos (gitignore `.agents/`)
 - Removed 2026-08-13: Cloudflare MCP×6, Postgres MCP, lexa MCP, commandcode Go-proxy, cloudflared (OMO-slim since re-enabled)
 - Default model ox-alpha free (`opencode/x-preview-f-free`) across opencode.json + all OMO-slim agents; observer pinned `opencode/mimo-v2.5-free` (2026-08-21; brief switch to opencode go same day, reverted)
+- Removed 2026-09-05: `lexa-swarm` skill (user request; source `config/skills/lexa-swarm` deleted, backup kept at `~/.agents/skills.backup/`)
+- Added 2026-09-05: `design-thinking` skill (SKILL.md router + refs/design-thinking.md, design-graph.md, graph-protocol.md, output-format.md; source r17x gist). Single ID; no AGENTS.md rule needed (auto-discovery).
+- Added 2026-09-05: `/design-thinking` command (`~/.config/opencode/commands/design-thinking.md`, mirrors `design.md` pattern; loads skill, routes $ARGUMENTS). Global commands dir unmanaged by home-manager — file lives only in ~/.config. Mirrored to beta profile (`~/.config/opencode-beta/opencode/commands/`, used by `o2`).
+- Beta only (`o2`, `~/.config/opencode-beta/opencode/opencode.json`, unmanaged): `agents.build.mode=all` so built-in build can run as subagent (built-in default is primary; primary cannot subagent per V2 docs). Main profile untouched.
