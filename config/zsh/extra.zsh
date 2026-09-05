@@ -51,6 +51,9 @@ elif [[ -f "$HOME/.env.toml" ]]; then
   set -a; __load_toml_env "$HOME/.env.toml"; set +a
 fi
 unset -f __load_toml_env 2>/dev/null || true
+# No global GITHUB_TOKEN by design (gh CLI uses keyring login).
+# Guard against values inherited from stale parent processes.
+unset GITHUB_TOKEN 2>/dev/null || true
 
 # Also load per-profile hermes env files if present (TOML only)
 __load_toml_env_hermes() {
