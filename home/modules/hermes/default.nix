@@ -21,13 +21,18 @@
       if [ -f "$HOME/projects/dotfiles/config/hermes/install-hermes.sh" ] && [ ! -f "$LIVE_PROFILES/../install-hermes.sh" ]; then
         $DRY_RUN_CMD cp -n "$HOME/projects/dotfiles/config/hermes/install-hermes.sh" "$LIVE_PROFILES/../install-hermes.sh" 2>/dev/null || true
       fi
+      # render @HERMES_HOME_*@ placeholders in LIVE copies from .env.toml
+      # (dotfiles source stays redacted; live files are gitignored runtime)
+      if [ -x "$HOME/projects/dotfiles/scripts/render-hermes-config.sh" ]; then
+        $DRY_RUN_CMD bash "$HOME/projects/dotfiles/scripts/render-hermes-config.sh" 2>&1 | head -20 || true
+      fi
     fi
   '';
 
   home.activation.hermesPerProfileEnv = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     # Per-profile env: each suite (channel+token+owner+profile) maps to a hermes profile.
     # HERMES_PROFILE_n optional — if empty, falls back to default profile for that suite.
-    #   _2 -> yola (1531031722064478279), _3 -> game-dev-team
+    #   _2 -> yola (HERMES_HOME_YOLA), _3 -> game-dev-team (HERMES_HOME_GAMEDEV)
     # Writes both .env.toml (systemd import via home/modules/env) and .env
     # (agent/secret_scope + hermes_cli/env_loader).
     _toml="$HOME/projects/dotfiles/.env.toml"
@@ -168,16 +173,17 @@ PY
   home.activation.hermesYolaSplit = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     # One-time cleanup: remove yola route from live yohanes multiplex config
     # (dotfiles source already patched; live copy via hermesSync is copy-if-missing only)
+    # Matches by profile name so no raw channel ID lives in git.
     _live="$HOME/apps/hermes/profiles/yohanes/config.yaml"
-    if [ -f "$_live" ] && grep -q "1531031722064478279" "$_live" 2>/dev/null; then
+    if [ -f "$_live" ] && grep -q "profile: yola" "$_live" 2>/dev/null; then
       $DRY_RUN_CMD ${pkgs.python3}/bin/python3 - "$_live" <<'PY'
 import pathlib, sys, re
 p = pathlib.Path(sys.argv[1])
 t = p.read_text(encoding="utf-8")
-# remove the casual/yola route block (4 lines)
-t = re.sub(r"    - name: casual\n      platform: discord\n      chat_id: '1531031722064478279'\n      profile: yola\n", "", t)
+# remove any 4-line route block pointing at profile yola (any chat_id)
+t, n = re.subn(r"    - name: [^\n]+\n      platform: discord\n      chat_id: '[^\n]+'\n      profile: yola\n", "", t)
 p.write_text(t, encoding="utf-8")
-print("patched live yohanes config: removed yola route")
+print(f"patched live yohanes config: removed {n} yola route(s)")
 PY
     fi
     unset _live 2>/dev/null || true

@@ -358,6 +358,26 @@ else
 fi
 echo ""
 
+# ── Check 10: No Leaked Secrets (tracked files) ─────────────────────────
+echo -e "${BOLD}Check 10: No Leaked Secrets${NC}"
+
+if [ ! -f "$REPO_ROOT/scripts/check-secrets.sh" ]; then
+    skip "scripts/check-secrets.sh not found"
+else
+    check "no secrets in tracked files" bash "$REPO_ROOT/scripts/check-secrets.sh"
+fi
+
+# hermes yamls must use placeholders, never raw snowflake IDs
+if grep -rEq "'[0-9]{17,19}'" "$REPO_ROOT/config/hermes/profiles/" 2>/dev/null; then
+    check "hermes configs use placeholders (no raw channel IDs)" false
+    grep -rEn "'[0-9]{17,19}'" "$REPO_ROOT/config/hermes/profiles/" | cut -d: -f1,2 | while IFS= read -r loc; do
+        echo -e "         ${RED}→ raw ID in $loc${NC}"
+    done
+else
+    check "hermes configs use placeholders (no raw channel IDs)" true
+fi
+echo ""
+
 # ── Additional Checks ──────────────────────────────────────────────────────
 echo -e "${BOLD}Additional Checks${NC}"
 

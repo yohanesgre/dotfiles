@@ -12,6 +12,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Scan for leaked secrets
+        run: bash scripts/check-secrets.sh
+
       - name: Run validation suite (CI mode)
         run: bash scripts/validate.sh --ci
 

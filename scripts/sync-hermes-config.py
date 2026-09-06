@@ -6,11 +6,14 @@ Strategy:
   - Reads all three profile configs from ~/apps/hermes/profiles/<name>/config.yaml
   - "Common" keys (shared across all profiles) are taken from the yohanes (primary) profile
   - Profile-specific keys (discord, gateway, etc.) are preserved per-profile
-   - Writes back to ~/projects/dotfiles/config/hermes/profiles/<name>/config.yaml
+  - Writes back to ~/projects/dotfiles/config/hermes/profiles/<name>/config.yaml
+  - Redacts raw channel IDs to @HERMES_HOME_*@ placeholders on write-back
+    (mapping from .env.toml HERMES_HOME_*; unknown IDs warn, never silently commit)
   - Auto-commits if changes detected
 """
 
 import os
+import re
 import sys
 import subprocess
 from pathlib import Path
@@ -21,6 +24,59 @@ DOTFILES_DIR = HOME / "projects/dotfiles/config/hermes/profiles"
 DOTFILES_REPO = HOME / "projects/dotfiles"
 
 PROFILES = ["yohanes", "game-dev-team", "yola"]
+
+ENV_CANDIDATES = [DOTFILES_REPO / ".env.toml", HOME / ".env.toml"]
+HOME_VARS = ("HERMES_HOME_YOHANES", "HERMES_HOME_YOLA", "HERMES_HOME_GAMEDEV")
+
+
+def load_redact_map() -> dict[str, str]:
+    """Map raw channel IDs -> placeholders from local .env.toml (never committed)."""
+    try:
+        import tomllib
+    except ImportError:
+        return {}
+    data: dict = {}
+    for cand in ENV_CANDIDATES:
+        if cand.exists():
+            try:
+                with open(cand, "rb") as f:
+                    data = tomllib.load(f)
+                break
+            except Exception:
+                continue
+    flat: dict[str, str] = {}
+
+    def _flat(d: dict, prefix: str = "") -> None:
+        for k, v in d.items():
+            key = f"{prefix}{k}" if not prefix else f"{prefix}_{k}"
+            if isinstance(v, dict):
+                _flat(v, key)
+            elif v is not None:
+                flat[key] = str(v)
+
+    _flat(data)
+    mapping = {}
+    for var in HOME_VARS:
+        val = flat.get(var, "").strip()
+        if val and val != f"REPLACE_WITH_{var}":
+            mapping[val] = f"@{var}@"
+    return mapping
+
+
+def redact_ids(text: str, mapping: dict[str, str]) -> str:
+    """Replace known raw IDs with placeholders; warn on unknown snowflakes."""
+    for raw_id, ph in mapping.items():
+        text = text.replace(f"'{raw_id}'", f"'{ph}'")
+    leftover = sorted(set(re.findall(r"'[0-9]{17,19}'", text)))
+    if leftover:
+        print(
+            f"  ⚠ unknown channel IDs would commit ({len(leftover)}): "
+            "add to HERMES_HOME_* in .env.toml or verify",
+            file=sys.stderr,
+        )
+        for lid in leftover:
+            print(f"    → {lid}", file=sys.stderr)
+    return text
 
 # Keys that are SHARED across all profiles (from yohanes primary)
 # Includes all top-level keys except PROFILE_KEYS; explicitly list known common keys
@@ -151,6 +207,7 @@ def sync_configs(profiles: list[str], dry_run: bool = False) -> bool:
                 desired_order.append(key)
 
         new_content = assemble_yaml(output_sections, desired_order)
+        new_content = redact_ids(new_content, load_redact_map())
 
         # Check if dotfiles needs updating
         old_content = read_yaml_text(dotfiles_path) if dotfiles_path.exists() else ""

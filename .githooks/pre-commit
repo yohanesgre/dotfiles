@@ -3,6 +3,18 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SECRETS="$ROOT_DIR/scripts/check-secrets.sh"
+
+if [ -f "$SECRETS" ]; then
+    echo "🔒 Scanning staged files for secrets..."
+    if ! bash "$SECRETS" --staged; then
+        echo ""
+        echo "❌ Secrets detected in staged files. Redact before committing."
+        echo "   To bypass: git commit --no-verify"
+        exit 1
+    fi
+fi
+
 SCRIPT="$ROOT_DIR/scripts/validate.sh"
 
 if [ ! -f "$SCRIPT" ]; then
