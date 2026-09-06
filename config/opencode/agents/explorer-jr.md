@@ -1,6 +1,7 @@
 ---
 description: Fast codebase search and pattern matching. Use for finding files, locating code patterns, and answering 'where is X?' questions.
 mode: all
+model: opencode-go/mimo-v2.5
 steps: 30
 permissions:
   - action: "*"

@@ -1,6 +1,7 @@
 ---
 description: Vision agent. Reads and describes images, screenshots, diagrams, charts, and UI mockups into text for text-only models. Use when the main model cannot see images.
 mode: subagent
+model: opencode-go/mimo-v2.5
 steps: 10
 permissions:
   - action: "*"

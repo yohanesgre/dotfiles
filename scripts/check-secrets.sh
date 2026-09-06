@@ -50,8 +50,10 @@ if [ "$STAGED" = true ]; then
     done
   done <<< "$FILES"
 else
+  # self-exclusion: this script contains its own patterns as regex literals
   while IFS= read -r f; do
     [ -z "$f" ] && continue
+    [ "$f" = "scripts/check-secrets.sh" ] && continue
     echo "$f" | grep -qE "$BLOCKED_RE" && { echo "TRACKED blocked file: $f"; FAILED=1; continue; }
     for re in "${SECRET_RES[@]}"; do
       HITS=$(git grep -n -E "$re" -- "$f" 2>/dev/null | grep -v -E "$PLACEHOLDER_RE" | cut -d: -f2 || true)

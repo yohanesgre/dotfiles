@@ -1,6 +1,7 @@
 ---
 description: External documentation and library research. Use for official docs lookup, GitHub examples, and understanding library internals.
 mode: all
+model: opencode-go/mimo-v2.5
 steps: 40
 permissions:
   - action: "*"

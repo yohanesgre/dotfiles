@@ -48,7 +48,7 @@ Key: no `plugin` entries (only live-local herdr-agent-state, not in config); no 
 
 ## Agents (`~/projects/dotfiles/config/opencode/agents/*.md`)
 
-All: `mode: all` (vision: subagent), model-agnostic (no `model` field — inherit session/default model), thin shells (identity + guardrails + skill pointer by name), deny-by-default `permissions` ordered rules, `steps` caps. Native V2 frontmatter only (`description`/`mode`/`steps`/`permissions` — legacy top-level `temperature` + V1 `permission` blocks removed 2026-09-06; per V2 docs, request overlays like temperature are not applied by the runner, so effective tuning lives on provider/model/variant). All prompts end with a caveman output mandate: ultra-terse fragments, no filler/narration, substance-only reports; vision keeps transcriptions verbatim.
+All: `mode: all` (vision: subagent), model-agnostic except librarian-jr + explorer-jr (both `model: opencode-go/mimo-v2.5`, cheapest clean quota: 30.1k req/5h, 0 retention), thin shells (identity + guardrails + skill pointer by name), deny-by-default `permissions` ordered rules, `steps` caps. Native V2 frontmatter only (`description`/`mode`/`steps`/`permissions` — legacy top-level `temperature` + V1 `permission` blocks removed 2026-09-06; per V2 docs, request overlays like temperature are not applied by the runner, so effective tuning lives on provider/model/variant). All prompts end with a caveman output mandate: ultra-terse fragments, no filler/narration, substance-only reports; vision keeps transcriptions verbatim.
 
 | Agent | Steps | Guardrails |
 |-------|-------|------------|
@@ -58,9 +58,9 @@ All: `mode: all` (vision: subagent), model-agnostic (no `model` field — inheri
 | reviewer | 40 | read-only; shell: git diff/status/log/show allow (bare + `*`), rest ask; subagent deny |
 | brainstormer | 30 | read-only; web ask; question allow; subagent deny. Skill: `agents-brainstormer` (wraps `brainstorming` process) |
 | designer-jr | 50 | edit+shell allow; web ask; question; subagent deny. Owns wireframes |
-| explorer-jr | 30 | read/glob/grep/list only |
-| librarian-jr | 40 | read tools + webfetch/websearch allow; no bash |
-| vision | 10 | read only |
+| explorer-jr | 30 | read/glob/grep/list only; model `opencode-go/mimo-v2.5` |
+| librarian-jr | 40 | read tools + webfetch/websearch allow; no bash; model `opencode-go/mimo-v2.5` |
+| vision | 10 | read only; model `opencode-go/mimo-v2.5` (unverified vision; fallback `deepseek-v4-flash-vision-exp`) |
 
 ## Skills System (2026-08-13 overhaul)
 
