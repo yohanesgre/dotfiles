@@ -1,71 +1,71 @@
 # OpenCode Configuration
 
-> Last updated: 2026-09-05
+> Last updated: 2026-09-06 — v2 cleanup (v1 archived, plugins removed except herdr, rtk MCP added, agents V2-native)
 
 ## Stack Overview
 
 ```
-OpenCode Go (provider, $10/mo)
+opencode2 (@opencode-ai/cli beta) + OpenCode Go provider ($10/mo)
 ├── ~/.config/opencode/          → harness config
-│   ├── opencode.json            → main config
-│   ├── cli.json / tui.json      → TUI
-│   ├── dcp.jsonc                → dynamic context pruning
-│   ├── AGENTS.md                → agent behavior rules (global)
-│   ├── CONFIGURATION.md         → this file
-│   ├── agents/*.md              → 8 custom agents (V2 permissions)
-│   ├── MCP (3)                  → engram, playwright, codebase-memory-mcp
-│   ├── skills/                  → removed 2026-08-13 (all moved to ~/.agents/skills, incl. cc-design)
-│   └── plugins/                 → local file plugins (rtk, engram, background-agents, notify, worktree, kdco-primitives)
-├── ~/.agents/skills/            → cross-harness skills (canonical, chezmoi dot_agents/skills/)
-├── ~/.commandcode/AGENTS.md     → commandcode user-tier memory (caveman rules)
-└── ~/.hermes/SOUL.md            → hermes identity (caveman rules)
+│   ├── opencode.jsonc           → main config (v2 minimal, home-manager managed)
+│   ├── cli.json                 → CLI prefs (managed)
+│   ├── AGENTS.md                → agent behavior rules (global, manual sync from dotfiles)
+│   ├── CONFIGURATION.md         → this file (managed)
+│   ├── agents/*.md              → 9 custom agents, V2 permissions (managed)
+│   ├── commands/                → /design-thinking only (manual, unmanaged; /design archived)
+│   ├── tools/                   → image.py only (manual, unmanaged; image.ts archived)
+│   ├── plugins/                 → herdr-agent-state only (live, unmanaged; rest archived)
+│   └── (no skills/ dir — single root `~/.agents/skills/`, restored 2026-09-06)
+│   └── MCP (4)                  → engram, playwright, codebase-memory-mcp, rtk
+├── ~/.agents/skills/            → cross-harness skills (canonical)
+└── ~/.config/opencode-archive-v1-20260906/ → v1 archive (see below)
 ```
 
-## Main Config (`opencode.json`)
+## Main Config (`opencode.jsonc`)
 
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/muse-spark-1.3-contributor",
   "permission": "allow",
   "default_agent": "build",
-  "agent": { "explore": { "disable": true }, "general": { "disable": true } },
-  "model": "opencode/x-preview-f-free",
+  "agents": {
+    "build": { "mode": "all" }
+  },
   "lsp": true,
-  "compaction": { "auto": true, "prune": true, "reserved": 10000 },
+  "compaction": { "auto": true, "buffer": 10000 },
   "mcp": {
     "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": true, "type": "local" },
     "playwright": { "command": ["bun", "x", "@playwright/mcp"], "enabled": true, "type": "local" },
-    "codebase-memory-mcp": { "enabled": true, "type": "local", "command": ["codebase-memory-mcp"] }
+    "codebase-memory-mcp": { "enabled": true, "type": "local", "command": ["codebase-memory-mcp"] },
+    "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" }
   },
-  "shell": "/usr/bin/zsh",
-  "plugin": ["@tarquinen/opencode-dcp@latest"]
+  "shell": "/usr/bin/zsh"
 }
 ```
 
-Key: preset `gmicloud` (gmicloud M3#thinking default, M2.7 for swe, mimo-v2.5-free for vision); default_agent build; built-in explore/general disabled (custom agents replace).
+Key: no `plugin` entries (only live-local herdr-agent-state, not in config); no presets/providers (gmicloud removed with v1); built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom explorer-jr/librarian-jr kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
 
-## Agents (`~/.config/opencode/agents/*.md`) — V2 permissions 2026-08-13
+## Agents (`~/projects/dotfiles/config/opencode/agents/*.md`)
 
-All: `mode: all` (vision: subagent), thin shells (identity + guardrails + skill pointer by name), deny-by-default `permissions` ordered rules, `steps` caps. Dual-format frontmatter: V2 `permissions` array + V1 `permission` object (V1 1.18.16 reads same agents/ dir; V1 defaults permissive so blocks deny non-granted tools + external_directory; only swe allows external `*`). All prompts end with a caveman output mandate (2026-08-21): ultra-terse fragments, no filler/narration, substance-only reports; vision keeps transcriptions verbatim.
+All: `mode: all` (vision: subagent), model-agnostic (no `model` field — inherit session/default model), thin shells (identity + guardrails + skill pointer by name), deny-by-default `permissions` ordered rules, `steps` caps. Native V2 frontmatter only (`description`/`mode`/`steps`/`permissions` — legacy top-level `temperature` + V1 `permission` blocks removed 2026-09-06; per V2 docs, request overlays like temperature are not applied by the runner, so effective tuning lives on provider/model/variant). All prompts end with a caveman output mandate: ultra-terse fragments, no filler/narration, substance-only reports; vision keeps transcriptions verbatim.
 
-| Agent | Temp | Steps | Guardrails |
-|-------|------|-------|------------|
-| swe | 0.2 | 60 | read/glob/grep/list/edit/shell allow; web+subagent deny; external_directory `*` allow (all dirs). Skill: `agents-swe` (routing hub). Model via `presets.gmicloud`. Dual-format frontmatter: V2 `permissions` array + V1 `permission` object |
-| planner | 0.2 | 40 | read-only; web ask; question allow; subagent deny. Skill: `agents-planner` (wraps `writing-plans` process; expects designed input). Model via `presets.gmicloud` |
-| architect | 0.4 | 40 | read-only; web ask; question allow; subagent deny. Skill: `agents-architect` (wraps `system-design` + `architecture`; owns design + ADR). Model via `presets.gmicloud` |
-| reviewer | 0.1 | 40 | read-only; shell: git diff/status/log/show allow, rest ask; subagent deny. Model via `presets.gmicloud` |
-| brainstormer | 0.8 | 30 | read-only; web ask; question allow; subagent deny. Skill: `agents-brainstormer` (wraps `brainstorming` process). Model via `presets.gmicloud` |
-| designer-jr | 0.7 | 50 | edit+shell allow; web ask; question; subagent deny. Owns wireframes. Model via `presets.gmicloud` |
-| explorer-jr | 0.1 | 30 | read/glob/grep/list only. Model via `presets.gmicloud` |
-| librarian-jr | 0.1 | 40 | read tools + webfetch/websearch allow; no bash. Model via `presets.gmicloud` |
-| vision | 0.1 | 10 | read only. Model via `presets.gmicloud` (`opencode/mimo-v2.5-free`) |
-
-Migration: V1 `permission` maps → V2 `permissions` ordered rules (`bash`→`shell`, `task`→`subagent`), wildcard-first + narrow-after. V1 configs still compatible.
+| Agent | Steps | Guardrails |
+|-------|-------|------------|
+| swe | 60 | read/glob/grep/list/edit/shell allow; web+question+subagent deny; external_directory `*` allow (all dirs). Skill: `agents-swe` (routing hub) |
+| planner | 40 | read-only; web ask; question allow; subagent deny. Skill: `agents-planner` (wraps `writing-plans` process; expects designed input) |
+| architect | 40 | read-only; web ask; question allow; subagent deny. Skill: `agents-architect` (wraps `system-design` + `architecture`; owns design + ADR) |
+| reviewer | 40 | read-only; shell: git diff/status/log/show allow (bare + `*`), rest ask; subagent deny |
+| brainstormer | 30 | read-only; web ask; question allow; subagent deny. Skill: `agents-brainstormer` (wraps `brainstorming` process) |
+| designer-jr | 50 | edit+shell allow; web ask; question; subagent deny. Owns wireframes |
+| explorer-jr | 30 | read/glob/grep/list only |
+| librarian-jr | 40 | read tools + webfetch/websearch allow; no bash |
+| vision | 10 | read only |
 
 ## Skills System (2026-08-13 overhaul)
 
-- Discovery: dirs only, recursive. `~/.agents/skills/` (canonical — now includes `cc-design`, Command Code port, renamed from `design` 2026-08-13 to dodge `ckm:design` name; `/design` command updated), project `.agents/skills/`. `.config/opencode/skills/` removed 2026-08-13 — single root. No AGENTS.md tables — auto-discovery.
-- Load: native `skill` tool first; `npx openskills read` fallback (binary not installed).
+- Discovery: dirs only, recursive. `~/.agents/skills/` (canonical, single root since 2026-09-06 — `config/opencode/skills/` deleted, no `skills` mapping in default.nix), project `.agents/skills/`. Live `~/.config/opencode/skills/` is an empty leftover dir. No AGENTS.md tables — auto-discovery.
+- Load: native `skill` tool first; `npx openskills read` fallback.
 - **Domain family** (all nested variants, name = parent dir, caveman style):
   - `frontend/` + `frontend-tanstack/` (React+TanStack+Tailwind+Vite, refs/stack-conventions.md)
   - `cli/` + `cli-bun-effect/` (Bun+Effect)
@@ -74,28 +74,28 @@ Migration: V1 `permission` maps → V2 `permissions` ordered rules (`bash`→`sh
 - Wiring: `agents-planner` → system-design/architecture; `agents-designer` → wireframes ownership; `agents-brainstormer` → defers process to superpowers `brainstorming` (persona + read-only subagent constraints + wrap-up format; returns design for parent to persist as spec doc). `agents-planner` defers process to superpowers `writing-plans` (persona + read-only subagent constraints + routing rules; returns plan for parent to persist as docs/superpowers/plans/). `agents-architect` defers process to `system-design` + `architecture` (owns design + ADR; returns both for parent to persist, ADR via docs/adr/ convention). Chain: brainstorming → architect (design + ADR) → planner (writing-plans) → swe.
 - YAML gotcha: unquoted frontmatter descriptions with `: ` silently break discovery (killed frontend + effect-ts 2026-08-13; fixed via single-quoted descriptions).
 - `~/AGENTS.md` deleted 2026-08-13 (stale catalog; redundant with native `<available_skills>` injection). Not chezmoi-managed.
-- `caveman-stats` pruned (Claude Code-only; reads CC session log). Caveman mode now in all 3 harnesses: opencode AGENTS.md, `~/.commandcode/AGENTS.md`, `~/.hermes/SOUL.md` (seeded 2026-08-13).
+- Caveman mode now in all 3 harnesses: opencode AGENTS.md, `~/.commandcode/AGENTS.md`, `~/.hermes/SOUL.md` (seeded 2026-08-13).
 - Cross-harness scan: opencode/hermes/commandcode recursive; Claude Code/Gemini/Cline/Roo shallow — irrelevant (unused).
 
 ## AGENTS.md Sections
 
-Memory (engram: session start → mem_current_project + mem_context; conflicts via mem_judge), Caveman Mode (incl. subagent inheritance: delegation prompts must carry "reply caveman-compressed" line; omo-slim agent prompts embed the mandate), Tool Selection, Codebase Knowledge Graph (codebase-memory-mcp: session-start index check, tool routing table — search_graph/get_code_snippet/trace_path×3/query_graph/search_code/detect_changes, grep fallback rules, delegation qualified_name passing), Agent-Browser, Code Style, Quality, Error Recovery, Quality Gates (agent selection table incl. wireframes→designer, missing-design→planner), Prompt Templates, Commit Rules, Safety, Tool Installation Automation.
+Memory (engram: session start → mem_current_project + mem_context; conflicts via mem_judge), Caveman Mode (incl. subagent inheritance: delegation prompts must carry "reply caveman-compressed" line; custom agent prompts embed the mandate), Tool Selection (incl. rtk preference), Codebase Knowledge Graph (codebase-memory-mcp: session-start index check, tool routing table — search_graph/get_code_snippet/trace_path×3/query_graph/search_code/detect_changes, grep fallback rules, delegation qualified_name passing), Agent-Browser, Code Style, Quality, Error Recovery, Quality Gates (agent selection table incl. wireframes→designer-jr, design/ADR→architect), Prompt Templates, Commit Rules, Safety, Tool Installation Automation.
 
-## DCP (`dcp.jsonc`)
+## DCP (`dcp.jsonc` — archived 2026-09-06)
 
-Range compress, allow, max 50% / min 30% context, nudge 3/10 soft; dedup + purgeErrors(3).
+Removed with the plugin purge. Upstream DCP slowed (focus moved to Sleev), V1-only (V2 breaks all V1 plugins), and our copy referenced stale V1 tool names. V2 native compaction (`buffer: 10000` in opencode.jsonc) covers the basics. File archived at `~/.config/opencode-archive-v1-20260906/dcp.jsonc`; mapping dropped from default.nix. Revisit if a V2-compatible DCP/Sleev integration appears.
 
-## RTK (CLI proxy)
-
-`~/.local/bin/rtk`, hooks bash via `plugins/rtk.ts` (tool.execute.before → `rtk rewrite`). Failsafe passthrough. Config `~/.config/rtk/config.toml` (machine-local; plugin synced).
-
-## MCP Servers (3)
+## MCP Servers (4)
 
 | Server | Type | Purpose |
 |--------|------|---------|
 | engram | Go binary `~/go/bin/engram` | Memory: SQLite+FTS5 `~/.engram/engram.db`, agent-only tools. `~/.engram/config.json` pins project_name=`opencode-dotfiles` for home-cwd writes (fixes ambiguous_project from lexa-* worktrees in $HOME; HOME config doesn't leak into repos) |
 | playwright | `bun x @playwright/mcp` | Browser automation |
 | codebase-memory-mcp | static C binary | Knowledge graph, 14 tools, 66 langs |
+| rtk | `~/.local/bin/rtk-mcp` (added 2026-09-06) | Token-optimized shell via `run_command` (allowlisted cmds, 60-90% savings). AGENTS.md Tool Selection: prefer `rtk` prefix / `run_command`, raw shell only when rtk lacks the command. Auto-rewrite plugin deferred (V2 plugin API unstable) |
+
+
+Removed with v1 2026-09-06: `context7`, `grep_app`, `websearch` (remote MCPs from old `opencode.json`).
 
 ## Global Gitignore
 
@@ -107,40 +107,49 @@ Agent files: .opencode/, opencode.json, .cursor*, .claude/, CLAUDE.md, .codex/, 
 
 ## Plugins
 
-npm: `@tarquinen/opencode-dcp` + `oh-my-opencode-slim` (re-enabled after 2026-08-13 removal). Local: rtk, engram, background-agents, notify, worktree, kdco-primitives.
+Only `herdr-agent-state` (restored 2026-09-06 from beta profile, V2-native TUI pane reporter; live only, not in dotfiles). Everything else removed 2026-09-06, pending rebuild.
+Dropped 2026-09-06: engram V2 port attempt (`plugins/engram/index.ts`, ported from upstream v1) — failed to load (server can't resolve `@opencode-ai/plugin` bare import; plain-object export then hit a transpile syntax error). Safe without it: memory works fully via MCP; the plugin only added automation (prompt/passive capture, nudges, compaction checkpoint). Revisit when V2 plugin API stabilizes.
+Archived under `~/.config/opencode-archive-v1-20260906/`:
+- `plugins-live/`: background-agents.ts, engram.ts, herdr-agent-state.js, herdr-agent-state-v2.js, kdco-primitives/, notify/, notify.ts, rtk.ts, worktree/, worktree.ts (+ `*.backup` files)
+- `dotfiles/plugins/`: dotfiles copies of the above (minus herdr-agent-state-v2.js)
+- `tui/`: herdr-tui-session.js + tui.jsonc (TUI plugin ref)
+- npm plugins dropped from config: `@tarquinen/opencode-dcp`, `oh-my-opencode-slim`
+- runtime manifests: package.json, package-lock.json, bun.lock (live `node_modules/` 87M deleted — regenerable via `bun install`)
 
-## OMO-slim (`oh-my-opencode-slim.json`)
+## V1 Archive (`~/.config/opencode-archive-v1-20260906/`)
 
-Preset `opencode-go`, all agents on `opencode/x-preview-f-free` (ox-alpha free Zen; variants dropped 2026-08-21 — variant `high` was a reasoning-effort knob, not valid on Zen free models): orchestrator (skills `*`, mcps `* !context7`), oracle (skill simplify), explorer, librarian (mcps context7+gh_grep), designer, fixer. Observer: `opencode/mimo-v2.5-free` (vision-capable). Multiplexer herdr main-vertical.
+Archived 2026-09-06 during opencode2 migration:
 
-## GMICloud Preset (`opencode.json`)
+| Path | Content |
+|------|---------|
+| `opencode.json` / `.bak` / `.pre-cmd-removal` | v1 main config (presets gmicloud/opencode-go, provider gmicloud MiniMax M3/M2.7, plugins omo-slim+dcp, remote MCPs) |
+| `oh-my-opencode-slim/` | prompt overrides (`opencode-go/*_append.md`) |
+| `.oh-my-opencode-slim/` `.ocx/` `.opencode/` | plugin caches |
+| `oh-my-opencode-slim.json.backup` + `.managed-copy` | OMO-slim preset config |
+| `live-v1-more/` | round 2: `commands/design.md` (dead `cc-design` ref), `service.json` (v1 service password), `tools/image.ts` (v1 SDK import), `skills/codemap` + `skills/simplify` (omo-bundled) |
+| `dotfiles-more/` | dotfiles-side round 2: `tools/image.ts`, `skills/codemap/`, `skills/simplify/` |
+| `dotfiles/` | dotfiles-side v1: opencode.json, oh-my-opencode-slim.json, tui.json (omo TUI plugin), package.json, skills/oh-my-opencode-slim |
+| `skills-opencode-final/` | round 3: `clonedeps/deepwork/verification-planning/worktrees` (dotfiles-side omo-era dupes) + `live/` (live copies incl. `reflect`, moved to canonical `config/skills/`) |
+| `live-v1-more/skills-backup/` | `*.backup` leftovers from live skills dirs |
+| `dotfiles-dot-opencode/` | `~/projects/dotfiles/.opencode/` project-local v1 (opencode.json + `plugin: ["list"]`, package manifests; 62M node_modules deleted, dir removed) |
+| `engram-config.json.backup` | stale `~/.engram/config.json` backup |
+| `beta/` | beta profile: `opencode/` (o2 config) + `o2` wrapper script |
+| `tui.json.managed-copy`, `tui.json.backup`, `tui.json.bak` | v1 TUI configs |
+| `*.backup` / `*.bak` | all other backups (agents, cli, dcp, CONFIGURATION) |
 
-Preset `gmicloud` (active by default, `preset: "gmicloud"` in opencode.json). Agent model overrides in `presets.gmicloud`:
-
-| Agent | Model |
-|-------|-------|
-| swe | `gmicloud/MiniMaxAI/MiniMax-M2.7` |
-| planner | `gmicloud/MiniMaxAI/MiniMax-M3#thinking` |
-| architect | `gmicloud/MiniMaxAI/MiniMax-M3#thinking` |
-| reviewer | `gmicloud/MiniMaxAI/MiniMax-M3#thinking` |
-| brainstormer | `gmicloud/MiniMaxAI/MiniMax-M3#thinking` |
-| designer-jr | `gmicloud/MiniMaxAI/MiniMax-M3#thinking` |
-| explorer-jr | `gmicloud/MiniMaxAI/MiniMax-M3#thinking` |
-| librarian-jr | `gmicloud/MiniMaxAI/MiniMax-M3#thinking` |
-| vision | `opencode/mimo-v2.5-free` |
-
-Prompt overrides (2026-08-22): `~/.config/opencode/oh-my-opencode-slim/opencode-go/{agent}_append.md` for oracle/explorer/librarian/designer/fixer — caveman mandate appended to bundled prompts (same line as custom agents; observer intentionally exempt — verbatim transcriptions; orchestrator covered by global AGENTS.md). Explorer append also mandates codebase-memory-mcp-first discovery (search_graph/get_code_snippet/trace_path/search_code over grep). Mechanism: plugin checks preset dir first, `{agent}_append.md` appends, `{agent}.md` replaces (avoid); built-in agents reject `prompt` fields in config JSON.
+Removed from dotfiles (git deletions, uncommitted): `config/opencode/opencode.json`, `config/opencode/oh-my-opencode-slim.json`, `config/opencode/tui.json`, `config/opencode/package.json`, `config/opencode/skills/` (entire dir: oh-my-opencode-slim, codemap, simplify, clonedeps, deepwork, reflect→moved to `config/skills/`, verification-planning, worktrees), `config/opencode/tools/image.ts`, `config/opencode/plugins/*`. Removed from `home/modules/opencode/default.nix`: `tui.json` + `oh-my-opencode-slim.json` + `skills` mappings; activations rewritten (`opencodeBunInstall` targets `@opencode-ai/cli@beta`, `opencodeFixPlugins` replaced by `opencodeSyncTools`).
+Deleted (not in dotfiles, not archived — regenerable/quit): live `node_modules/` (87M).
+Beta profile deleted: `~/.config/opencode-beta/opencode/`, `~/.local/bin/o2` (use `opencode2` + main profile now; `google-chrome/` + data dirs under opencode-beta left untouched).
 
 ## Design Decisions (recent; full history in git)
 
+- 2026-09-06: v2 migration — archived v1 (opencode.json, omo-slim, gmicloud preset/provider, remote MCPs), removed plugins (herdr-agent-state restored from beta profile), deleted beta profile + `o2` wrapper, main profile minimal + shell/lsp/compaction/playwright. Custom agents migrated to native V2 (temperature + V1 permission blocks dropped, model-agnostic). Skills back to single root (`config/skills/` canonical, incl. rescued `reflect`). rtk MCP added (`run_command`; auto-rewrite plugin deferred). engram 1.15.7→1.20.0. default.nix activations rewritten for `@opencode-ai/cli@beta`. Compaction migrated to native V2 (`buffer`, dropped ignored `reserved`/`prune`).
+- Removed 2026-09-05: `lexa-swarm` skill (user request; source `config/skills/lexa-swarm` deleted, backup kept at `~/.agents/skills.backup/`)
+- Added 2026-09-05: `design-thinking` skill (SKILL.md router + refs/design-thinking.md, design-graph.md, graph-protocol.md, output-format.md; source r17x gist). Single ID; no AGENTS.md rule needed (auto-discovery).
+- Added 2026-09-05: `/design-thinking` command (`~/.config/opencode/commands/design-thinking.md`, mirrors `design.md` pattern; loads skill, routes $ARGUMENTS). Global commands dir unmanaged by home-manager — file lives only in ~/.config.
 - Chose engram over opencode-mem (no API key)
 - Agent family + routing skills (2026-08-13): thin agents, thick skills, deny-by-default
 - Nested skill dirs: opencode uses dir basename as ID — collisions displace (tested); variants keep unique names
 - DB folded into backend (no separate skill); system design → planner, wireframes → designer-jr
 - Skills installed globally only; never vendored in repos (gitignore `.agents/`)
-- Removed 2026-08-13: Cloudflare MCP×6, Postgres MCP, lexa MCP, commandcode Go-proxy, cloudflared (OMO-slim since re-enabled)
-- Default model ox-alpha free (`opencode/x-preview-f-free`) across opencode.json + all OMO-slim agents; observer pinned `opencode/mimo-v2.5-free` (2026-08-21; brief switch to opencode go same day, reverted)
-- Removed 2026-09-05: `lexa-swarm` skill (user request; source `config/skills/lexa-swarm` deleted, backup kept at `~/.agents/skills.backup/`)
-- Added 2026-09-05: `design-thinking` skill (SKILL.md router + refs/design-thinking.md, design-graph.md, graph-protocol.md, output-format.md; source r17x gist). Single ID; no AGENTS.md rule needed (auto-discovery).
-- Added 2026-09-05: `/design-thinking` command (`~/.config/opencode/commands/design-thinking.md`, mirrors `design.md` pattern; loads skill, routes $ARGUMENTS). Global commands dir unmanaged by home-manager — file lives only in ~/.config. Mirrored to beta profile (`~/.config/opencode-beta/opencode/commands/`, used by `o2`).
-- Beta only (`o2`, `~/.config/opencode-beta/opencode/opencode.json`, unmanaged): `agents.build.mode=all` so built-in build can run as subagent (built-in default is primary; primary cannot subagent per V2 docs). Main profile untouched.
+- Removed 2026-08-13: Cloudflare MCP×6, Postgres MCP, lexa MCP, commandcode Go-proxy, cloudflared

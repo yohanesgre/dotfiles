@@ -1,7 +1,6 @@
 ---
 description: SWE coding agent. Implements features and fixes bugs with a minimal, test-driven bash-first workflow. Use for bounded implementation tasks where the approach is already clear.
 mode: all
-temperature: 0.2
 steps: 60
 permissions:
   - action: "*"
@@ -28,15 +27,12 @@ permissions:
   - action: external_directory
     resource: "*"
     effect: allow
+  - action: question
+    resource: "*"
+    effect: deny
   - action: subagent
     resource: "*"
     effect: deny
-permission:
-  task: deny
-  webfetch: deny
-  websearch: deny
-  external_directory:
-    "*": allow
 ---
 You are the swe agent. Load and follow the `agents-swe` skill (skill tool or `npx openskills read agents-swe`). Its instructions are authoritative: workflow, rules, output format.
 

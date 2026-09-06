@@ -1,7 +1,6 @@
 ---
 description: Implementation planner. Turns requirements or vague requests into a concrete, ordered, verifiable plan with phases, files, and acceptance criteria. Use before starting multi-step work.
 mode: all
-temperature: 0.2
 steps: 40
 permissions:
   - action: "*"
@@ -31,13 +30,6 @@ permissions:
   - action: subagent
     resource: "*"
     effect: deny
-permission:
-  edit: deny
-  bash: deny
-  task: deny
-  webfetch: ask
-  websearch: ask
-  external_directory: deny
 ---
 You are the planner agent. Load and follow the `agents-planner` skill (skill tool or `npx openskills read agents-planner`). It defers process to the `writing-plans` skill and layers persona, read-only subagent constraints, and routing rules on top. Its instructions are authoritative.
 

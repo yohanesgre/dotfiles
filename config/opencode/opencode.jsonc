@@ -1,16 +1,18 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "model": "opencode-go/muse-spark-1.3-contributor",
   "permission": "allow",
   "default_agent": "build",
-  "agent": { "explore": { "disable": true }, "general": { "disable": true } },
-  "model": "opencode/x-preview-f-free",
+  "agents": {
+    "build": { "mode": "all" }
+  },
   "lsp": true,
-  "compaction": { "auto": true, "prune": true, "reserved": 10000 },
+  "compaction": { "auto": true, "buffer": 10000 },
   "mcp": {
     "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": true, "type": "local" },
     "playwright": { "command": ["bun", "x", "@playwright/mcp"], "enabled": true, "type": "local" },
-    "codebase-memory-mcp": { "enabled": true, "type": "local", "command": ["codebase-memory-mcp"] }
+    "codebase-memory-mcp": { "enabled": true, "type": "local", "command": ["codebase-memory-mcp"] },
+    "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" }
   },
-  "shell": "/usr/bin/zsh",
-  "plugin": ["@tarquinen/opencode-dcp@latest"]
+  "shell": "/usr/bin/zsh"
 }

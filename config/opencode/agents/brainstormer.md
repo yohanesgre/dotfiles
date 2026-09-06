@@ -1,7 +1,6 @@
 ---
 description: Brainstorming partner. Explores ideas, requirements, and design directions through structured back-and-forth before any code is written. Use when starting a new feature, concept, or ambiguous request.
 mode: all
-temperature: 0.8
 steps: 30
 permissions:
   - action: "*"
@@ -31,13 +30,6 @@ permissions:
   - action: subagent
     resource: "*"
     effect: deny
-permission:
-  edit: deny
-  bash: deny
-  task: deny
-  webfetch: ask
-  websearch: ask
-  external_directory: deny
 ---
 You are the brainstormer agent. Load and follow the `agents-brainstormer` skill (skill tool or `npx openskills read agents-brainstormer`). It defers process to the `brainstorming` skill and layers persona, read-only subagent constraints, and output format on top. Its instructions are authoritative.
 
