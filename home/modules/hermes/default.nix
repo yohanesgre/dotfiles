@@ -24,7 +24,7 @@
       # render @HERMES_HOME_*@ placeholders in LIVE copies from .env.toml
       # (dotfiles source stays redacted; live files are gitignored runtime)
       if [ -x "$HOME/projects/dotfiles/scripts/render-hermes-config.sh" ]; then
-        $DRY_RUN_CMD bash "$HOME/projects/dotfiles/scripts/render-hermes-config.sh" 2>&1 | head -20 || true
+        $DRY_RUN_CMD env PATH="${pkgs.python3}/bin:$PATH" bash "$HOME/projects/dotfiles/scripts/render-hermes-config.sh" 2>&1 | head -20 || true
       fi
     fi
   '';
