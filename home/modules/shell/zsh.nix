@@ -12,6 +12,14 @@
       custom = "$HOME/.oh-my-zsh/custom";
     };
 
+    plugins = [
+      {
+        name = "powerlevel10k";
+        src = pkgs.zsh-powerlevel10k;
+        file = "share/zsh-powerlevel10k/powerlevel10k.zsh-theme";
+      }
+    ];
+
     initContent = lib.mkMerge [
       (lib.mkBefore ''
         # Powerlevel10k instant prompt — must stay near top of zshrc.
