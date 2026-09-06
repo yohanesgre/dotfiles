@@ -11,6 +11,7 @@
     ./modules/packages.nix
     ./modules/manual
     ./modules/shell/zsh.nix
+    ./modules/terminal/ghostty.nix
     ./modules/env
     ./modules/opencode
     ./modules/engram

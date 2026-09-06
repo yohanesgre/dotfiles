@@ -1,0 +1,7 @@
+# ghostty config — managed by nix (home/modules/terminal/ghostty.nix).
+# Nerd Font wajib buat powerlevel10k; nix install MesloLGS NF sekalian (lihat packages di modul).
+
+# Fallback stack: nix-provided MesloLGS NF dulu, lalu pacman nerd-fonts, terakhir monospace.
+font-family = "MesloLGS NF"
+font-family = "MesloLGS Nerd Font Mono"
+font-family = "monospace"
