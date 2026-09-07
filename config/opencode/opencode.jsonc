@@ -8,6 +8,17 @@
   },
   "lsp": true,
   "compaction": { "auto": true, "buffer": 10000 },
+  "providers": {
+    "opencode-go": {
+      "settings": { "baseURL": "http://127.0.0.1:8787/v1" }
+    },
+    "opencode": {
+      "settings": { "baseURL": "http://127.0.0.1:8788/v1" }
+    },
+    "openrouter": {
+      "settings": { "baseURL": "http://127.0.0.1:8789/v1" }
+    }
+  },
   "mcp": {
     "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": true, "type": "local" },
     "playwright": { "command": ["bun", "x", "@playwright/mcp"], "enabled": true, "type": "local" },

@@ -97,6 +97,25 @@ Removed with the plugin purge. Upstream DCP slowed (focus moved to Sleev), V1-on
 
 Removed with v1 2026-09-06: `context7`, `grep_app`, `websearch` (remote MCPs from old `opencode.json`).
 
+## Removed 2026-09-07
+
+- **CommandCode (CC)** — full removal: pacman `command-code` pkg (`/usr/bin/commandcode`), `cc-proxy.service` user unit (npx commandcode-api-proxy :8787, held CC_API_KEY), `~/.commandcode/` data, `~/.local/bin/cc-key`. `/usr/bin/cc` untouched (gcc symlink, separate pkg). opencode-go/zen gateway unaffected — direct auth verified post-removal.
+- **gmicloud provider** — dropped per user request (3 providers remain: opencode-go, opencode, openrouter); auth entry removed from `auth.json`.
+
+## Headroom compression proxy (2026-09-07, active)
+
+69k★ `headroomlabs-ai/headroom` v0.37.0, installed via `uv tool install "headroom-ai[all]"`. Three systemd user units, one per upstream (native `--openai-api-url` routing):
+
+| Unit | Port | Upstream | Kompress ML |
+|---|---|---|---|
+| `headroom-opencode-go.service` | 8787 | https://opencode.ai/zen/go | on (primary) |
+| `headroom-opencode.service` | 8788 | https://opencode.ai/zen | off |
+| `headroom-openrouter.service` | 8789 | https://openrouter.ai/api | off |
+
+opencode.jsonc `providers.<id>.settings.baseURL` points at `http://127.0.0.1:87xx/v1`. Beacons off, rate-limit off, default `coding` profile (cache mode, prefix-safe, file reads never lossy).
+
+**Gotchas learned**: (1) `x-headroom-base-url` header routing (shim-style) 502s silently in 0.37.0 — use native `--openai-api-url` per upstream instead; one instance per upstream. (2) auth.json zen tokens go stale; live tokens ride per-request from opencode2 — manual curl with auth.json token shows false 500/401. (3) `--port` omitted = default 8787, collides. Verify traffic: `curl -s http://127.0.0.1:8787/stats` → `summary.api_requests`.
+
 ## Global Gitignore
 
 Agent files: .opencode/, opencode.json, .cursor*, .claude/, CLAUDE.md, .codex/, AGENTS.md, .gemini/, GEMINI.md, .windsurf/, .engram/, .aider/, .amazonq/.
