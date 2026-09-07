@@ -9,12 +9,15 @@
 
   imports = [
     ./modules/packages.nix
+    ./modules/pacman
+    ./modules/upstream
     ./modules/manual
     ./modules/shell/zsh.nix
     ./modules/terminal/ghostty.nix
     ./modules/env
     ./modules/opencode
     ./modules/engram
+    ./modules/neovim
     ./modules/skills
   ];
 }

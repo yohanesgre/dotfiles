@@ -39,8 +39,8 @@ One-liner bootstrap without local clone (curl):
 curl -fsSL https://raw.githubusercontent.com/yohanesgre/dotfiles/main/scripts/bootstrap.sh | bash -s -- --remote --host dell-xps13 --full
 ```
 
-Manual binaries auto-install via `home.activation.manualInstall` (`home/modules/manual`):
-`engram` skipped (upstream `github.com/engramhq/engram` has no `go.mod`, no installable package). `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` now in `home.packages`.
+Manual binaries auto-install + auto-update via activations (`manualInstall`, `upstreamInstall`, opencode):
+`engram` (`go install`), `bun`/`codebase-memory-mcp`/`rtk`/`herdr` (official installers, update every switch), `opencode` (`bun add -g`).
 
 ## Prerequisites
 
@@ -56,10 +56,12 @@ flake.lock                  # pinned
 home/common.nix             # username/homeDirectory/stateVersion + imports
 home/hosts/desktop.nix      # desktop (imports hermes)
 home/hosts/laptop.nix       # laptop/dell-xps13 (shared, minimal)
-home/modules/packages.nix   # CLI allowlist (home.packages)
-home/modules/manual/        # home.activation.manualInstall — engram stub (skipped)
+home/modules/packages.nix   # home.packages — intentionally empty (no nixpkgs packages)
+home/modules/pacman/        # declarative pacman/CachyOS package list (pacmanSync activation)
+home/modules/manual/        # home.activation.manualInstall — engram via go install
 home/modules/shell/zsh.nix  # zsh (force zsh + p10k + oh-my-zsh, removes tmux plugin)
 home/modules/opencode/      # opencode config
+home/modules/neovim/        # LazyVim — config/nvim (out-of-store symlink), pacman neovim binary
 home/modules/engram/        # engram
 home/modules/skills/        # skills
 config/                     # raw configs symlinked via xdg.configFile (zsh/p10k/opencode/hermes/engram/skills)
@@ -75,7 +77,9 @@ scripts/validate.sh         # repo validation
 
 Hybrid policy — see [docs/migration/packages-boundary.md](docs/migration/packages-boundary.md):
 
-- **Nix (`home.packages`)** — reproducible CLI toolchain (git/curl/jq/ripgrep/fd/fzf/bat/eza/zoxide/bun/nodejs_22/go/nvim/tmux + `codebase-memory-mcp`/`rtk`/`opencode`/`herdr`)
+- **Nix** — declarative config only: dotfiles, symlinks, activation scripts. `home.packages` is **empty** (no nixpkgs packages, policy 2026-09-07)
+- **pacman/CachyOS (`home/modules/pacman`)** — system + stable CLI (git/curl/wget/jq/ripgrep/fd/fzf/bat/eza/zoxide/nodejs/npm/go/neovim/zsh/p10k). Declarative list, `pacman -T` check + install missing on every switch. Standalone: `scripts/pacman-sync.sh`
+- **Upstream installer (`home/modules/upstream` + `opencode` + `manual`)** — fast-moving tools, install when missing + update every switch (bun/codebase-memory-mcp/rtk/herdr/opencode/engram)
 - **pacman (CachyOS/Arch)** — GUI/GPU/DE/browsers/electron/gaming (firefox, chrome, nvidia/mesa/vulkan, plasma, steam) — avoids nixGL mismatch
 - **Upstream installer > pacman** — if tool offers official `curl|sh`/`go install`/`npm`/`cargo`, prefer upstream over `pacman -S` (avoids distro lag)
 - GUI packages intentionally absent from `home.packages` (verified `grep -E 'firefox|chromium|nvidia|mesa'` hits only comment)

@@ -1,38 +1,12 @@
-{ config, lib, pkgs, ... }:
 {
-  home.packages = with pkgs; [
-    git
-    curl
-    wget
-    jq
-    ripgrep
-    fd
-    fzf
-    bat
-    eza
-    zoxide
-    bun
-    nodejs_22
-    go
-    neovim
-    tmux
-    codebase-memory-mcp
-    rtk
-    herdr
-  ];
-
-  # opencode via bun (opencode-ai) — nixpkgs lags behind, manual install in home/modules/opencode
-  # engram not in nixpkgs: kept manual via home/modules/manual (go install).
-  # GUI/GPU stays pacman: browsers, nvidia/mesa, DE, steam — not in Nix (avoid nixGL mismatch).
-
-  home.activation.bunShim = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    mkdir -p "$HOME/.bun/bin" "$HOME/.local/bin"
-    ln -sf "$HOME/.nix-profile/bin/bun" "$HOME/.bun/bin/bun"
-    ln -sf "$HOME/.nix-profile/bin/bunx" "$HOME/.bun/bin/bunx"
-    if [ -x "$HOME/.nix-profile/bin/node" ]; then
-      ln -sf "$HOME/.nix-profile/bin/node" "$HOME/.local/bin/node"
-      ln -sf "$HOME/.nix-profile/bin/npm" "$HOME/.local/bin/npm"
-      ln -sf "$HOME/.nix-profile/bin/npx" "$HOME/.local/bin/npx"
-    fi
-  '';
+  # Deliberately empty — no nixpkgs packages in the profile (policy 2026-09-07).
+  # Nix here is declarative config only (dotfiles, symlinks, activation scripts).
+  #
+  # - System + CLI tools: pacman/CachyOS repos — declarative list in
+  #   home/modules/pacman/default.nix (synced on every switch; standalone:
+  #   scripts/pacman-sync.sh)
+  # - Fast-moving tools (bun, rtk, codebase-memory-mcp, herdr): upstream
+  #   installers — home/modules/upstream/default.nix
+  # - engram: go install — home/modules/manual/default.nix
+  # - GUI/GPU stays pacman: browsers, nvidia/mesa, DE, steam (nixGL mismatch).
 }

@@ -11,13 +11,12 @@
   home.packages = with pkgs; [ stdenv.cc.cc.lib ];
 
   home.activation.opencodeBunInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    export PATH="${pkgs.bun}/bin:$HOME/.bun/bin:$PATH"
-    if [ ! -x "$HOME/.bun/install/global/node_modules/@opencode-ai/cli/bin/opencode2.exe" ]; then
-      echo "opencode: installing @opencode-ai/cli@beta via bun (global)..."
-      ${pkgs.bun}/bin/bun add -g @opencode-ai/cli@beta || echo "opencode: bun add -g failed (continuing)"
-    else
-      echo "opencode: @opencode-ai/cli already installed via bun"
-    fi
+    # prefer upstream bun (~/.bun, see home/modules/upstream); nix bun only as bootstrap
+    BUN_BIN="$HOME/.bun/bin/bun"
+    if [ ! -x "$BUN_BIN" ]; then BUN_BIN="${pkgs.bun}/bin/bun"; fi
+    export PATH="$HOME/.bun/bin:$PATH"
+    echo "opencode: installing/updating @opencode-ai/cli@beta via bun (global)..."
+    "$BUN_BIN" add -g @opencode-ai/cli@beta || echo "opencode: bun add -g failed (continuing)"
     mkdir -p "$HOME/.bun/bin"
   '';
 

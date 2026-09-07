@@ -2,7 +2,8 @@
 {
   home.activation.manualInstall = lib.hm.dag.entryAfter [ "installPackages" ] ''
     set -u
-    export PATH="${pkgs.go}/bin:${pkgs.git}/bin:$PATH"
+    # go from pacman (see home/modules/pacman) — not nixpkgs
+    export PATH="/usr/bin:/usr/local/bin:$PATH"
     export GOPATH="$HOME/go"
     export GOBIN="$HOME/go/bin"
     mkdir -p "$GOBIN" "$HOME/.local/bin"
@@ -10,30 +11,23 @@
     warn() { echo "manualInstall: $*" >&2; }
     info() { echo "manualInstall: $*"; }
 
-    # engram: Gentleman-Programming/engram (Go, not in nixpkgs)
-    if [ ! -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
-      info "installing engram (Gentleman-Programming)..."
-      if [ -x "${pkgs.go}/bin/go" ]; then
-        ${pkgs.go}/bin/go install github.com/Gentleman-Programming/engram/cmd/engram@latest 2>&1 || warn "go install engram failed (continuing)"
-        if [ -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
-          ln -sf "$HOME/go/bin/engram" "$HOME/.local/bin/engram" 2>/dev/null || true
-        fi
-      else
-        warn "go not found at ${pkgs.go}/bin/go — skipping"
-      fi
-      if [ ! -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
-        warn "engram still missing after go install — check https://github.com/Gentleman-Programming/engram"
-      fi
-    else
-      info "engram already installed"
-      # ensure symlink
+    # engram: Gentleman-Programming/engram (Go, not in nixpkgs) — update on every switch
+    GO_BIN="$(command -v go 2>/dev/null || true)"
+    if [ -n "$GO_BIN" ]; then
+      info "installing/updating engram (Gentleman-Programming)..."
+      "$GO_BIN" install github.com/Gentleman-Programming/engram/cmd/engram@latest 2>&1 || warn "go install engram failed (continuing)"
       if [ -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
         ln -sf "$HOME/go/bin/engram" "$HOME/.local/bin/engram" 2>/dev/null || true
       fi
+    else
+      warn "go not found in PATH — run: sudo pacman -S go"
+    fi
+    if [ ! -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ]; then
+      warn "engram still missing after go install — check https://github.com/Gentleman-Programming/engram"
     fi
 
-    # codebase-memory-mcp, rtk, herdr now via nixpkgs home.packages (migrated 2026-08-31)
-    # opencode moved to bun (opencode-ai) via home/modules/opencode (nixpkgs lags behind)
+    # bun / codebase-memory-mcp / rtk / herdr via upstream installers (home/modules/upstream)
+    # opencode via bun (home/modules/opencode)
 
     # never block switch
     true

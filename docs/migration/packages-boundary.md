@@ -1,43 +1,50 @@
 # Package Boundary — Nix vs Pacman vs Manual
 
-> Phase 5 boundary doc. Hybrid policy: CLI reproducible via Nix, GUI/GPU stays pacman, manual binaries stay `~/.local/bin`. Verified `main` 34615d7, Nix 2.35.2 daemon, `nix flake check --no-build` passes.
+> Phase 5 boundary doc. **Updated 2026-09-07: `home.packages` is empty — no nixpkgs packages (user directive). Nix = declarative config only; system + stable CLI via pacman/CachyOS; fast movers via upstream installers.** Verified `main` 34615d7, Nix 2.35.2 daemon, `nix flake check --no-build` passes.
 
 ## Policy
 
-- **Nix (home-manager)**: Reproducible CLI toolchain. Pinned via `flake.lock` (`nixpkgs/nixos-unstable`, `home-manager` follows nixpkgs). Install via `home-manager switch --flake .#yohanes@<host>`.
+- **Nix (home-manager)**: Declarative user environment — dotfiles, symlinks, activation scripts, skills. `home.packages` **empty** (no nixpkgs packages). Pinned via `flake.lock` (`nixpkgs/nixos-unstable`, `home-manager` follows nixpkgs). Install via `home-manager switch --flake .#yohanes@<host>`.
+- **pacman / CachyOS repos (`home/modules/pacman`)**: System + stable CLI toolchain (declared list, 17 entries). `pacmanSync` activation runs before `installPackages` on every switch: `pacman -T` → `sudo pacman -S --needed --noconfirm <missing>` (non-blocking on sudo failure). Standalone: `scripts/pacman-sync.sh`.
 - **Upstream installer > Pacman (user 2026-08-31)**: If tool provides official installer from its repo (curl|sh, `go install`, `npm`/`cargo`), prefer that over `pacman -S`. Rationale: avoid distro lag, get latest upstream, consistent across CachyOS ↔ laptop. Example: Nix itself via `https://nixos.org/nix/install --daemon` (chosen) not `pacman -S nix`. Pacman kept only for GUI/GPU/kernel-tied packages where no upstream installer fits.
-- **Pacman (CachyOS/Arch)**: GUI, GPU drivers, DE, browsers, electron apps, gaming. Not in `home.packages` — avoids nixGL/OpenGL mismatch, avoids duplicating 297 explicit pacman packages. Use only when no upstream installer exists or package is system-tied.
+- **Pacman (CachyOS/Arch)**: GUI, GPU drivers, DE, browsers, electron apps, gaming. Not in Nix — avoids nixGL/OpenGL mismatch, avoids duplicating 297 explicit pacman packages.
 - **Manual / chezmoi**: Binaries not in nixpkgs + systemd user units. Kept in `~/.local/bin` + `dot_config/systemd/` via chezmoi until Phase 7 (deferred per user).
 
 `nixGL` deferred — no `hardware.opengl`/`hardware.graphics` in Nix, no GUI packages in `home.packages`.
 
-## CLI — Nix (`home/modules/packages.nix`)
+## CLI — pacman (`home/modules/pacman/default.nix`)
 
-Allowlist = 19 entries, all CLI/headless (verified `grep` shows no GUI string in `home.packages`):
+**Since 2026-09-07** the stable CLI toolchain moved out of nixpkgs `home.packages` (previously 14 entries) into a declarative pacman list. Nix still declares *which* packages must exist — pacman provides the binaries.
 
-| Package | nixpkgs attr | Notes |
-|---------|--------------|-------|
-| git | `git` | vcs |
-| curl | `curl` | http |
-| wget | `wget` | http |
-| jq | `jq` | json |
-| ripgrep | `ripgrep` | search |
-| fd | `fd` | find |
-| fzf | `fzf` | fuzzy |
-| bat | `bat` | pager |
-| eza | `eza` | ls |
-| zoxide | `zoxide` | cd |
-| bun | `bun` | js runtime (also in `home/modules/opencode` — deduped by Nix) |
-| nodejs_22 | `nodejs_22` | node LTS 22 |
-| go | `go` | Go 1.27 |
-| neovim | `neovim` | editor |
-| tmux | `tmux` | multiplexer |
-| codebase-memory-mcp | `codebase-memory-mcp` | 0.10.8 — migrated from manual curl (2026-08-31) |
-| rtk | `rtk` | 0.45.0 — migrated from manual curl (2026-08-31) |
-| opencode | `opencode` | 1.18.21 — migrated from manual curl (2026-08-31) |
-| herdr | `herdr` | 0.8.2 — newly added via nixpkgs (2026-08-31, lag 2-3d acceptable) |
+| Package | Notes |
+|---------|-------|
+| git | vcs |
+| curl | http (upstream installers depend on it) |
+| wget | http |
+| jq | json |
+| ripgrep | search |
+| fd | find |
+| fzf | fuzzy |
+| bat | pager |
+| eza | ls |
+| zoxide | smart cd (`z <keyword>`) — dipasang duluan, init di zsh ready |
+| nodejs | node (pacman current, was nixpkgs nodejs_22) |
+| npm | node pkg manager |
+| go | Go toolchain — used by `manualInstall` (engram) |
+| neovim | editor |
+| zsh | login shell (pacman `/usr/bin/zsh`; `forceZshShell` targets it) |
+| zsh-theme-powerlevel10k | p10k theme (`/usr/share/zsh-theme-powerlevel10k/…`, out-of-store symlink into oh-my-zsh custom themes) |
 
-Extra Nix packages pulled implicitly (not allowlist, via modules): `zsh`, `nix-zsh-completions`, `oh-my-zsh`, `shared-mime-info`, `man-db`, etc. — visible in `nix eval .#homeConfigurations."yohanes@desktop".config.home.packages` but owned by `common.nix` imports (`zsh`, `opencode`, …). Migrated 2026-08-31: `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` moved from `home/modules/manual` + `scripts/install-manual.sh` to `home.packages` (nixpkgs unstable) — `engram` stays manual (not in nixpkgs). Removed 2026-08-31: `omp` (oh-my-pi via `inputs.omp`) deleted — unused.
+`pacmanSync` ordering: `entryBefore ["installPackages"]` — guarantees `go`/`curl` exist before `manualInstall` (engram) and `upstreamInstall` (installers) run.
+
+HM-implicit machinery remains in the profile (`zsh` via `programs.zsh`, man pages, shared-mime-info) — activation internals, not user tools.
+
+Fast-moving tools (bun, codebase-memory-mcp, rtk, herdr) stay upstream-managed,
+see `home/modules/upstream/default.nix` (moved out of Nix 2026-09-07 — nixpkgs lag:
+bun 1.3.13 vs 1.4.2, rtk 0.45.0 vs v0.48.0; herdr/cbm lose `herdr update` /
+`codebase-memory-mcp update` self-update under Nix).
+
+Extra Nix packages pulled implicitly (not allowlist, via modules): `zsh`, `nix-zsh-completions`, `oh-my-zsh`, `shared-mime-info`, `man-db`, etc. — visible in `nix eval .#homeConfigurations."yohanes@desktop".config.home.packages` but owned by `common.nix` imports (`zsh`, `opencode`, …). Migrated 2026-08-31: `codebase-memory-mcp`/`rtk`/`opencode`/`herdr` moved from `home/modules/manual` + `scripts/install-manual.sh` to `home.packages` (nixpkgs unstable) — `engram` stays manual (not in nixpkgs). Removed 2026-08-31: `omp` (oh-my-pi via `inputs.omp`) deleted — unused. **Reverted 2026-09-07**: `bun`/`codebase-memory-mcp`/`rtk`/`herdr` moved back out of `home.packages` to `home/modules/upstream` (official installers) — nixpkgs lag proven (`bun` 1.3.13 vs 1.4.2, `rtk` 0.45.0 vs v0.48.0; `herdr update` + `codebase-memory-mcp update` self-update Nix-blocked). `opencode` stays bun-installed (`home/modules/opencode`, now prefers upstream `~/.bun/bin/bun`).
 
 `home.packages` grep verification (2026-08-31):
 
@@ -77,21 +84,27 @@ Full explicit list includes additionally (not in grep but pacman-owned, never Ni
 | GPU drivers, mesa, vulkan, nvidia | pacman | kernel-tied, `linux-cachyos-nvidia-open` |
 | DE, display manager, plasma | pacman | system scope |
 | Steam, gaming | pacman | 32-bit + driver coupling |
-| CLI toolchain (above allowlist) | Nix | reproducible, pinned |
+| CLI toolchain (stable list) | pacman | declarative via `home/modules/pacman`, system-native binaries |
 
 ## Manual / Chezmoi (auto-installed via Nix activation) + Migrated to Nix
 
-> Auto via `home/modules/manual/default.nix` — `home.activation.manualInstall` (`lib.hm.dag.entryAfter ["writeBoundary"]`) runs on every `home-manager switch --flake`. Idempotent (`[ -x ... ]` check), non-blocking (`|| true` + warn), `go` guarded. Standalone fallback: `bash scripts/install-manual.sh`. Migrated tools now in `home.packages` (nixpkgs unstable) — no longer manual.
+> Auto via `home/modules/manual/default.nix` (`manualInstall`) + `home/modules/upstream/default.nix`
+> (`upstreamInstall`) + `home/modules/opencode/default.nix` — each `home.activation.*`
+> (`lib.hm.dag.entryAfter ["installPackages"/"writeBoundary"]`) runs on every `home-manager switch`.
+> Upstream tools install when missing and **update on every switch** (all steps `|| warn`,
+> offline-safe, never blocks switch). Standalone fallback: `bash scripts/install-manual.sh`.
 
 | Tool | Location | Status | Install |
 |------|----------|--------|---------|
 | `engram` | `~/go/bin/engram` or `~/.local/bin` | **Manual — not in nixpkgs (404)** | `go install github.com/engramhq/engram@latest` (via `manual/default.nix` + `scripts/install-manual.sh`) |
-| `codebase-memory-mcp` | nixpkgs `codebase-memory-mcp` 0.10.8 | **Migrated to Nix 2026-08-31** (was `~/.local/bin/codebase-memory-mcp` curl) | `home.packages` — `nixpkgs#codebase-memory-mcp` |
-| `rtk` / `rtk-mcp` | nixpkgs `rtk` 0.45.0 | **Migrated to Nix 2026-08-31** (was `~/.local/bin/rtk` curl) | `home.packages` — `nixpkgs#rtk` |
-| `opencode` | nixpkgs `opencode` 1.18.21 | **Migrated to Nix 2026-08-31** (was `~/.opencode/bin` curl) | `home.packages` — `nixpkgs#opencode` |
-| `herdr` | nixpkgs `herdr` 0.8.2 | **New via Nix 2026-08-31** (lag 2-3d acceptable) | `home.packages` — `nixpkgs#herdr` |
+| `bun` | `~/.bun/bin/bun` | **Upstream 2026-09-07** (was nixpkgs, lagged 1.3.13 vs 1.4.2) | `curl -fsSL https://bun.sh/install \| bash` (via `upstream/default.nix`) |
+| `codebase-memory-mcp` | `~/.local/bin/codebase-memory-mcp` | **Upstream 2026-09-07** (was nixpkgs 0.10.8) | DeusData `install.sh` (via `upstream/default.nix`); update via `codebase-memory-mcp update` |
+| `rtk` | `~/.local/bin/rtk` | **Upstream 2026-09-07** (was nixpkgs 0.45.0, lagged vs v0.48.0) | `rtk-ai/rtk` `install.sh` (via `upstream/default.nix`) |
+| `rtk-mcp` | `~/.local/bin/rtk-mcp` | **Manual (unchanged, since 2026-09-06)** | standalone MCP server binary, separate from `rtk` CLI |
+| `opencode` | `~/.bun` global | **Bun (unchanged)** | `bun add -g @opencode-ai/cli@beta` (via `opencode/default.nix`) |
+| `herdr` | `~/.local/bin/herdr` | **Upstream 2026-09-07** (was nixpkgs 0.8.2; `herdr update` Nix-blocked) | `curl -fsSL https://herdr.dev/install.sh \| sh` (via `upstream/default.nix`) |
 | systemd user units | `dot_config/systemd/user/` → `~/.config/systemd/user/` via chezmoi | Phase 7 deferred | `chezmoi apply`; `systemctl --user daemon-reload` |
-| `bun`/`node` shims | pacman `bun 1.4.0`, `nodejs-lts-krypton 24.19.0` also present system-wide | Nix provides `bun`+`nodejs_22` but pacman copies remain until Phase 7 | — |
+| `bun`/`node` shims | pacman `bun` **removed 2026-09-07** (`pacman -R bun`); `nodejs-lts-krypton` stays (node from pacman = policy) | Upstream owns `~/.bun`; `config/zsh/path.zsh` puts Nix/upstream dirs before `/usr/bin` so same-name pacman tools are shadowed | — |
 | Chezmoi dotfiles | `dot_*`, `dot_config/opencode`, `dot_config/hermes`, `.chezmoiignore` | Purge deferred to Phase 7 | `chezmoi managed` / `chezmoi diff` |
 
 Comment in `packages.nix` now: `# engram not in nixpkgs: kept manual via home/modules/manual (go install).`.
@@ -169,12 +182,17 @@ bash scripts/hm-switch.sh laptop
 # source /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
 # home-manager switch --flake .#yohanes@laptop -b backup
 
-# 6. Manual binaries — engram only (others migrated to Nix)
-# home.activation.manualInstall (home/modules/manual) runs on switch — engram only:
-# engram:       go install github.com/engramhq/engram@latest
-# codebase-memory-mcp/rtk/opencode/herdr now via home.packages (nixpkgs); omp removed
-# verify: ls ~/go/bin/engram; which codebase-memory-mcp rtk opencode herdr
-# fallback (standalone): bash scripts/install-manual.sh  # engram only
+# 5b. pacman packages — auto via pacmanSync activation on switch;
+#     standalone fallback: bash scripts/pacman-sync.sh
+
+# 6. Upstream binaries — auto via activations on switch (install when missing + update every run):# bun:                curl -fsSL https://bun.sh/install | bash  (update: bun upgrade)
+# codebase-memory-mcp: DeusData install.sh                     (update: codebase-memory-mcp update)
+# rtk:                rtk-ai/rtk install.sh (re-run = update, pin RTK_VERSION=vX.Y.Z)
+# herdr:              curl -fsSL https://herdr.dev/install.sh | sh (update: herdr update)
+# opencode:           bun add -g @opencode-ai/cli@beta
+# engram:             go install github.com/engramhq/engram@latest
+# verify: which bun codebase-memory-mcp rtk herdr opencode engram
+# fallback (standalone): bash scripts/install-manual.sh
 
 # 7. Chezmoi systemd (kept — Phase 7 deferred)
 chezmoi apply
