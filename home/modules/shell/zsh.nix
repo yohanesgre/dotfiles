@@ -8,18 +8,12 @@
 
     oh-my-zsh = {
       enable = true;
+      theme = "powerlevel10k";
       plugins = [ "git" "fzf" "extract" ];
       custom = "$HOME/.oh-my-zsh/custom";
     };
 
-    plugins = [
-      {
-        name = "powerlevel10k";
-        src = pkgs.zsh-powerlevel10k;
-        file = "share/zsh-powerlevel10k/powerlevel10k.zsh-theme";
-      }
-    ];
-
+    # powerlevel10k from pacman (zsh-theme-powerlevel10k) — no nixpkgs theme
     initContent = lib.mkMerge [
       (lib.mkBefore ''
         # Powerlevel10k instant prompt — must stay near top of zshrc.
@@ -27,8 +21,8 @@
           source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
         fi
 
-        # Ensure nix profile in PATH before oh-my-zsh plugins (fixes tmux not found + p10k warning)
-        export PATH="$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$HOME/.local/bin:$HOME/.bun/bin:$PATH"
+        # PATH priority (Nix/upstream > pacman) — see config/zsh/path.zsh
+        ${builtins.readFile ../../../config/zsh/path.zsh}
       '')
       (builtins.readFile ../../../config/zsh/extra.zsh)
     ];
@@ -36,14 +30,18 @@
 
   home.file.".p10k.zsh".source = ../../../config/p10k.zsh;
 
+  # p10k theme from pacman package — out-of-store symlink (follows pacman updates)
+  home.file.".oh-my-zsh/custom/themes/powerlevel10k.zsh-theme".source =
+    config.lib.file.mkOutOfStoreSymlink "/usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme";
+
   # Force zsh as default login shell on every machine (CachyOS desktop/laptop/dell-xps13)
-  # - ensures /usr/bin/zsh and nix zsh are in /etc/shells
+  # - ensures /usr/bin/zsh (pacman) is in /etc/shells
   # - chsh to zsh if current shell is not zsh
   home.activation.forceZshShell = lib.hm.dag.entryAfter ["writeBoundary"] ''
-    ZSH_BIN="${pkgs.zsh}/bin/zsh"
+    ZSH_BIN="/usr/bin/zsh"
     SYS_ZSH="/usr/bin/zsh"
     # ensure zsh binaries are in /etc/shells (needs sudo, best-effort)
-    for bin in "$ZSH_BIN" "$SYS_ZSH" "/bin/zsh"; do
+    for bin in "$SYS_ZSH" "/bin/zsh"; do
       if [ -x "$bin" ] && ! grep -qxF "$bin" /etc/shells 2>/dev/null; then
         echo "→ adding $bin to /etc/shells"
         if sudo -n sh -c "echo '$bin' >> /etc/shells" 2>/dev/null; then
@@ -58,12 +56,8 @@
 
     CURRENT_SHELL="$(/usr/bin/getent passwd "$USER" 2>/dev/null | cut -d: -f7 || getent passwd "$USER" 2>/dev/null | cut -d: -f7 || echo "$SHELL")"
     TARGET_SHELL="$SYS_ZSH"
-    # prefer nix zsh if it is already in /etc/shells, else sys zsh
-    if grep -qxF "$ZSH_BIN" /etc/shells 2>/dev/null; then
-      TARGET_SHELL="$ZSH_BIN"
-    fi
 
-    if [ "$CURRENT_SHELL" != "$TARGET_SHELL" ] && [ "$CURRENT_SHELL" != "$ZSH_BIN" ] && [ "$CURRENT_SHELL" != "$SYS_ZSH" ]; then
+    if [ "$CURRENT_SHELL" != "$TARGET_SHELL" ] && [ "$CURRENT_SHELL" != "$SYS_ZSH" ]; then
       echo "→ forcing default shell: $CURRENT_SHELL -> $TARGET_SHELL"
       if chsh -s "$TARGET_SHELL" 2>/dev/null; then
         echo "  ✓ chsh succeeded"

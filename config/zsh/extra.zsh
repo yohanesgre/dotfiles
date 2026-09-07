@@ -10,7 +10,9 @@ fi
 unset _HM_ZSH _HM_ZSH_CUSTOM
 [[ ! -f ~/.p10k.zsh ]] || source ~/.p10k.zsh
 
-export PATH="$HOME/go/bin:$HOME/.bun/bin:$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
+# Restore PATH priority after CachyOS config source (typeset -U dedups
+# against config/zsh/path.zsh entries) + extra tool dirs not in path.zsh.
+export PATH="$HOME/.nix-profile/bin:/nix/var/nix/profiles/default/bin:$HOME/.bun/bin:$HOME/.local/bin:$HOME/go/bin:$HOME/.cargo/bin:$PATH"
 export PATH="$HOME/projects/sdk/flutter/bin:$PATH"
 # Auto-load private env (never committed) — TOML only
 # Order: ~/projects/dotfiles/.env.toml → ~/.env.toml
@@ -51,9 +53,6 @@ elif [[ -f "$HOME/.env.toml" ]]; then
   set -a; __load_toml_env "$HOME/.env.toml"; set +a
 fi
 unset -f __load_toml_env 2>/dev/null || true
-# No global GITHUB_TOKEN by design (gh CLI uses keyring login).
-# Guard against values inherited from stale parent processes.
-unset GITHUB_TOKEN 2>/dev/null || true
 
 # Also load per-profile hermes env files if present (TOML only)
 __load_toml_env_hermes() {
@@ -92,38 +91,5 @@ unset -f __load_toml_env_hermes 2>/dev/null || true
 
 export HERMES_HOME="$HOME/apps/hermes"
 
-alias ld="lazydocker"
-alias dc="docker compose"
-alias dps="docker ps"
-
-[[ -f "$HOME/projects/google-cloud-sdk/path.zsh.inc" ]] && source "$HOME/projects/google-cloud-sdk/path.zsh.inc"
-[[ -f "$HOME/projects/google-cloud-sdk/completion.zsh.inc" ]] && source "$HOME/projects/google-cloud-sdk/completion.zsh.inc"
-
-tmuxhelp() {
-  cat <<'EOF'
-TMUX CHEAT SHEET
-================
-  to <name>      tmux new-session -A -s <name>   attach/create (most-used)
-  ta <name>      tmux attach -t <name>
-  ts <name>      tmux new-session -s <name>      create new
-  tl             tmux list-sessions
-  tkss <name>    tmux kill-session -t <name>
-  tksv           tmux kill-server
-  tds            tmux new -As <dir>-<hash>       session per folder
-  tmuxconf       $EDITOR ~/.tmux.conf
-Inside tmux (prefix Ctrl-a):
-  ?              this help
-  c              new window
-  n/p Tab        next/prev/last window
-  | -            split h/v
-  h j k l        move panes
-  H J K L        resize panes
-  z              zoom pane
-  x              close pane
-  , $            rename window/session
-  d              detach
-  r              reload config
-  Ctrl-s/r       save/restore (resurrect)
-  I              install plugins
-EOF
-}
+# zoxide init — smart cd (`z <keyword>`); noop until zoxide is installed
+command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
