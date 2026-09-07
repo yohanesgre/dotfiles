@@ -1,5 +1,8 @@
 {
   "theme": {
     "name": "opencode"
+  },
+  "tabs": {
+    "layout": "vertical"
   }
 }

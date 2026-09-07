@@ -1,6 +1,7 @@
 # OpenCode Configuration
 
-> Last updated: 2026-09-06 — v2 cleanup (v1 archived, plugins removed except herdr, rtk MCP added, agents V2-native)
+> Last updated: 2026-09-07 — no pinned `model` (session follows TUI selection, subagents inherit); cli.json syncs `tabs.layout: vertical`
+> 2026-09-06 — v2 cleanup (v1 archived, plugins removed except herdr, rtk MCP added, agents V2-native)
 
 ## Stack Overview
 
@@ -126,7 +127,11 @@ Agent files: .opencode/, opencode.json, .cursor*, .claude/, CLAUDE.md, .codex/, 
 
 ## Plugins
 
-Only `herdr-agent-state` (restored 2026-09-06 from beta profile, V2-native TUI pane reporter; live only, not in dotfiles). Everything else removed 2026-09-06, pending rebuild.
+- `opencode-subagents` (added 2026-09-07, dotfiles-managed via `xdg.configFile` in `home/modules/opencode/default.nix`): V2 TUI plugin — sidebar section listing live subagents (child sessions) of the current session. Source: `config/opencode/plugins/opencode-subagents/` (index.ts server stub, tui.tsx slot wiring, types.ts contract, useSubagents.tsx data, SubagentSection.tsx tree, variants.ts V states). Slot `append: "sidebar.content"`; live via `data.listen` + 2s poll; header click toggles collapse (mouse toggle verified only for layout, synthetic-pty mouse never reaches slot content — real-terminal click untested). One line per subagent (agent, status, model/provider, elapsed, tokens) + title/model line — no expand/border (see gotcha). Gotchas (verified empirically 2026-09-07, opencode2 beta-19242, sandbox fake-HOME + `--server` attach):
+1. TUI plugin runtime loader only aliases `solid-js`/`solid-js/store` for `.tsx` files — bare `solid-js` imports in `.ts` files fail with `Cannot find package 'solid-js'` at load. Any plugin file importing solid must use `.tsx` (JSX not required).
+2. A `box` with `border`/`title` props inside a TUI slot FREEZES the whole renderer at first paint (no crash log, blank screen). Never use border/title in slot content — plain `box` + `text` is fine (signals/timers render normally). Also in the REAL TUI sidebar, flex spacers (`flexGrow`) inside slot rows collapse — children render sequentially with no gap and overflow wraps. Every slot line must be ONE space-padded string per text node; content width measured = 37 cols (pane inset 2 left, ends col 77 on 80-col terminal). Host visual language (measured from ANSI frames): label bold `text.default` at col 41, items `• name` (bullet U+2022, success-green), right meta muted, blank line between sections.
+3. TUI plugins are not logged by the plugin loader; failures show only as an in-TUI banner. To debug headless: run `opencode2 serve --port <p>` in a fake HOME, create a session via its OpenAPI (`POST /api/session`, basic auth `opencode:<password from serve log>`), then `opencode2 --server http://127.0.0.1:<p> -s <ses_id>` in a pty.
+- `herdr-agent-state` (restored 2026-09-06 from beta profile, V2-native TUI pane reporter; live only, not in dotfiles). Everything else removed 2026-09-06, pending rebuild.
 Dropped 2026-09-06: engram V2 port attempt (`plugins/engram/index.ts`, ported from upstream v1) — failed to load (server can't resolve `@opencode-ai/plugin` bare import; plain-object export then hit a transpile syntax error). Safe without it: memory works fully via MCP; the plugin only added automation (prompt/passive capture, nudges, compaction checkpoint). Revisit when V2 plugin API stabilizes.
 Archived under `~/.config/opencode-archive-v1-20260906/`:
 - `plugins-live/`: background-agents.ts, engram.ts, herdr-agent-state.js, herdr-agent-state-v2.js, kdco-primitives/, notify/, notify.ts, rtk.ts, worktree/, worktree.ts (+ `*.backup` files)
