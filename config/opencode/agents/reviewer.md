@@ -18,6 +18,24 @@ permissions:
   - action: list
     resource: "*"
     effect: allow
+  - action: skill
+    resource: "agents-reviewer"
+    effect: allow
+  - action: skill
+    resource: "caveman"
+    effect: allow
+  - action: codebase_memory_mcp_search_graph
+    resource: "*"
+    effect: allow
+  - action: codebase_memory_mcp_trace_path
+    resource: "*"
+    effect: allow
+  - action: codebase_memory_mcp_get_code_snippet
+    resource: "*"
+    effect: allow
+  - action: codebase_memory_mcp_check_index_coverage
+    resource: "*"
+    effect: allow
   - action: shell
     resource: "*"
     effect: ask
@@ -45,6 +63,18 @@ permissions:
   - action: shell
     resource: "git show *"
     effect: allow
+  - action: shell
+    resource: "git blame"
+    effect: allow
+  - action: shell
+    resource: "git blame *"
+    effect: allow
+  - action: edit
+    resource: "*"
+    effect: deny
+  - action: question
+    resource: "*"
+    effect: deny
   - action: subagent
     resource: "*"
     effect: deny

@@ -57,7 +57,7 @@ All: `mode: all` (vision: subagent), model-agnostic except librarian-jr + explor
 | swe | 60 | read/glob/grep/list/edit/shell allow; web+question+subagent deny; external_directory `*` allow (all dirs). Skill: `agents-swe` (routing hub) |
 | planner | 40 | read-only; web ask; question allow; subagent deny. Skill: `agents-planner` (wraps `writing-plans` process; expects designed input) |
 | architect | 40 | read-only; web ask; question allow; subagent deny. Skill: `agents-architect` (wraps `system-design` + `architecture`; owns design + ADR) |
-| reviewer | 40 | read-only; shell: git diff/status/log/show allow (bare + `*`), rest ask; subagent deny |
+| reviewer | 40 | read-only + skill(agents-reviewer, caveman) + graph read (search_graph/trace_path/get_code_snippet/check_index_coverage); shell: git diff/status/log/show/blame allow (bare + `*`), rest ask; edit/question/subagent deny |
 | brainstormer | 30 | read-only; web ask; question allow; subagent deny. Skill: `agents-brainstormer` (wraps `brainstorming` process) |
 | designer-jr | 50 | edit+shell allow; web ask; question; subagent deny. Owns wireframes |
 | explorer-jr | 30 | read/glob/grep/list only; model `opencode-go/mimo-v2.5` |
