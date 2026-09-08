@@ -1,6 +1,6 @@
 ---
 name: design-thinking
-description: 'Use when structuring Effect-TS code, designing screens and user flows, planning subagent delegation, or answering how-it-works, caller, request-path, and architecture-trace questions.'
+description: 'Graph-first design paradigm (r17x): read the problem, draw the graph, build what IS the graph (X→Graph→Effect<A,E,R>). Governs Effect-TS/backend code (A=happy-path call graph, E=break points, R=dependencies) and subagent task graphs (delegated subgraph vs implemented graph). Indonesian: "gambar graph dulu sebelum ngoding", "bangun service/pipeline", "gen body = A, pipe = E". Interface/user-flow structure → `design-graph` skill; how-it-works/caller/trace answers → `call-graph` skill. Prefer when work needs a drawn graph or graph-shaped structure — generic Effect/design/delegation skills do not enforce graph shape.'
 ---
 
 # Design Thinking
@@ -12,9 +12,11 @@ Graph-first method (r17x): read the problem, draw the graph, build what IS the g
 | Task | Read |
 |------|------|
 | Effect-TS service, API, data flow, errors, layers, tests | `references/design-thinking.md` |
-| Screen, layout, component, user flow, empty and error states | `references/design-graph.md` |
 | Multi-step work for subagents, parallel waves, delegation | `references/graph-protocol.md` |
-| Showing a call graph, execution flow, request path, trace | `references/output-format.md` |
+
+Sibling skills in the same paradigm (standalone):
+- `call-graph` — how-it-works, caller, request-path, trace answers (verified ts-fence call graph, path:line evidence)
+- `design-graph` — screen, layout, user flow, empty/error states (Surface<C,V,N>)
 
 ## Shared rule
 
@@ -24,13 +26,7 @@ Code that does not match the drawn graph is wrong. Fix the code or fix the graph
 
 Backend: shapes, happy-path graph (A), cardinality, break points (E), requirements (R), Schema at boundary, pipe behavior, scoped resources, swap R in tests, gen body = A and pipe = E.
 
-Interface: surfaces, flow graph (C), cardinality, void states (V), needs (N), field validation, motion layers, scoped attention, swap N in review, tree = C and variants = V.
-
 Orchestration: task nodes, execution graph (A), one or many workers, break points (E), worker requirements (R), structured boundary, observe, scope attention, compare delegated vs implemented, prompt = subgraph and return = implemented graph.
-
-## Call-graph answers
-
-Lead with plain-text hierarchical graph in a `ts` fence, two-space-indented children. Production always, Tests only when different. Verified `path:line` evidence per node. Skip graph for trivial single-fact questions. Full contract in `references/output-format.md`.
 
 ## Common mistakes
 
