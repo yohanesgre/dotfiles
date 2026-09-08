@@ -1,6 +1,5 @@
 /** @jsxImportSource @opentui/solid */
 import { createSignal, For, onCleanup, Show } from "solid-js";
-import { usePlugin } from "@opencode-ai/plugin/tui";
 import { useSubagents } from "./useSubagents";
 import * as v from "./variants";
 import type { SubagentSummary } from "./types";
@@ -10,10 +9,13 @@ import type { SubagentSummary } from "./types";
 // right-aligned meta, blank line between sections, "•" bullets.
 // Constraint: box border/title inside a TUI slot freezes the renderer, and
 // flex spacers collapse in slot content — lines are single padded strings.
-export function SubagentSection(props: { sessionID: string }) {
-  const ctx = usePlugin();
-  const p = () => v.palette(ctx.theme);
-  const sub = useSubagents(props.sessionID, { data: ctx.data });
+// Data + theme arrive via props from tui.tsx setup(context) closure — never
+// usePlugin(): the bundled @opencode-ai/plugin copy (beta-19271) ships its
+// own solid context while the host (beta-19289+) provides
+// @opencode/plugin/tui, so host-provided context reads as missing.
+export function SubagentSection(props: { sessionID: string; data: any; theme: unknown }) {
+  const p = () => v.palette(props.theme);
+  const sub = useSubagents(props.sessionID, { data: props.data });
   const [now, setNow] = createSignal(Date.now());
   const [collapsed, setCollapsed] = createSignal(false);
   const tick = setInterval(() => setNow(Date.now()), 1000);
