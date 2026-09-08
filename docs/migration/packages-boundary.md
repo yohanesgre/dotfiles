@@ -101,7 +101,7 @@ Full explicit list includes additionally (not in grep but pacman-owned, never Ni
 | `codebase-memory-mcp` | `~/.local/bin/codebase-memory-mcp` | **Upstream 2026-09-07** (was nixpkgs 0.10.8) | DeusData `install.sh` (via `upstream/default.nix`); update via `codebase-memory-mcp update` |
 | `rtk` | `~/.local/bin/rtk` | **Upstream 2026-09-07** (was nixpkgs 0.45.0, lagged vs v0.48.0) | `rtk-ai/rtk` `install.sh` (via `upstream/default.nix`) |
 | `rtk-mcp` | `~/.local/bin/rtk-mcp` | **Manual (unchanged, since 2026-09-06)** | standalone MCP server binary, separate from `rtk` CLI |
-| `opencode` | `~/.bun` global | **Bun (unchanged)** | `bun add -g @opencode-ai/cli@beta` (via `opencode/default.nix`) |
+| `opencode` | `~/.bun` global | **Bun (unchanged)** | `bun install -g --trust @opencode/cli@beta` (via `opencode/default.nix`) |
 | `herdr` | `~/.local/bin/herdr` | **Upstream 2026-09-07** (was nixpkgs 0.8.2; `herdr update` Nix-blocked) | `curl -fsSL https://herdr.dev/install.sh \| sh` (via `upstream/default.nix`) |
 | systemd user units | `dot_config/systemd/user/` → `~/.config/systemd/user/` via chezmoi | Phase 7 deferred | `chezmoi apply`; `systemctl --user daemon-reload` |
 | `bun`/`node` shims | pacman `bun` **removed 2026-09-07** (`pacman -R bun`); `nodejs-lts-krypton` stays (node from pacman = policy) | Upstream owns `~/.bun`; `config/zsh/path.zsh` puts Nix/upstream dirs before `/usr/bin` so same-name pacman tools are shadowed | — |
@@ -189,7 +189,7 @@ bash scripts/hm-switch.sh laptop
 # codebase-memory-mcp: DeusData install.sh                     (update: codebase-memory-mcp update)
 # rtk:                rtk-ai/rtk install.sh (re-run = update, pin RTK_VERSION=vX.Y.Z)
 # herdr:              curl -fsSL https://herdr.dev/install.sh | sh (update: herdr update)
-# opencode:           bun add -g @opencode-ai/cli@beta
+# opencode:           bun install -g --trust @opencode/cli@beta
 # engram:             go install github.com/engramhq/engram@latest
 # verify: which bun codebase-memory-mcp rtk herdr opencode engram
 # fallback (standalone): bash scripts/install-manual.sh

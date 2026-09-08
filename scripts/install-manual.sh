@@ -62,11 +62,13 @@ else
   curl -fsSL https://herdr.dev/install.sh | sh 2>&1 || warn "herdr install failed"
 fi
 
-# opencode via bun (see home/modules/opencode): always add -g = install or update
+# opencode via bun (see home/modules/opencode): always install -g --trust = install or update.
+# NOTE: live `opencode2` bin comes from the SCOPED @opencode/cli@beta package (NOT the
+# deprecated unscoped @opencode-ai/cli@beta, which lags/stales). Keep target in sync.
 BUN_BIN="$HOME/.bun/bin/bun"
 if [ -x "$BUN_BIN" ]; then
-  info "installing/updating @opencode-ai/cli@beta via bun..."
-  "$BUN_BIN" add -g @opencode-ai/cli@beta 2>&1 || warn "opencode install/update failed"
+  info "installing/updating @opencode/cli@beta via bun..."
+  "$BUN_BIN" install -g --trust @opencode/cli@beta 2>&1 || warn "opencode install/update failed"
 else
   warn "bun missing — skipping opencode"
 fi

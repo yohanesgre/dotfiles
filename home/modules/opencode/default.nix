@@ -15,8 +15,8 @@
     BUN_BIN="$HOME/.bun/bin/bun"
     if [ ! -x "$BUN_BIN" ]; then BUN_BIN="${pkgs.bun}/bin/bun"; fi
     export PATH="$HOME/.bun/bin:$PATH"
-    echo "opencode: installing/updating @opencode-ai/cli@beta via bun (global)..."
-    "$BUN_BIN" add -g @opencode-ai/cli@beta || echo "opencode: bun add -g failed (continuing)"
+    echo "opencode: installing/updating @opencode/cli@beta via bun (global)..."
+    "$BUN_BIN" install -g --trust @opencode/cli@beta || echo "opencode: bun install -g failed (continuing)"
     mkdir -p "$HOME/.bun/bin"
   '';
 
