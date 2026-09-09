@@ -135,7 +135,7 @@ EOF
         ln -sfn "$HOME/.agents/skills" "$HERMES_HOME/shared/skills"
         info "Skills symlinked: ~/.agents/skills/ → $HERMES_HOME/shared/skills"
     else
-        warn "~/.agents/skills/ not found — run chezmoi apply first"
+        warn "~/.agents/skills/ not found — run bash ~/projects/dotfiles/scripts/hm-switch.sh first"
     fi
 }
 

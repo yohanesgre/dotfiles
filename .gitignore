@@ -25,3 +25,9 @@ result
 result-*
 .direnv/
 
+
+# Nix build outputs
+result
+result-*
+# LazyVim generated state
+config/nvim/lazyvim.json

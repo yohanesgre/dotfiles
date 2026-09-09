@@ -8,7 +8,7 @@
 - **pacman / CachyOS repos (`home/modules/pacman`)**: System + stable CLI toolchain (declared list, 17 entries). `pacmanSync` activation runs before `installPackages` on every switch: `pacman -T` → `sudo pacman -S --needed --noconfirm <missing>` (non-blocking on sudo failure). Standalone: `scripts/pacman-sync.sh`.
 - **Upstream installer > Pacman (user 2026-08-31)**: If tool provides official installer from its repo (curl|sh, `go install`, `npm`/`cargo`), prefer that over `pacman -S`. Rationale: avoid distro lag, get latest upstream, consistent across CachyOS ↔ laptop. Example: Nix itself via `https://nixos.org/nix/install --daemon` (chosen) not `pacman -S nix`. Pacman kept only for GUI/GPU/kernel-tied packages where no upstream installer fits.
 - **Pacman (CachyOS/Arch)**: GUI, GPU drivers, DE, browsers, electron apps, gaming. Not in Nix — avoids nixGL/OpenGL mismatch, avoids duplicating 297 explicit pacman packages.
-- **Manual / chezmoi**: Binaries not in nixpkgs + systemd user units. Kept in `~/.local/bin` + `dot_config/systemd/` via chezmoi until Phase 7 (deferred per user).
+- **Manual**: Binaries not in nixpkgs (`~/.local/bin` via `go install`). Systemd user units via `home/modules/hermes` (`systemd.user.services`).
 
 `nixGL` deferred — no `hardware.opengl`/`hardware.graphics` in Nix, no GUI packages in `home.packages`.
 
@@ -103,10 +103,8 @@ Full explicit list includes additionally (not in grep but pacman-owned, never Ni
 | `rtk-mcp` | `~/.local/bin/rtk-mcp` | **Manual (unchanged, since 2026-09-06)** | standalone MCP server binary, separate from `rtk` CLI |
 | `opencode` | `~/.bun` global | **Bun (unchanged)** | `bun install -g --trust @opencode/cli@beta` (via `opencode/default.nix`) |
 | `herdr` | `~/.local/bin/herdr` | **Upstream 2026-09-07** (was nixpkgs 0.8.2; `herdr update` Nix-blocked) | `curl -fsSL https://herdr.dev/install.sh \| sh` (via `upstream/default.nix`) |
-| systemd user units | `dot_config/systemd/user/` → `~/.config/systemd/user/` via chezmoi | Phase 7 deferred | `chezmoi apply`; `systemctl --user daemon-reload` |
+| systemd user units | `~/.config/systemd/user/` via `home/modules/hermes` | HM-managed | `systemctl --user daemon-reload` after switch |
 | `bun`/`node` shims | pacman `bun` **removed 2026-09-07** (`pacman -R bun`); `nodejs-lts-krypton` stays (node from pacman = policy) | Upstream owns `~/.bun`; `config/zsh/path.zsh` puts Nix/upstream dirs before `/usr/bin` so same-name pacman tools are shadowed | — |
-| Chezmoi dotfiles | `dot_*`, `dot_config/opencode`, `dot_config/hermes`, `.chezmoiignore` | Purge deferred to Phase 7 | `chezmoi managed` / `chezmoi diff` |
-
 Comment in `packages.nix` now: `# engram not in nixpkgs: kept manual via home/modules/manual (go install).`.
 
 > `omp` (oh-my-pi) — **Removed 2026-08-31**: former `inputs.omp.url = "github:can1357/oh-my-pi"` + `omp.homeManagerModules.default` + `home/modules/omp/default.nix` (`programs.omp`) deleted — unused, DNS npm build failures. Manual fallback `curl https://omp.sh/install | sh` not adopted; reinstall via flake if needed.
@@ -194,8 +192,7 @@ bash scripts/hm-switch.sh laptop
 # verify: which bun codebase-memory-mcp rtk herdr opencode engram
 # fallback (standalone): bash scripts/install-manual.sh
 
-# 7. Chezmoi systemd (kept — Phase 7 deferred)
-chezmoi apply
+# 7. Systemd user units (HM-managed via home/modules/hermes)
 systemctl --user daemon-reload
 systemctl --user status hermes-gateway-yohanes walker elephant cc-proxy --no-pager
 
@@ -208,12 +205,6 @@ bash scripts/validate.sh  # if present, else nix flake check
 ### Why `home.packages` Identical Across Hosts Now
 
 Stubs empty → `nix eval .#homeConfigurations."yohanes@desktop".config.home.packages --apply 'pkgs: map (p: p.pname or p.name ...) pkgs'` and same for `laptop` return identical list (modulo store hash). Expected. Host divergence added later by editing `home/hosts/<host>.nix`.
-
-## Chezmoi Keep (Phase 7 Deferred)
-
-- `dot_*`, `dot_config/systemd/user/`, `dot_config/hermes/`, `dot_agents/` remain chezmoi-managed.
-- `scripts/install.sh` (chezmoi bootstrap) retained — Nix install uses `flake.nix` + `hm-switch.sh`, not `scripts/nix-install.sh` (does not exist; laptop steps above are canonical).
-- Do not purge chezmoi until Phase 7. `~/.config/systemd/user/` units (hermes-*, walker, elephant) stay via `chezmoi apply`.
 
 ## Commands Reference
 

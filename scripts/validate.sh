@@ -9,11 +9,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-if [ -d "$REPO_ROOT/config/opencode" ]; then
-    OC_DIR="$REPO_ROOT/config/opencode"
-else
-    OC_DIR="$REPO_ROOT/dot_config/opencode"
-fi
+OC_DIR="$REPO_ROOT/config/opencode"
 HOME_AGENTS="$HOME/AGENTS.md"
 
 source "$SCRIPT_DIR/lib.sh"
@@ -75,19 +71,10 @@ _jsonc_valid() {
     " > /dev/null 2>&1
 }
 
-# Helper: check balanced {{ }} braces in a file
-_balanced_braces() {
-    local content open close
-    content=$(cat "$1")
-    open=$(echo "$content" | grep -o '{{' | wc -l)
-    close=$(echo "$content" | grep -o '}}' | wc -l)
-    [ "$open" -eq "$close" ]
-}
-
 # Helper: check skill exists in at least one skill directory
 _skill_dir_exists() {
     local skill="$1"
-    for dir in "$HOME/.agents/skills" "$HOME/.agents/skills" "$HOME/.config/opencode/skills" "$REPO_ROOT/dot_config/opencode/skills"; do
+    for dir in "$HOME/.agents/skills" "$REPO_ROOT/config/skills"; do
         [ -d "$dir/$skill" ] && return 0
     done
     return 1
@@ -145,15 +132,6 @@ else
         check "deadnix clean" false
     fi
 fi
-echo ""
-
-# ── Check 2: Chezmoi Template Syntax ───────────────────────────────────────
-echo -e "${BOLD}Check 2: Chezmoi Template Syntax${NC}"
-
-for f in $(find "$REPO_ROOT" -type f -name '*.tmpl' ! -path '*/.git/*' 2>/dev/null | sort); do
-    rel="${f#$REPO_ROOT/}"
-    check "balanced braces in $rel" _balanced_braces "$f"
-done
 echo ""
 
 # ── Check 3: AGENTS.md Skill References ────────────────────────────────────
@@ -241,7 +219,7 @@ for agents_file in "$OC_DIR/AGENTS.md" "$HOME_AGENTS"; do
         if [ "$agents_file" = "$HOME_AGENTS" ]; then
             _suggest "run: npx openskills sync -y"
         else
-            _suggest "run: chezmoi apply  (deploys config-level AGENTS.md)"
+            _suggest "run: bash scripts/hm-switch.sh (redeploys config-level AGENTS.md)"
         fi
         continue
     fi
@@ -265,21 +243,6 @@ if dupes:
         check "no duplicate names in $fname$dir_label" true
     fi
 done
-echo ""
-
-# ── Check 7: Chezmoi Dry-Run ───────────────────────────────────────────────
-echo -e "${BOLD}Check 7: Chezmoi Dry-Run${NC}"
-
-if [ "$CI_MODE" = true ]; then
-    skip "CI mode — chezmoi not configured in CI"
-elif ! command -v chezmoi >/dev/null 2>&1; then
-    skip "chezmoi not installed"
-elif ! chezmoi apply --dry-run >/dev/null 2>&1; then
-    check "chezmoi apply --dry-run succeeds" false
-    echo "         ${YELLOW}→ run 'chezmoi init --source=~/projects/dotfiles' first${NC}"
-else
-    check "chezmoi apply --dry-run succeeds" true
-fi
 echo ""
 
 # ── Check 8: MCP URL Validity ──────────────────────────────────────────────
@@ -308,18 +271,6 @@ for name, cfg in data.get('mcp', {}).items():
             "
         done <<< "$URLS"
     fi
-fi
-echo ""
-
-# ── Check 9: .chezmoi.toml.tmpl Validity ──────────────────────────────────
-echo -e "${BOLD}Check 9: .chezmoi.toml.tmpl Validity${NC}"
-
-CHEZMOI_TOML="$REPO_ROOT/.chezmoi.toml.tmpl"
-if [ ! -f "$CHEZMOI_TOML" ]; then
-    skip ".chezmoi.toml.tmpl not found"
-else
-    check ".chezmoi.toml.tmpl has sourceDir" grep -q 'sourceDir' "$CHEZMOI_TOML"
-    check ".chezmoi.toml.tmpl has balanced braces" _balanced_braces "$CHEZMOI_TOML"
 fi
 echo ""
 
