@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   # System + CLI packages from pacman/CachyOS repos (policy 2026-09-07:
   # no nixpkgs packages in the profile — Nix is declarative config only).

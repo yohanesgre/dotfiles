@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   xdg.configFile."opencode/opencode.jsonc".source = ../../../config/opencode/opencode.jsonc;
   xdg.configFile."opencode/cli.json".source = ../../../config/opencode/cli.json;

@@ -121,6 +121,32 @@ done
 echo ""
 
 
+# ── Check 1b: Nix Flake (check + fmt + deadnix) ──────────────────────────
+echo -e "${BOLD}Check 1b: Nix Flake${NC}"
+
+if ! command -v nix >/dev/null 2>&1; then
+    skip "nix not in PATH"
+else
+    check "nix flake check --no-build" nix flake check --no-build
+    if nix fmt -- --check flake.nix home/ >/dev/null 2>&1; then
+        check "nix fmt --check clean" true
+    else
+        # fallback: nixpkgs-fmt direct (older nix without `nix fmt --check`)
+        if nix run nixpkgs#nixpkgs-fmt -- --check flake.nix home/ >/dev/null 2>&1; then
+            check "nixpkgs-fmt --check clean" true
+        else
+            check "nix fmt clean (run: nix fmt)" false
+        fi
+    fi
+    # deadnix lint, non-blocking warn first run (harden later)
+    if nix run nixpkgs#deadnix -- -L --fail flake.nix home/ >/dev/null 2>&1; then
+        check "deadnix clean" true
+    else
+        check "deadnix clean" false
+    fi
+fi
+echo ""
+
 # ── Check 2: Chezmoi Template Syntax ───────────────────────────────────────
 echo -e "${BOLD}Check 2: Chezmoi Template Syntax${NC}"
 

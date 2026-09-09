@@ -1,4 +1,9 @@
-{ config, pkgs, lib, ... }:
+{
+  config,
+  pkgs,
+  lib,
+  ...
+}:
 {
   programs.zsh = {
     enable = true;
@@ -9,8 +14,20 @@
     oh-my-zsh = {
       enable = true;
       theme = "powerlevel10k";
-      plugins = [ "git" "fzf" "extract" ];
+      plugins = [
+        "git"
+        "fzf"
+        "extract"
+      ];
       custom = "$HOME/.oh-my-zsh/custom";
+    };
+
+    shellAliases = {
+      hm = "$HOME/projects/dotfiles/scripts/hm-switch.sh";
+      hm-remote = "$HOME/projects/dotfiles/scripts/hm-switch.sh --remote";
+      hm-check = "nix flake check --no-build";
+      hm-fmt = "nix fmt";
+      hm-validate = "bash $HOME/projects/dotfiles/scripts/validate.sh";
     };
 
     # powerlevel10k from pacman (zsh-theme-powerlevel10k) — no nixpkgs theme
@@ -37,7 +54,7 @@
   # Force zsh as default login shell on every machine (CachyOS desktop/laptop/dell-xps13)
   # - ensures /usr/bin/zsh (pacman) is in /etc/shells
   # - chsh to zsh if current shell is not zsh
-  home.activation.forceZshShell = lib.hm.dag.entryAfter ["writeBoundary"] ''
+  home.activation.forceZshShell = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     ZSH_BIN="/usr/bin/zsh"
     SYS_ZSH="/usr/bin/zsh"
     # ensure zsh binaries are in /etc/shells (needs sudo, best-effort)

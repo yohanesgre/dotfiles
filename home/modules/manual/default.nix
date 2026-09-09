@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   home.activation.manualInstall = lib.hm.dag.entryAfter [ "installPackages" ] ''
     set -u

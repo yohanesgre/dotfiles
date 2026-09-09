@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 {
   # Fast-moving tools pinned to upstream installers, not nixpkgs.
   # Activation installs when missing and updates on every switch
