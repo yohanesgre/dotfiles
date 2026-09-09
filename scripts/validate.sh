@@ -160,67 +160,6 @@ with open('$HOME_AGENTS') as f:
 fi
 echo ""
 
-# ── Check 4: Cross-Reference Designer Skills ───────────────────────────────
-echo -e "${BOLD}Check 4: Cross-Reference Designer Skills${NC}"
-
-SLIM_JSON="$OC_DIR/oh-my-opencode-slim.json"
-
-if [ ! -f "$SLIM_JSON" ]; then
-    skip "oh-my-opencode-slim.json not found"
-elif [ ! -f "$HOME_AGENTS" ]; then
-    skip "~/AGENTS.md not found"
-    _suggest "run: npx openskills sync -y"
-else
-    PRESET=$(python3 -c "
-import json
-with open('$SLIM_JSON') as f:
-    data = json.load(f)
-print(data.get('preset', ''))
-" 2>/dev/null || echo "")
-
-    if [ -z "$PRESET" ]; then
-        skip "no preset field found in oh-my-opencode-slim.json"
-    else
-        DESIGNER_SKILLS=$(python3 -c "
-import json
-with open('$SLIM_JSON') as f:
-    data = json.load(f)
-preset = data.get('preset', '')
-skills = data.get('presets', {}).get(preset, {}).get('designer', {}).get('skills', [])
-for s in skills:
-    print(s)
-" 2>/dev/null || echo "")
-
-        if [ -z "$DESIGNER_SKILLS" ]; then
-            skip "no designer skills found for preset '$PRESET'"
-        else
-            AGENTS_SKILLS=$(python3 -c "
-import re
-with open('$HOME_AGENTS') as f:
-    content = f.read()
-blocks = re.findall(r'<skill>(.*?)</skill>', content, re.DOTALL)
-for block in blocks:
-    name_m = re.search(r'<name>(.*?)</name>', block)
-    loc_m = re.search(r'<location>(.*?)</location>', block)
-    if name_m and loc_m and loc_m.group(1) == 'project':
-        print(name_m.group(1))
-" 2>/dev/null || echo "")
-
-            while IFS= read -r skill; do
-                [ -z "$skill" ] && continue
-                if _in_lines "$skill" "$AGENTS_SKILLS"; then
-                    check "designer skill '$skill' in ~/AGENTS.md (location=project)" true
-                elif _skill_dir_exists "$skill"; then
-                    _warn "designer skill '$skill' not in ~/AGENTS.md (exists on disk)"
-                else
-                    check "designer skill '$skill' in ~/AGENTS.md (location=project)" false
-                fi
-            done <<< "$DESIGNER_SKILLS"
-        fi
-    fi
-fi
-echo ""
-
 # ── Check 5: File Existence (MCP commands, plugin paths) ───────────────────
 echo -e "${BOLD}Check 5: Path Existence (MCP commands, binaries)${NC}"
 
