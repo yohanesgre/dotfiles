@@ -78,6 +78,7 @@ All: `mode: all` (vision: subagent), model-agnostic except librarian-jr + explor
 - `~/AGENTS.md` deleted 2026-08-13 (stale catalog; redundant with native `<available_skills>` injection). Not chezmoi-managed.
 - Caveman mode now in all 3 harnesses: opencode AGENTS.md, `~/.commandcode/AGENTS.md`, `~/.hermes/SOUL.md` (seeded 2026-08-13).
 - Cross-harness scan: opencode/hermes/commandcode recursive; Claude Code/Gemini/Cline/Roo shallow — irrelevant (unused).
+- `nix/` skill replaced 2026-09-10 with `r17x/universe:.claude/skills/nix` (SKILL.md + debug/flake/module/service sub-skills; eval/debug/build/service focused). Old generic skill backed up at `/tmp/opencode/nix-backup-2026-09-10/`.
 
 ## AGENTS.md Sections
 

@@ -1,224 +1,168 @@
 ---
 name: nix
-description: Comprehensive NixOS, Nix Flakes, Home Manager, and nix-darwin skill. Covers declarative system configuration, reproducible environments, package management, and cross-platform Nix workflows. Activate for any Nix/NixOS/Flakes/Home-Manager/nix-darwin tasks.
+description: Nix flakes, nix-darwin, NixOS, and home-manager development assistance
+allowed-tools:
+  - Bash
+  - Read
+  - Grep
+  - Glob
+  - Edit
+  - Write
 ---
 
-# Nix Ecosystem Guide
+# Nix Development Skill
 
-## Core Philosophy
+## Evaluation & Debugging
 
-1. **Declarative over Imperative** - Describe desired state, not steps to reach it
-2. **Reproducibility** - Lock files (`flake.lock`) pin exact versions
-3. **Immutability** - Nix Store is read-only; same inputs = same outputs
-4. **Rollback (NixOS)** - Every generation preserved; instant recovery via boot menu
+### Evaluate flake outputs
+```bash
+# List available outputs
+nix flake show
 
-## Flake Structure
+# Evaluate specific attribute
+nix eval .#<attribute> --json
 
-```nix
-{
-  description = "My Nix configuration";
+# Darwin config options
+nix eval .#darwinConfigurations.<host>.options.<path>
 
-  inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
-    home-manager = {
-      url = "github:nix-community/home-manager/release-24.11";
-      inputs.nixpkgs.follows = "nixpkgs";  # CRITICAL: avoid duplicate nixpkgs
-    };
-    # macOS support
-    nix-darwin = {
-      url = "github:nix-darwin/nix-darwin/nix-darwin-24.11";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-  };
-
-  outputs = { self, nixpkgs, home-manager, nix-darwin, ... }@inputs: {
-    # NixOS configurations
-    nixosConfigurations.hostname = nixpkgs.lib.nixosSystem {
-      system = "x86_64-linux";
-      modules = [ ./configuration.nix ];
-    };
-
-    # macOS configurations
-    darwinConfigurations.hostname = nix-darwin.lib.darwinSystem {
-      system = "aarch64-darwin";  # or x86_64-darwin for Intel
-      modules = [ ./darwin.nix ];
-    };
-
-    # Development shells
-    devShells.x86_64-linux.default = nixpkgs.legacyPackages.x86_64-linux.mkShell {
-      packages = [ /* ... */ ];
-    };
-  };
-}
+# Home-manager config
+nix eval .#homeConfigurations."<user>@<host>".config.<path>
 ```
 
-## Essential Patterns
+### Debug evaluation errors
+```bash
+# Show full trace
+nix eval .#<attr> --show-trace
 
-### Input Management
-```nix
-inputs = {
-  nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
-  unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+# Check flake validity
+nix flake check
 
-  # Use parent's nixpkgs to avoid downloading multiple versions
-  home-manager.inputs.nixpkgs.follows = "nixpkgs";
-
-  # Non-flake input (config files, etc.)
-  private-config = {
-    url = "git+ssh://git@github.com/user/config.git";
-    flake = false;
-  };
-};
+# Instantiate without building
+nix-instantiate --eval -E '<expression>'
 ```
 
-### Module System
-```nix
-# Modules have: imports, options, config
-{ config, pkgs, lib, ... }: {
-  imports = [ ./hardware.nix ./services.nix ];
+## Building & Rebuilding
 
-  options.myOption = lib.mkOption {
-    type = lib.types.bool;
-    default = false;
-  };
+### Darwin (macOS)
+```bash
+darwin-rebuild switch --flake .
+darwin-rebuild switch --flake .#<hostname>
 
-  config = lib.mkIf config.myOption {
-    # conditional configuration
-  };
-}
+# Rollback
+darwin-rebuild --list-generations
+darwin-rebuild switch --rollback
 ```
-
-### Priority Control
-```nix
-{
-  # lib.mkDefault (priority 1000) - base module defaults
-  services.nginx.enable = lib.mkDefault true;
-
-  # Direct assignment (priority 100) - normal config
-  services.nginx.enable = true;
-
-  # lib.mkForce (priority 50) - override everything
-  services.nginx.enable = lib.mkForce false;
-}
-```
-
-### Package Customization
-```nix
-{
-  # Override function arguments
-  pkgs.fcitx5-rime.override { rimeDataPkgs = [ ./custom-rime ]; }
-
-  # Override derivation attributes
-  pkgs.hello.overrideAttrs (old: { doCheck = false; })
-
-  # Overlays (global modification)
-  nixpkgs.overlays = [
-    (final: prev: {
-      myPackage = prev.myPackage.override { /* ... */ };
-    })
-  ];
-}
-```
-
-## Platform-Specific
 
 ### NixOS
 ```bash
-sudo nixos-rebuild switch --flake .#hostname
-sudo nixos-rebuild boot --flake .#hostname    # apply on next boot
-sudo nixos-rebuild test --flake .#hostname    # test without boot entry
+sudo nixos-rebuild switch --flake .#<hostname>
+sudo nixos-rebuild boot --flake .#<hostname>
 ```
 
-### nix-darwin (macOS)
+### Home-manager standalone
 ```bash
-darwin-rebuild switch --flake .#hostname
-# TouchID for sudo:
-# security.pam.services.sudo_local.touchIdAuth = true;
+home-manager switch --flake .#<user>@<host>
 ```
 
-### Home Manager
-```nix
-# As NixOS/Darwin module:
-home-manager.useGlobalPkgs = true;
-home-manager.useUserPackages = true;
-home-manager.users.username = import ./home.nix;
+## Service Management (launchd/systemd)
 
-# Standalone:
-home-manager switch --flake .#username@hostname
+### macOS launchd
+```bash
+# List services
+launchctl list | grep -E "org.nixos|nix"
+
+# Service status
+launchctl print system/<label>
+launchctl print gui/$(id -u)/<label>
+
+# Control services
+launchctl kickstart [-k] <domain>/<label>
+launchctl kill SIGTERM <domain>/<label>
 ```
 
-## Commands Reference
+### Linux systemd
+```bash
+systemctl --user list-units --type=service
+systemctl --user status <service>
+systemctl --user restart <service>
+journalctl --user -u <service> -f
+```
 
-| Task | Command |
-|------|---------|
-| Rebuild NixOS | `sudo nixos-rebuild switch --flake .#hostname` |
-| Rebuild Darwin | `darwin-rebuild switch --flake .#hostname` |
-| Dev shell | `nix develop` |
-| Temp package | `nix shell nixpkgs#package` |
-| Run package | `nix run nixpkgs#package` |
-| Update all | `nix flake update` |
-| Update one | `nix flake update nixpkgs` |
-| GC old gens | `sudo nix-collect-garbage -d` |
-| List gens | `nix profile history --profile /nix/var/nix/profiles/system` |
-| Debug build | `nixos-rebuild switch --show-trace -L -v` |
-| REPL | `nix repl` then `:lf .` to load flake |
+## Launchd Configuration Options
 
-## Common Gotchas
-
-1. **Untracked files ignored** - `git add` before any flake command (nix build/run/shell/develop, nixos-rebuild, darwin-rebuild)
-2. **allowUnfree fails in devShells** - Use `nixpkgs-unfree` overlay or `~/.config/nixpkgs/config.nix`
-3. **Duplicate input downloads** - Use `follows` to pin dependencies (most common: `inputs.nixpkgs.follows`)
-4. **Python pip fails** - Use `venv`, `poetry2nix`, or containers
-5. **Downloaded binaries fail** - Use FHS environment or `nix-ld`
-6. **Merge conflicts in lists** - Use `lib.mkBefore`/`lib.mkAfter` for ordering
-7. **Build from source unexpectedly** - Check if overlays invalidate cache
-
-## Development Environments
-
+For reducing CPU/IO priority in nix-darwin:
 ```nix
-# In flake.nix outputs:
-devShells.x86_64-linux.default = pkgs.mkShell {
-  packages = with pkgs; [ nodejs python3 rustc ];
-
-  shellHook = ''
-    echo "Dev environment ready"
-    export MY_VAR="value"
-  '';
-
-  # For C libraries
-  LD_LIBRARY_PATH = lib.makeLibraryPath [ pkgs.openssl ];
+launchd.daemons.<name>.serviceConfig = {
+  RunAtLoad = false;        # Don't start at boot
+  KeepAlive = false;        # Don't auto-restart
+  Nice = 5;                 # Lower CPU priority (1-20)
+  ProcessType = "Background"; # Background scheduling
+  LowPriorityIO = true;     # Lower I/O priority
+  ThrottleInterval = 10;    # Min seconds between restarts
 };
+
+launchd.user.agents.<name>.serviceConfig = { /* same options */ };
 ```
 
-### direnv Integration
+## Common Patterns
+
+### Override with mkForce
+```nix
+# When upstream sets a value you need to override
+someOption = lib.mkForce false;
+```
+
+### Conditional by platform
+```nix
+# At Nix level (preferred)
+serviceCommands = if pkgs.stdenv.isDarwin
+  then import ./darwin.nix
+  else import ./linux.nix;
+
+# In module
+config = lib.mkIf pkgs.stdenv.isDarwin { ... };
+```
+
+### Module structure
+```nix
+{ lib, config, pkgs, ... }:
+let
+  cfg = config.myModule;
+in {
+  options.myModule = {
+    enable = lib.mkEnableOption "my module";
+  };
+
+  config = lib.mkIf cfg.enable {
+    # implementation
+  };
+}
+```
+
+## Flake Inputs Management
+
 ```bash
-# .envrc
-use flake
-# or for unfree: use flake --impure
+# Update all inputs
+nix flake update
+
+# Update specific input
+nix flake lock --update-input <input-name>
+
+# Show inputs
+nix flake metadata
 ```
 
-## Debugging
+## Troubleshooting
 
-```bash
-# Verbose rebuild
-nixos-rebuild switch --show-trace --print-build-logs --verbose
+### "infinite recursion" error
+- Check for circular dependencies in imports
+- Use `lib.mkDefault` or `lib.mkForce` to resolve conflicts
 
-# Interactive REPL
-nix repl
-:lf .                    # load current flake
-:e pkgs.hello           # open in editor
-:b pkgs.hello           # build derivation
-inputs.<TAB>            # explore inputs
-```
+### "attribute not found"
+- Verify the attribute path with `nix eval`
+- Check if module is properly imported
 
-## References
-
-For detailed information, see:
-- `references/nix-language.md` - Nix language syntax
-- `references/flakes.md` - Flake inputs/outputs details
-- `references/home-manager.md` - User environment management
-- `references/nix-darwin.md` - macOS configuration
-- `references/nixpkgs-advanced.md` - Overlays, overrides, callPackage
-- `references/dev-environments.md` - Dev shells, direnv, FHS
-- `references/best-practices.md` - Modularization, debugging, deployment
-- `references/templates.md` - Ready-to-use flake.nix examples
+### Service not starting
+- Check plist/unit file generation
+- Verify paths in ProgramArguments
+- Check logs for errors
