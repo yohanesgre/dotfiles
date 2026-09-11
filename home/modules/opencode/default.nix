@@ -11,6 +11,8 @@
   xdg.configFile."opencode/CONFIGURATION.md".source = ../../../config/opencode/CONFIGURATION.md;
   xdg.configFile."opencode/agents".source = ../../../config/opencode/agents;
   xdg.configFile."opencode/agents".recursive = true;
+  xdg.configFile."opencode/commands".source = ../../../config/opencode/commands;
+  xdg.configFile."opencode/commands".recursive = true;
 
   # stdenv.cc.cc.lib kept so `LD_LIBRARY_PATH=/nix/store/.../lib:$LD_LIBRARY_PATH opencode` works for sharp/image tool.
   # DO NOT set home.sessionVariables.LD_LIBRARY_PATH globally — breaks KDE (libstdc++ mismatch).
