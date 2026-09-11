@@ -1,0 +1,2005 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settings — wireframe &amp; interaction spec — Fixture Docs</title>
+<style>
+/* ============================================================
+   Project source tokens — mirrored verbatim from assets/tokens.css.
+   assets/tokens.css is the authority and must never be edited.
+   This file is self-contained, so the values are copied here.
+   ============================================================ */
+:root {
+  --ink: #1b1f24;
+  --paper: #f7f5f0;
+  --cyan: #00a6b2;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --font-display: "Charter", Georgia, serif;
+  --font-body: "Avenir Next", system-ui, sans-serif;
+  --radius: 6px;
+
+  /* ---------- Derived aliases (NOT in tokens.css) ----------
+     Settings-page-local values derived from the source tokens.
+     Rationale and contrast in the Tokens section. Open item #2
+     asks whether these should be promoted to assets/tokens.css. */
+  --muted: color-mix(in srgb, var(--ink) 70%, var(--paper));        /* #5d5f61  text 5.8:1 */
+  --line: color-mix(in srgb, var(--ink) 16%, var(--paper));         /* #d4d3cf  decoration only */
+  --line-strong: color-mix(in srgb, var(--ink) 50%, var(--paper));  /* #898a8a  control borders 3.2:1 */
+  --line-hover: color-mix(in srgb, var(--ink) 68%, var(--paper));   /* #616365 */
+  --wash: color-mix(in srgb, var(--ink) 6%, var(--paper));          /* #eae8e4 */
+  --wash-strong: color-mix(in srgb, var(--ink) 14%, var(--paper));  /* #d8d7d3 */
+  --cyan-ink: color-mix(in srgb, var(--cyan) 88%, var(--ink));      /* #0396a1  fill, ink text 4.6:1 */
+  --cyan-ink-hover: color-mix(in srgb, var(--cyan) 96%, var(--ink));/* #01a4af  ink text 5.3:1 */
+  --cyan-ink-active: color-mix(in srgb, var(--cyan) 90%, var(--ink));/* #0598a3 ink text 4.8:1 */
+  --danger: #b42318;                                                /* danger text 6.0:1 */
+  --danger-hover: color-mix(in srgb, var(--danger) 88%, var(--ink));/* #a22319 */
+  --danger-wash: color-mix(in srgb, var(--danger) 8%, var(--paper));/* #f2e4df, text 5.3:1 */
+  --focus: var(--ink);                                              /* focus ring 15.1:1 */
+  --radius-sm: 3px;
+
+  /* Type scale (derived; tokens define families, not sizes) */
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-h1: 28px;
+
+  /* Motion (derived) */
+  --dur-1: 120ms;
+  --dur-2: 160ms;
+  --dur-3: 200ms;
+  --ease-snap: cubic-bezier(.2, .8, .2, 1);
+  --ease-out: ease-out;
+
+  /* Annotation mono stack (design sheet only, local fonts) */
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.desktop { --text-h1: 32px; }
+
+/* ============================================================
+   Design sheet chrome
+   ============================================================ */
+* { box-sizing: border-box; }
+body.sheet {
+  margin: 0;
+  background: var(--wash);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.sheet-wrap { max-width: 1500px; margin: 0 auto; padding: 32px 24px 120px; }
+.eyebrow { margin: 0 0 8px; font-family: var(--mono); font-size: var(--text-xs); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+h1.sheet-title { margin: 0 0 16px; font-family: var(--font-display); font-size: 34px; line-height: 1.15; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0 0 16px; padding: 0; font-size: var(--text-sm); }
+.meta div { display: flex; gap: 8px; }
+.meta dt { font-weight: 600; }
+.meta dd { margin: 0; color: var(--muted); }
+.scope { max-width: 90ch; margin: 0; padding: 12px 16px; border-left: 3px solid var(--cyan); background: var(--paper); border-radius: 0 var(--radius) var(--radius) 0; }
+.sheet-head { border-bottom: 2px solid var(--ink); padding-bottom: 24px; margin-bottom: 8px; }
+.toc { margin: 24px 0 40px; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: var(--text-sm); }
+.toc a { color: var(--ink); text-decoration-color: var(--cyan); text-underline-offset: 3px; }
+.spec { margin: 0 0 48px; }
+.spec > h2 { font-family: var(--font-display); font-size: 22px; margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--line); }
+.spec h3 { font-size: var(--text-base); margin: 24px 0 8px; }
+.spec p, .spec li { max-width: 95ch; }
+.spec ul { margin: 8px 0; padding-left: 20px; }
+.spec li { margin: 4px 0; }
+code { font-family: var(--mono); font-size: .82em; background: var(--wash); padding: 1px 5px; border-radius: var(--radius-sm); }
+table.spec-table { width: 100%; border-collapse: collapse; font-size: var(--text-sm); margin: 8px 0 16px; background: var(--paper); }
+.spec-table th, .spec-table td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.spec-table th { background: var(--wash); font-weight: 600; }
+.spec-table td:first-child { white-space: nowrap; }
+.note { font-size: var(--text-sm); color: var(--muted); }
+
+/* Panels */
+.panel { margin: 0 0 48px; }
+.panel figcaption { margin: 0 0 8px; font-size: var(--text-sm); }
+.panel-no { display: inline-block; font-family: var(--mono); font-weight: 700; background: var(--ink); color: var(--paper); padding: 1px 6px; border-radius: var(--radius-sm); margin-right: 8px; }
+.panel-note { display: block; color: var(--muted); margin-top: 4px; }
+.frame-scroll { overflow-x: auto; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--paper); }
+.frame { min-width: 1280px; }
+.frame-m { min-width: 375px; max-width: 375px; }
+.frame-m .site { width: 375px; }
+.strip { margin: 0 0 12px; padding: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); }
+.strip-label { display: block; font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); margin-bottom: 8px; }
+.strip-measure { max-width: 720px; }
+.strip-m { max-width: 343px; }
+.measure { max-width: 720px; }
+.flow { margin-top: 8px; }
+.flow h3 { font-size: var(--text-sm); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 16px 0 8px; }
+.flow-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 0 0 12px; }
+.fnode { display: inline-flex; flex-direction: column; gap: 2px; padding: 6px 10px; background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius-sm); font-size: var(--text-sm); }
+.fnode small { font-size: 11px; color: var(--muted); }
+.fnode.is-state { background: var(--wash); border-style: dashed; }
+.fnode.is-void { background: var(--danger-wash); border-color: var(--danger); }
+.farr { color: var(--muted); }
+.specimens { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+.specimen { display: grid; gap: 8px; align-content: start; justify-items: start; padding: 16px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); }
+.specimen .input, .specimen .seg, .specimen .savebar, .specimen .banner, .specimen .toast { justify-self: stretch; }
+.specimen .savebar { position: static; }
+.spec-label { font-family: var(--mono); font-size: var(--text-xs); color: var(--muted); }
+
+/* ============================================================
+   The product surface (settings page), scoped to .site
+   ============================================================ */
+.site { position: relative; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: var(--text-base); line-height: 1.5; }
+.site * { box-sizing: border-box; }
+.site-head { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 0 16px; min-height: 56px; border-bottom: 1px solid var(--line); }
+.site-nav { margin-left: auto; display: flex; flex-wrap: wrap; gap: 0 16px; }
+.site-nav a { color: var(--ink); text-decoration: none; font-size: 15px; padding: 12px 0; border-bottom: 2px solid transparent; }
+.site-nav a:hover { text-decoration: underline; text-decoration-color: var(--cyan); text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.site-nav a[aria-current="page"] { border-bottom-color: var(--cyan); font-weight: 600; }
+.brand { font-family: var(--font-display); font-weight: 700; font-size: var(--text-lg); color: var(--ink); text-decoration: none; }
+.site-main { padding: 24px 16px 96px; }
+.page { max-width: 720px; margin: 0 auto; }
+.page > h1 { font-family: var(--font-display); font-size: var(--text-h1); line-height: 1.2; margin: 0 0 8px; }
+.intro { margin: 0 0 24px; color: var(--muted); }
+.form { display: grid; gap: 16px; }
+
+.card { border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; display: grid; gap: 16px; }
+.card-head { display: grid; gap: 8px; }
+.card h2 { font-family: var(--font-display); font-size: var(--text-lg); margin: 0; line-height: 1.3; }
+.card-desc { margin: 0; color: var(--muted); font-size: var(--text-sm); }
+
+.field { display: grid; gap: 8px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.field-label { font-size: 14px; font-weight: 600; padding: 0; }
+.field-control { display: grid; gap: 8px; min-width: 0; }
+.help { margin: 0; color: var(--muted); font-size: var(--text-sm); line-height: 1.45; }
+
+.input { width: 100%; height: 44px; padding: 0 12px; font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius); }
+.input:hover, .input.is-hover { border-color: var(--line-hover); }
+.input:focus-visible, .input.is-focus { outline: 2px solid var(--focus); outline-offset: 1px; }
+.input.is-error { border-color: var(--danger); }
+.input:disabled { background: var(--wash); color: var(--muted); border-color: var(--line); cursor: not-allowed; }
+.error-text { display: flex; gap: 8px; align-items: flex-start; color: var(--danger); font-size: var(--text-sm); line-height: 1.45; }
+.error-text svg { flex: none; margin-top: 2px; }
+
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: var(--radius); overflow: hidden; }
+.seg-opt { display: inline-flex; cursor: pointer; }
+.seg-opt input { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+.seg-opt span { display: inline-flex; align-items: center; height: 36px; padding: 0 12px; font-size: 15px; border-right: 1px solid var(--line-strong); }
+.seg-opt:last-child span { border-right: 0; }
+.seg-opt input:checked + span { background: var(--cyan-ink); color: var(--ink); font-weight: 600; }
+.seg-opt input:focus-visible + span { outline: 2px solid var(--focus); outline-offset: -2px; }
+.seg.is-focus .seg-opt:nth-child(2) span { outline: 2px solid var(--focus); outline-offset: -2px; }
+.seg.is-disabled { opacity: 1; }
+.seg.is-disabled span { color: var(--muted); background: var(--wash); cursor: not-allowed; }
+.seg.is-disabled input:checked + span { background: var(--wash-strong); }
+
+.switch { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; cursor: pointer; min-height: 44px; }
+.switch input { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+.switch-text { display: grid; gap: 2px; }
+.switch-title { font-weight: 600; font-size: 15px; }
+.switch-track { position: relative; flex: none; width: 40px; height: 24px; margin-top: 4px; border-radius: 999px; background: var(--line-strong); transition: background var(--dur-1) var(--ease-out); }
+.switch-track::after { content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%; background: var(--paper); transition: transform var(--dur-1) var(--ease-out); }
+.switch input:checked ~ .switch-track { background: var(--cyan-ink); }
+.switch input:checked ~ .switch-track::after { transform: translateX(16px); }
+.switch input:focus-visible ~ .switch-track { outline: 2px solid var(--focus); outline-offset: 2px; }
+.switch.is-focus .switch-track { outline: 2px solid var(--focus); outline-offset: 2px; }
+.switch input:disabled ~ .switch-track { background: var(--line); cursor: not-allowed; }
+.switch input:disabled ~ .switch-text { color: var(--muted); }
+.switch.is-static { cursor: default; }
+.static-value { display: inline-block; min-height: 24px; font-size: var(--text-base); }
+.static-state { font-weight: 600; margin-top: 4px; }
+
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 12px; font: inherit; font-size: 15px; font-weight: 600; border-radius: var(--radius); border: 1px solid transparent; cursor: pointer; }
+.btn.primary { background: var(--cyan-ink); color: var(--ink); border-color: var(--cyan-ink); }
+.btn.primary:hover, .btn.primary.is-hover { background: var(--cyan-ink-hover); border-color: var(--cyan-ink-hover); }
+.btn.primary:active, .btn.primary.is-active { background: var(--cyan-ink-active); border-color: var(--cyan-ink-active); }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line-strong); }
+.btn.ghost:hover, .btn.ghost.is-hover { background: var(--wash); }
+.btn.ghost:active, .btn.ghost.is-active { background: var(--wash-strong); }
+.btn.danger { background: var(--danger); color: var(--paper); border-color: var(--danger); }
+.btn.danger:hover, .btn.danger.is-hover { background: var(--danger-hover); border-color: var(--danger-hover); }
+.btn:focus-visible, .btn.is-focus { outline: 2px solid var(--focus); outline-offset: 2px; }
+.btn:disabled, .btn.is-disabled { background: var(--wash); color: var(--muted); border-color: var(--line); cursor: not-allowed; }
+.btn.is-loading { pointer-events: none; cursor: progress; }
+.btn.primary.is-loading, .btn.primary.is-loading:disabled { background: var(--cyan-ink); color: var(--ink); border-color: var(--cyan-ink); }
+.spinner { width: 14px; height: 14px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--ink) 30%, transparent); border-top-color: var(--ink); animation: spin 800ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.savebar { position: sticky; bottom: 16px; z-index: 2; background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 12px 16px; }
+.savebar-inner { display: grid; gap: 8px; }
+.save-status { margin: 0; font-size: 15px; }
+.savebar.is-dirty .save-status { font-weight: 600; }
+.savebar.is-error { border-color: var(--danger); }
+.save-actions { display: flex; gap: 8px; }
+.save-actions .btn { flex: 0 0 auto; }
+.savebar.is-dirty .save-actions .btn.primary { flex: 1 1 auto; }
+
+.banner { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 16px; border: 1px solid var(--line-strong); border-left-width: 3px; border-radius: var(--radius); background: var(--paper); }
+.banner.is-error { border-color: var(--danger); background: var(--danger-wash); }
+.banner.is-info { border-left-color: var(--cyan-ink); }
+.banner.is-error { border-left-color: var(--danger); }
+.banner-title { margin: 0; font-weight: 600; }
+.banner-body { margin: 0; font-size: var(--text-sm); color: var(--muted); }
+.banner .btn { min-height: 36px; }
+.banner.is-error .icon { color: var(--danger); }
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.icon { flex: none; margin-top: 2px; }
+
+.card.is-failed { border-color: var(--line-strong); }
+.card-error { display: grid; gap: 8px; justify-items: start; padding: 12px; border-radius: var(--radius); background: var(--danger-wash); }
+.card-error-title { margin: 0; font-weight: 600; color: var(--danger); }
+
+.toast { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; max-width: 420px; padding: 12px 16px; background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius); }
+.toast p { margin: 0; font-size: 15px; }
+.toast-badge { display: grid; place-items: center; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; background: var(--cyan-ink); color: var(--ink); }
+.toast-close { border: 0; background: transparent; font-size: 18px; line-height: 1; color: var(--muted); cursor: pointer; padding: 2px 4px; }
+
+.state-block { display: grid; gap: 16px; justify-items: start; max-width: 60ch; padding: 24px 0; }
+.state-block h2 { font-family: var(--font-display); font-size: 22px; margin: 0; }
+.state-block p { margin: 0; color: var(--muted); }
+
+.sk { background: var(--wash-strong); border-radius: var(--radius-sm); }
+.sk-h1 { width: 180px; height: 32px; margin-bottom: 12px; }
+.sk-sub { width: 320px; max-width: 100%; height: 14px; margin-bottom: 24px; }
+.sk-title { width: 140px; height: 18px; }
+.sk-field { width: 60%; min-width: 180px; height: 40px; }
+.sk-line { width: 100%; height: 12px; }
+.sk-line.short { width: 55%; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+
+.overlay { position: absolute; inset: 0; z-index: 3; }
+.backdrop { position: absolute; inset: 0; background: color-mix(in srgb, var(--ink) 45%, transparent); }
+.dialog { position: absolute; left: 50%; top: 96px; transform: translateX(-50%); width: min(440px, calc(100% - 32px)); display: grid; gap: 16px; padding: 24px; background: var(--paper); border: 1px solid var(--line-strong); border-radius: var(--radius); }
+.dialog-title { margin: 0; font-family: var(--font-display); font-size: 22px; }
+.dialog-body { margin: 0; font-size: 15px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* Forced-state helpers used by specimen strips */
+.input.is-readonly-static { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 0; height: 24px; }
+.transition-off, .transition-off * { transition: none !important; animation: none !important; }
+
+/* Panels rendered at 1280 use the desktop rules; the base rules
+   above are mobile-first, these upgrade at the same 640px breakpoint
+   implemented by the product. Fixed-width frames need explicit media
+   emulation, so the .desktop class mirrors the >=640px branch. */
+.desktop .site-main { padding: 24px 24px 96px; }
+.desktop .site-head { padding: 0 24px; min-height: 64px; }
+.desktop .card { padding: 24px; }
+.desktop .field { grid-template-columns: 240px minmax(0, 1fr); gap: 16px; }
+.desktop .field-label { padding-top: 10px; }
+.desktop .input { height: 40px; }
+.desktop .savebar-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.desktop .save-actions .btn { min-height: 40px; }
+.desktop .btn { min-height: 40px; }
+.desktop .switch { min-height: 24px; }
+.desktop .site-nav a { padding: 12px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; }
+}
+</style>
+</head>
+<body class="sheet">
+<div class="sheet-wrap">
+
+<header class="sheet-head">
+  <p class="eyebrow">Fixture Docs · Design artifact · v1.0</p>
+  <h1 class="sheet-title">Settings — wireframe &amp; interaction spec</h1>
+  <dl class="meta">
+    <div><dt>Date</dt><dd>2026-09-11</dd></div>
+    <div><dt>Status</dt><dd>Ready for implementation</dd></div>
+    <div><dt>Route</dt><dd>/settings (new page)</dd></div>
+    <div><dt>Source tokens</dt><dd>assets/tokens.css (mirrored, never edited)</dd></div>
+    <div><dt>Skill</dt><dd>designer → design-graph</dd></div>
+  </dl>
+  <p class="scope"><strong>Design artifact only.</strong> The real page belongs in <code>docs/settings.html</code> and is <em>not</em> built here. The implementer builds from this sheet verbatim; every value, string, and state below is part of the contract. Panels are static renders — they show what the spec produces, not an interactive prototype.</p>
+</header>
+
+<nav aria-label="Sheet contents">
+  <ul class="toc">
+    <li><a href="#tokens">Tokens</a></li>
+    <li><a href="#flow">Flow graph (C)</a></li>
+    <li><a href="#voids">Void states (V)</a></li>
+    <li><a href="#needs">Needs (N)</a></li>
+    <li><a href="#layout">Layout</a></li>
+    <li><a href="#motion">Motion</a></li>
+    <li><a href="#a11y">Accessibility</a></li>
+    <li><a href="#copy">Copy deck</a></li>
+    <li><a href="#panels">Panels 01–13</a></li>
+    <li><a href="#components">Component states</a></li>
+    <li><a href="#contract">Handoff contract</a></li>
+    <li><a href="#open">Open items</a></li>
+  </ul>
+</nav>
+
+<!-- ============================================================ -->
+<section class="spec" id="tokens">
+  <h2>Tokens</h2>
+  <p>The source of truth is <code>assets/tokens.css</code> — variables only, never edited. This sheet mirrors it verbatim so the wireframe is self-contained, then derives the few semantic values the raw set does not define. Every value below is exact; nothing is implicit.</p>
+
+  <h3>Source tokens (mirrored from assets/tokens.css)</h3>
+  <table class="spec-table">
+    <thead><tr><th>Token</th><th>Value</th><th>Used for here</th></tr></thead>
+    <tbody>
+      <tr><td><code>--ink</code></td><td><code>#1b1f24</code></td><td>All text, control borders (via mixes), focus ring</td></tr>
+      <tr><td><code>--paper</code></td><td><code>#f7f5f0</code></td><td>Page and surface background</td></tr>
+      <tr><td><code>--cyan</code></td><td><code>#00a6b2</code></td><td>Brand accent. Never text on paper (2.7:1); fills only, with ink glyphs (5.6:1)</td></tr>
+      <tr><td><code>--space-2</code></td><td><code>8px</code></td><td>Minimum step: label→control, action gaps</td></tr>
+      <tr><td><code>--space-3</code></td><td><code>12px</code></td><td>Control padding, banner/toast padding</td></tr>
+      <tr><td><code>--space-4</code></td><td><code>16px</code></td><td>Card gap, grid gap, page padding base</td></tr>
+      <tr><td><code>--font-display</code></td><td><code>"Charter", Georgia, serif</code></td><td>h1, h2, brand</td></tr>
+      <tr><td><code>--font-body</code></td><td><code>"Avenir Next", system-ui, sans-serif</code></td><td>Everything else</td></tr>
+      <tr><td><code>--radius</code></td><td><code>6px</code></td><td>Controls, cards, save bar, toast, dialog</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Derived aliases (defined in this artifact, not in tokens.css)</h3>
+  <p>Tokens carry no muted/line/danger semantics, and no sizes. These aliases are computed from the source tokens with <code>color-mix(in srgb, …)</code>. They are local to the settings page until Open item&nbsp;#2 is decided. Approximate hex values are for review only — ship the <code>color-mix()</code> expressions.</p>
+  <table class="spec-table">
+    <thead><tr><th>Alias</th><th>Value</th><th>Purpose / contrast on <code>--paper</code> (#f7f5f0)</th></tr></thead>
+    <tbody>
+      <tr><td><code>--muted</code></td><td><code>color-mix(in srgb, var(--ink) 70%, var(--paper))</code> ≈ #5d5f61</td><td>Secondary text, help copy. 5.8:1 — passes AA</td></tr>
+      <tr><td><code>--line</code></td><td><code>color-mix(in srgb, var(--ink) 16%, var(--paper))</code> ≈ #d4d3cf</td><td>Hairlines and card borders. Decorative only, 1.4:1</td></tr>
+      <tr><td><code>--line-strong</code></td><td><code>color-mix(in srgb, var(--ink) 50%, var(--paper))</code> ≈ #898a8a</td><td>Control borders, bar borders. 3.2:1 — passes non-text</td></tr>
+      <tr><td><code>--line-hover</code></td><td><code>color-mix(in srgb, var(--ink) 68%, var(--paper))</code> ≈ #616365</td><td>Hover border on inputs</td></tr>
+      <tr><td><code>--wash</code></td><td><code>color-mix(in srgb, var(--ink) 6%, var(--paper))</code> ≈ #eae8e4</td><td>Hover surface (ghost buttons, disabled fills)</td></tr>
+      <tr><td><code>--wash-strong</code></td><td><code>color-mix(in srgb, var(--ink) 14%, var(--paper))</code> ≈ #d8d7d3</td><td>Active surface, skeleton blocks</td></tr>
+      <tr><td><code>--cyan-ink</code></td><td><code>color-mix(in srgb, var(--cyan) 88%, var(--ink))</code> ≈ #0396a1</td><td>Primary fill, switch on, selected segment. Boundary 3.3:1; ink text on it 4.6:1</td></tr>
+      <tr><td><code>--cyan-ink-hover</code></td><td><code>color-mix(in srgb, var(--cyan) 96%, var(--ink))</code> ≈ #01a4af</td><td>Primary hover. Ink text 5.3:1</td></tr>
+      <tr><td><code>--cyan-ink-active</code></td><td><code>color-mix(in srgb, var(--cyan) 90%, var(--ink))</code> ≈ #0598a3</td><td>Primary pressed. Ink text 4.8:1</td></tr>
+      <tr><td><code>--danger</code></td><td><code>#b42318</code></td><td>Error text/borders/fill. 6.0:1; paper on it 6.0:1</td></tr>
+      <tr><td><code>--danger-wash</code></td><td><code>color-mix(in srgb, var(--danger) 8%, var(--paper))</code> ≈ #f2e4df</td><td>Error banner/section background. Danger text on it 5.3:1</td></tr>
+      <tr><td><code>--focus</code></td><td><code>var(--ink)</code></td><td>Focus ring, 2px, offset 1–2px. 15.1:1. Cyan would be 2.7:1 — too low for a focus indicator</td></tr>
+      <tr><td><code>--radius-sm</code></td><td><code>3px</code></td><td>Skeleton bars, inline code marks</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Type scale and spacing (derived)</h3>
+  <ul>
+    <li>Base body/controls <code>16px</code>, line-height <code>1.5</code>. Help and card copy <code>13px</code> / <code>1.45</code>. Field labels <code>14px</code> / 600. Card h2 <code>18px</code> / 1.3. Page h1 <code>28px</code> mobile, <code>32px</code> ≥640px, line-height 1.2.</li>
+    <li>Spacing uses only the token steps (8/12/16) and their compositions: 24 = 16+8, 32 = 2×16, 48 = 3×16. No other values appear in this design.</li>
+    <li>No shadows anywhere. Structure comes from 1px borders; elevation is not part of this system.</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="flow">
+  <h2>Flow graph — C</h2>
+  <p><strong>Job:</strong> adjust reading and account preferences, and know exactly when they are saved. <strong>Cardinality: detail.</strong> Exactly one settings record per account; sections and fields are fixed units — no collection, no pagination, no live values. That is why this page has no list/refresh states; it has load, save, and permission states instead.</p>
+
+  <div class="flow">
+    <h3>Happy path</h3>
+    <div class="flow-row">
+      <span class="fnode">Docs nav</span><span class="farr">→</span>
+      <span class="fnode">Settings · load<small>needs: session + settings data</small></span><span class="farr">→</span>
+      <span class="fnode">Form · idle</span><span class="farr">→</span>
+      <span class="fnode">Edit field</span><span class="farr">→</span>
+      <span class="fnode is-state">Dirty</span><span class="farr">→</span>
+      <span class="fnode">Save</span><span class="farr">→</span>
+      <span class="fnode is-state">Saving</span><span class="farr">→</span>
+      <span class="fnode is-state">Saved</span><span class="farr">→</span>
+      <span class="fnode">Form · idle</span>
+    </div>
+    <h3>Branches</h3>
+    <div class="flow-row">
+      <span class="fnode is-state">Saving</span><span class="farr">→</span>
+      <span class="fnode is-void">Save failed</span><span class="farr">→</span>
+      <span class="fnode is-state">Dirty · edits kept</span><span class="farr">→</span>
+      <span class="fnode">Try again</span><span class="farr">→</span>
+      <span class="fnode is-state">Saving</span>
+    </div>
+    <div class="flow-row">
+      <span class="fnode">Settings · load</span><span class="farr">→</span>
+      <span class="fnode is-void">Load failed</span><span class="farr">→</span>
+      <span class="fnode">Try again</span><span class="farr">→</span>
+      <span class="fnode">Settings · load</span>
+    </div>
+    <div class="flow-row">
+      <span class="fnode is-state">Dirty</span><span class="farr">→</span>
+      <span class="fnode">Discard changes</span><span class="farr">→</span>
+      <span class="fnode">Form · idle · snapshot restored</span>
+    </div>
+    <div class="flow-row">
+      <span class="fnode">Form · idle</span><span class="farr">→</span>
+      <span class="fnode">Reset preferences…</span><span class="farr">→</span>
+      <span class="fnode">Confirm dialog</span><span class="farr">→</span>
+      <span class="fnode is-state">Staged defaults · dirty</span><span class="farr">→</span>
+      <span class="fnode">Save</span>
+    </div>
+    <div class="flow-row">
+      <span class="fnode">Edit field</span><span class="farr">→</span>
+      <span class="fnode">Blur</span><span class="farr">→</span>
+      <span class="fnode is-void">Invalid</span><span class="farr">→</span>
+      <span class="fnode">Inline error · fix</span><span class="farr">→</span>
+      <span class="fnode is-state">Dirty</span>
+    </div>
+    <p class="note">Submit with an invalid field: focus moves to the first invalid field; no request is sent. Submit with an empty diff is impossible — Save is disabled while clean.</p>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="voids">
+  <h2>Void states — V</h2>
+  <p>Every way content can be absent, each a designed surface. Empty is deliberately unreachable for a settings record — defaults always render as values — so it is not drawn; the honest absences are loading, partial, error, denied, plus field-level invalid.</p>
+  <table class="spec-table">
+    <thead><tr><th>Void</th><th>Trigger</th><th>Treatment</th><th>Panel</th></tr></thead>
+    <tbody>
+      <tr><td>Empty</td><td>Not reachable by design: a settings record always resolves to defaults</td><td>Defaults render as values; no empty illustration exists or is needed</td><td>01</td></tr>
+      <tr><td>Loading</td><td>Initial fetch in flight, longer than 150 ms</td><td>Skeleton blocks in the exact shape of the sections; nav and h1 remain; no save bar until resolved</td><td>06</td></tr>
+      <tr><td>Partial</td><td>One section's request fails, the rest succeed</td><td>That card shows an inline error with Retry; other cards stay usable; Save pauses with a reason</td><td>08</td></tr>
+      <tr><td>Error — load</td><td>The settings request rejects</td><td>Form replaced by a plain-language error block with Try again; page shell and h1 remain</td><td>07</td></tr>
+      <tr><td>Error — save</td><td>Save request rejects</td><td>Persistent banner above the save bar + Try again; edits stay in the form</td><td>05</td></tr>
+      <tr><td>Denied</td><td>Session has view-only access</td><td>Values render as static text; no controls, no save bar; one notice explains why</td><td>09</td></tr>
+      <tr><td>Invalid</td><td>Field fails its constraint on blur or submit</td><td>Inline error at the field; focus first invalid on submit; Save stays enabled</td><td>05</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="needs">
+  <h2>Needs — N</h2>
+  <table class="spec-table">
+    <thead><tr><th>Need</th><th>On</th><th>When unsatisfied</th></tr></thead>
+    <tbody>
+      <tr><td>Data: settings record</td><td>Rendering the form</td><td>Load error (07); never a blank form</td></tr>
+      <tr><td>Permission: edit</td><td>Controls and save bar</td><td>View-only (09): affordances are absent, not disabled</td></tr>
+      <tr><td>Network</td><td>Save</td><td>Save error keeps edits in place (05)</td></tr>
+      <tr><td>Section data</td><td>Each card</td><td>Partial: only that card fails, Save pauses (08)</td></tr>
+      <tr><td>Viewport ≥ 640 px</td><td>Two-column field rows; bar layout</td><td>Below 640 the graph re-routes to a stacked form and stacked bar — it never squeezes the two-column version</td></tr>
+      <tr><td>Prior step</td><td>None</td><td>Page is directly addressable; no wizard</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="layout">
+  <h2>Layout — exact values</h2>
+  <table class="spec-table">
+    <thead><tr><th>Property</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Page measure</td><td>720 px max, centered; shell header is full width</td></tr>
+      <tr><td>Page padding</td><td>16 px &lt;640; 24 px ≥640; 32 px ≥1024 (horizontal). Top 24 px; bottom 96 px so the sticky bar never covers the last card</td></tr>
+      <tr><td>Header</td><td>min-height 56 px &lt;640 / 64 px ≥640; brand + nav; nav links get aria-current="page" on Settings; nav link tap target ≥44 px tall</td></tr>
+      <tr><td>Cards</td><td>16 px gap between cards; padding 16 px &lt;640 / 24 px ≥640; border 1 px <code>--line</code>; radius <code>--radius</code>; internal gap 16 px; card-head gap 8 px</td></tr>
+      <tr><td>Field rows</td><td>&lt;640: stacked, label→control 8 px. ≥640: <code>240px minmax(0,1fr)</code>, gap 16 px; label top-padding 10 px to align with the first control line</td></tr>
+      <tr><td>Controls</td><td>height 44 px &lt;640 / 40 px ≥640; padding-inline 12 px; border 1 px <code>--line-strong</code>; radius <code>--radius</code>; font 16 px</td></tr>
+      <tr><td>Switch</td><td>track 40×24 px, radius 999; thumb 18 px at 3 px inset; travel 16 px; row min-height 44 px (whole row is the label)</td></tr>
+      <tr><td>Segmented control</td><td>36 px tall; option padding-inline 12 px; 1 px dividers <code>--line-strong</code>; selected fill <code>--cyan-ink</code> with ink text</td></tr>
+      <tr><td>Save bar</td><td>sticky, bottom 16 px; radius <code>--radius</code>; border 1 px <code>--line-strong</code>; padding 12 px 16 px; ≥640 flex space-between; &lt;640 stacked (status line above actions). Buttons 40/44 px</td></tr>
+      <tr><td>Toast</td><td>max-width 420 px; pinned bottom-right, 16 px from the viewport edge, ~88 px up (above the save bar); padding 12 px 16 px</td></tr>
+      <tr><td>Dialog</td><td>max-width 440 px; top 96 px desktop / 32 px mobile; side margins 16 px; padding 24 px; backdrop <code>color-mix(in srgb, var(--ink) 45%, transparent)</code> over the page</td></tr>
+      <tr><td>Breakpoints</td><td>640 px = all layout switches; 1024 px = padding only. Measure stays 720 px above both</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="motion">
+  <h2>Motion — durations, easings, triggers</h2>
+  <p>Motion wraps feedback; it never carries content. Removing every animation must leave the interface fully learnable — which it does. Reduced motion honors both the OS setting and the in-app “Reduce motion” switch.</p>
+  <table class="spec-table">
+    <thead><tr><th>Element</th><th>Trigger</th><th>Animation</th><th>Duration</th><th>Easing</th><th>Reduced motion</th></tr></thead>
+    <tbody>
+      <tr><td>Buttons, inputs, links</td><td>hover / active</td><td>background and border color</td><td>120 ms</td><td>ease-out</td><td>Same (color only; no movement)</td></tr>
+      <tr><td>Save bar</td><td>first becomes visible (after load)</td><td>opacity 0→1 and translateY 4→0</td><td>160 ms</td><td><code>cubic-bezier(.2,.8,.2,1)</code></td><td>Opacity only, 0 ms</td></tr>
+      <tr><td>Switch</td><td>toggle</td><td>track fill; thumb translateX</td><td>120 ms</td><td>ease-out</td><td>State jumps, 0 ms</td></tr>
+      <tr><td>Spinner (saving)</td><td>save in flight</td><td>rotate 360°</td><td>800 ms</td><td>linear, infinite</td><td>Spinner hidden; “Saving…” text remains</td></tr>
+      <tr><td>Toast</td><td>save succeeds</td><td>enter: opacity 0→1 + translateY 8→0; exit: opacity 1→0</td><td>200 ms enter / 120 ms exit</td><td>ease-out</td><td>Opacity only, 0 ms</td></tr>
+      <tr><td>Dialog</td><td>open / close</td><td>backdrop opacity; panel opacity + scale .98→1</td><td>200 ms</td><td>ease-out</td><td>Opacity only, 0 ms</td></tr>
+      <tr><td>Skeleton</td><td>loading &gt;150 ms</td><td>optional opacity pulse .6↔1</td><td>1.6 s</td><td>ease-in-out, infinite</td><td>Static blocks, no pulse</td></tr>
+    </tbody>
+  </table>
+  <p class="note">No transitions on theme-free content. No transform on buttons. No parallax, no auto-playing motion anywhere on this page.</p>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="a11y">
+  <h2>Accessibility</h2>
+  <ul>
+    <li><strong>Contrast:</strong> ink/paper 15.1:1; muted/paper 5.8:1; danger/paper 6.0:1; danger on danger-wash 5.3:1; ink on cyan-ink 4.6:1 (hover 5.3, active 4.8); control borders 3.2:1. Raw <code>--cyan</code> is 2.7:1 on paper — never text, never the only indicator; use it as a fill behind ink glyphs or as a 2px accent paired with text. Focus ring is ink (15.1:1) — cyan fails the 3:1 focus-appearance bar.</li>
+    <li><strong>Focus visible:</strong> 2 px solid <code>--focus</code>, offset 1–2 px on every interactive element. Focus order: shell nav → h1 → cards top to bottom → save bar actions last. The dialog traps focus, Esc and Cancel close it, and focus returns to the “Reset preferences…” trigger.</li>
+    <li><strong>Labels:</strong> every control has a visible label — text inputs wrap their label element; segmented and radio-style groups use <code>fieldset</code> + <code>legend</code> or an equivalent accessible group name; switches are checkboxes with <code>role="switch"</code>, toggled by Space and by clicking anywhere in the row.</li>
+    <li><strong>Errors:</strong> inline text at the field, <code>aria-invalid</code> on the control, error text referenced with <code>aria-describedby</code>. Color is never the only signal — every error carries an icon and a sentence. On submit with errors, focus moves to the first invalid field.</li>
+    <li><strong>Announcements:</strong> save status text is <code>role="status"</code> (polite); save-failure banner and load error are announced as alerts; the saved toast is <code>role="status"</code> and is dismissible.</li>
+    <li><strong>Targets:</strong> ≥44 px on mobile for every control and nav link; ≥40 px on desktop; the switch row is the full-width label, not just the 40×24 track.</li>
+    <li><strong>Headings:</strong> one h1 (“Settings”), one h2 per card, no skipped levels. No content is conveyed by position or color alone.</li>
+    <li><strong>Viewport:</strong> no horizontal scroll at 320 px. Long values scroll inside their input, never push the layout wide.</li>
+    <li><strong>Dirty guard:</strong> leaving with unsaved changes triggers the browser’s standard unload confirmation; the save status announces “You have unsaved changes.”</li>
+  </ul>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="copy">
+  <h2>Copy deck — real strings</h2>
+  <p>Use these exact strings. Sentence case; no exclamation marks; contractions are fine.</p>
+  <table class="spec-table">
+    <thead><tr><th>Where</th><th>String</th></tr></thead>
+    <tbody>
+      <tr><td>Page h1</td><td>Settings</td></tr>
+      <tr><td>Page intro</td><td>Preferences for how you read the Fixture Docs. Changes save to your account.</td></tr>
+      <tr><td>Nav current link</td><td>Settings</td></tr>
+      <tr><td>Profile card</td><td>Profile / How you appear on comments and suggestions.</td></tr>
+      <tr><td>Display name label</td><td>Display name</td></tr>
+      <tr><td>Display name help</td><td>Shown on comments and suggestions.</td></tr>
+      <tr><td>Email label</td><td>Email</td></tr>
+      <tr><td>Email help</td><td>Used for docs notifications only. Never shown publicly.</td></tr>
+      <tr><td>Email error</td><td>Enter an email address like name@example.com.</td></tr>
+      <tr><td>Appearance card</td><td>Appearance / Applies as soon as you change it; saved when you choose Save.</td></tr>
+      <tr><td>Text size label</td><td>Text size</td></tr>
+      <tr><td>Text size options</td><td>Compact · Comfortable · Large</td></tr>
+      <tr><td>Text size help</td><td>Sets the base size for guide and reference pages.</td></tr>
+      <tr><td>Reduce motion label</td><td>Reduce motion</td></tr>
+      <tr><td>Reduce motion help</td><td>Minimizes animation across the site.</td></tr>
+      <tr><td>Reading card</td><td>Reading / How guide and reference pages render for you.</td></tr>
+      <tr><td>Line numbers label</td><td>Code line numbers</td></tr>
+      <tr><td>Line numbers help</td><td>Show numbers beside code samples.</td></tr>
+      <tr><td>Wrap label</td><td>Wrap long code lines</td></tr>
+      <tr><td>Wrap help</td><td>Off scrolls long lines; on wraps them at the pane edge.</td></tr>
+      <tr><td>Notifications card</td><td>Notifications / Email from Fixture Docs. Security and account mail still sends either way.</td></tr>
+      <tr><td>Digest label</td><td>Weekly digest</td></tr>
+      <tr><td>Digest help</td><td>A summary of new and updated pages, every Monday.</td></tr>
+      <tr><td>Release notes label</td><td>Release notes</td></tr>
+      <tr><td>Release notes help</td><td>Product news, no more than once a month.</td></tr>
+      <tr><td>Reset card</td><td>Reset / Restore the defaults on this page. Your profile is not affected.</td></tr>
+      <tr><td>Reset label</td><td>Default preferences</td></tr>
+      <tr><td>Reset button</td><td>Reset preferences…</td></tr>
+      <tr><td>Save bar — idle</td><td>All changes saved.</td></tr>
+      <tr><td>Save bar — dirty</td><td>You have unsaved changes.</td></tr>
+      <tr><td>Save bar — saving</td><td>Saving changes…</td></tr>
+      <tr><td>Save bar — discarded</td><td>Changes discarded.</td></tr>
+      <tr><td>Save bar — partial</td><td>Some settings didn't load. Save is paused.</td></tr>
+      <tr><td>Buttons</td><td>Discard changes · Save changes · Saving… · Try again · Retry · Cancel · Reset preferences</td></tr>
+      <tr><td>Saved toast</td><td>Settings saved.</td></tr>
+      <tr><td>Save failure banner</td><td>We couldn't save your changes. / Your edits are still here. Try again, or refresh the page if this keeps happening.</td></tr>
+      <tr><td>Load error</td><td>Settings didn't load. / We couldn't reach the settings service. Check your connection and try again.</td></tr>
+      <tr><td>Section error</td><td>This section didn't load. / Appearance preferences are unavailable right now.</td></tr>
+      <tr><td>View-only banner</td><td>View-only access / Ask a workspace admin if you need to change these settings.</td></tr>
+      <tr><td>Reset dialog</td><td>Reset preferences? / Restores the defaults for Appearance, Reading, and Notifications. Your profile and email are not changed.</td></tr>
+      <tr><td>Loading</td><td>Loading settings… (screen-reader only)</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="panels">
+  <h2>Panels 01–13</h2>
+  <p class="note">Each frame is rendered at its real width (1280 px desktop, 375 px mobile). Frames scroll horizontally where needed. Everything inside a bordered frame is the product; captions are the sheet.</p>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">01</span> Desktop 1280 · default<span class="panel-note">The baseline the implementer builds first. Nothing edited: the bar reads “All changes saved.” and both actions are disabled.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main">
+            <div class="page">
+              <h1>Settings</h1>
+              <p class="intro">Preferences for how you read the Fixture Docs. Changes save to your account.</p>
+              <form class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions.</p>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <input class="input" type="text" name="display_name" value="Ada Nakamura" autocomplete="nickname">
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Email</span>
+                    <span class="field-control">
+                      <input class="input" type="email" name="email" value="ada@example.com" autocomplete="email">
+                      <span class="help">Used for docs notifications only. Never shown publicly.</span>
+                    </span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Appearance</h2>
+                    <p class="card-desc">Applies as soon as you change it; saved when you choose Save.</p>
+                  </div>
+                  <fieldset class="field">
+                    <legend class="field-label">Text size</legend>
+                    <div class="field-control">
+                      <div class="seg">
+                        <label class="seg-opt"><input type="radio" name="text_size" value="compact"><span>Compact</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="comfortable" checked><span>Comfortable</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="large"><span>Large</span></label>
+                      </div>
+                      <p class="help">Sets the base size for guide and reference pages.</p>
+                    </div>
+                  </fieldset>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="reduce_motion">
+                    <span class="switch-text">
+                      <span class="switch-title">Reduce motion</span>
+                      <span class="help">Minimizes animation across the site.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reading</h2>
+                    <p class="card-desc">How guide and reference pages render for you.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="line_numbers" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Code line numbers</span>
+                      <span class="help">Show numbers beside code samples.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="wrap_code">
+                    <span class="switch-text">
+                      <span class="switch-title">Wrap long code lines</span>
+                      <span class="help">Off scrolls long lines; on wraps them at the pane edge.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Notifications</h2>
+                    <p class="card-desc">Email from Fixture Docs. Security and account mail still sends either way.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="weekly_digest" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Weekly digest</span>
+                      <span class="help">A summary of new and updated pages, every Monday.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="release_notes">
+                    <span class="switch-text">
+                      <span class="switch-title">Release notes</span>
+                      <span class="help">Product news, no more than once a month.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reset</h2>
+                    <p class="card-desc">Restore the defaults on this page. Your profile is not affected.</p>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Default preferences</span>
+                    <span class="field-control">
+                      <button class="btn ghost" type="button">Reset preferences…</button>
+                    </span>
+                  </div>
+                </section>
+
+                <div class="savebar">
+                  <div class="savebar-inner">
+                    <p class="save-status">All changes saved.</p>
+                    <div class="save-actions">
+                      <button class="btn ghost" type="button" disabled>Discard changes</button>
+                      <button class="btn primary" type="submit" disabled>Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">02</span> Desktop 1280 · dirty<span class="panel-note">Text size changed to Large and not yet saved. The bar announces “You have unsaved changes.” and enables both actions; the primary action grows to fill the remaining width. Appearance previews apply instantly; persistence happens only on Save.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main">
+            <div class="page">
+              <h1>Settings</h1>
+              <p class="intro">Preferences for how you read the Fixture Docs. Changes save to your account.</p>
+              <form class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions.</p>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <input class="input" type="text" name="display_name" value="Ada Nakamura" autocomplete="nickname">
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Email</span>
+                    <span class="field-control">
+                      <input class="input" type="email" name="email" value="ada@example.com" autocomplete="email">
+                      <span class="help">Used for docs notifications only. Never shown publicly.</span>
+                    </span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Appearance</h2>
+                    <p class="card-desc">Applies as soon as you change it; saved when you choose Save.</p>
+                  </div>
+                  <fieldset class="field">
+                    <legend class="field-label">Text size</legend>
+                    <div class="field-control">
+                      <div class="seg">
+                        <label class="seg-opt"><input type="radio" name="text_size" value="compact"><span>Compact</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="comfortable"><span>Comfortable</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="large" checked><span>Large</span></label>
+                      </div>
+                      <p class="help">Sets the base size for guide and reference pages.</p>
+                    </div>
+                  </fieldset>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="reduce_motion">
+                    <span class="switch-text">
+                      <span class="switch-title">Reduce motion</span>
+                      <span class="help">Minimizes animation across the site.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reading</h2>
+                    <p class="card-desc">How guide and reference pages render for you.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="line_numbers" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Code line numbers</span>
+                      <span class="help">Show numbers beside code samples.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="wrap_code">
+                    <span class="switch-text">
+                      <span class="switch-title">Wrap long code lines</span>
+                      <span class="help">Off scrolls long lines; on wraps them at the pane edge.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Notifications</h2>
+                    <p class="card-desc">Email from Fixture Docs. Security and account mail still sends either way.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="weekly_digest" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Weekly digest</span>
+                      <span class="help">A summary of new and updated pages, every Monday.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="release_notes">
+                    <span class="switch-text">
+                      <span class="switch-title">Release notes</span>
+                      <span class="help">Product news, no more than once a month.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reset</h2>
+                    <p class="card-desc">Restore the defaults on this page. Your profile is not affected.</p>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Default preferences</span>
+                    <span class="field-control">
+                      <button class="btn ghost" type="button">Reset preferences…</button>
+                    </span>
+                  </div>
+                </section>
+
+                <div class="savebar is-dirty">
+                  <div class="savebar-inner">
+                    <p class="save-status" role="status">You have unsaved changes.</p>
+                    <div class="save-actions">
+                      <button class="btn ghost" type="button">Discard changes</button>
+                      <button class="btn primary" type="submit">Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">03</span> Save bar states (720 px measure, desktop behavior)<span class="panel-note">Idle, dirty, saving, partial-paused, and the transient “Changes discarded.” message. The bar is sticky: bottom 16 px, never covering the last card (page bottom padding 96 px).</span></figcaption>
+    <div class="strip">
+      <span class="strip-label">Idle — clean form</span>
+      <div class="measure desktop">
+        <div class="savebar">
+          <div class="savebar-inner">
+            <p class="save-status">All changes saved.</p>
+            <div class="save-actions">
+              <button class="btn ghost" type="button" disabled>Discard changes</button>
+              <button class="btn primary" type="submit" disabled>Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="strip">
+      <span class="strip-label">Dirty — unsaved edits</span>
+      <div class="measure desktop">
+        <div class="savebar is-dirty">
+          <div class="savebar-inner">
+            <p class="save-status" role="status">You have unsaved changes.</p>
+            <div class="save-actions">
+              <button class="btn ghost" type="button">Discard changes</button>
+              <button class="btn primary" type="submit">Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="strip">
+      <span class="strip-label">Saving — request in flight</span>
+      <div class="measure desktop">
+        <div class="savebar is-dirty">
+          <div class="savebar-inner">
+            <p class="save-status" role="status">Saving changes…</p>
+            <div class="save-actions">
+              <button class="btn ghost" type="button" disabled>Discard changes</button>
+              <button class="btn primary is-loading" type="submit" aria-busy="true" disabled><span class="spinner" aria-hidden="true"></span>Saving…</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="strip">
+      <span class="strip-label">Partial — a section failed to load; Save is paused, Discard still works</span>
+      <div class="measure desktop">
+        <div class="savebar">
+          <div class="savebar-inner">
+            <p class="save-status" role="status">Some settings didn't load. Save is paused.</p>
+            <div class="save-actions">
+              <button class="btn ghost" type="button">Discard changes</button>
+              <button class="btn primary" type="submit" disabled>Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="strip">
+      <span class="strip-label">Discarded — transient, 2 s, then back to idle</span>
+      <div class="measure desktop">
+        <div class="savebar">
+          <div class="savebar-inner">
+            <p class="save-status" role="status">Changes discarded.</p>
+            <div class="save-actions">
+              <button class="btn ghost" type="button" disabled>Discard changes</button>
+              <button class="btn primary" type="submit" disabled>Save changes</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">04</span> Toast and failure banner<span class="panel-note">Success is a toast (auto-dismiss 4 s, dismissible). Failure is a persistent, actionable banner next to the save bar — failure is never only a toast, because it needs a retry target. Errors are announced; success is polite.</span></figcaption>
+    <div class="strip">
+      <span class="strip-label">Saved toast — bottom-right, above the bar</span>
+      <div class="toast" role="status">
+        <span class="toast-badge"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.7 11.6 2.8 7.7l1.2-1.2 2.7 2.7 5.3-5.3 1.2 1.2z"/></svg></span>
+        <p>Settings saved.</p>
+        <button class="toast-close" type="button" aria-label="Dismiss">×</button>
+      </div>
+    </div>
+    <div class="strip">
+      <span class="strip-label">Save failure banner — above the save bar, persists until resolved</span>
+      <div class="banner is-error" role="alert">
+        <svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5 15.2 14.5H.8L8 1.5Z"/><path fill="var(--paper)" d="M7.25 6h1.5v4.2h-1.5zM7.25 11.4h1.5v1.6h-1.5z"/></svg>
+        <div>
+          <p class="banner-title">We couldn't save your changes.</p>
+          <p class="banner-body">Your edits are still here. Try again, or refresh the page if this keeps happening.</p>
+        </div>
+        <button class="btn ghost" type="button">Try again</button>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">05</span> Desktop 1280 · validation + save failure<span class="panel-note">Email fails its constraint on blur. The error line replaces the help line at the field and Save stays enabled — submit focuses the first invalid field and sends nothing. A separate save failure shows as the persistent banner; edits are never lost.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main">
+            <div class="page">
+              <h1>Settings</h1>
+              <p class="intro">Preferences for how you read the Fixture Docs. Changes save to your account.</p>
+              <form class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions.</p>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <input class="input" type="text" name="display_name" value="Ada Nakamura" autocomplete="nickname">
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Email</span>
+                    <span class="field-control">
+                      <input class="input is-error" type="email" name="email" value="ada@example" autocomplete="email" aria-invalid="true">
+                      <span class="error-text"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm.75 4h-1.5v5h1.5V4Zm0 6.5h-1.5V12h1.5v-1.5Z"/></svg>Enter an email address like name@example.com.</span>
+                    </span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Appearance</h2>
+                    <p class="card-desc">Applies as soon as you change it; saved when you choose Save.</p>
+                  </div>
+                  <fieldset class="field">
+                    <legend class="field-label">Text size</legend>
+                    <div class="field-control">
+                      <div class="seg">
+                        <label class="seg-opt"><input type="radio" name="text_size" value="compact"><span>Compact</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="comfortable" checked><span>Comfortable</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="large"><span>Large</span></label>
+                      </div>
+                      <p class="help">Sets the base size for guide and reference pages.</p>
+                    </div>
+                  </fieldset>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="reduce_motion">
+                    <span class="switch-text">
+                      <span class="switch-title">Reduce motion</span>
+                      <span class="help">Minimizes animation across the site.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reading</h2>
+                    <p class="card-desc">How guide and reference pages render for you.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="line_numbers" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Code line numbers</span>
+                      <span class="help">Show numbers beside code samples.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="wrap_code">
+                    <span class="switch-text">
+                      <span class="switch-title">Wrap long code lines</span>
+                      <span class="help">Off scrolls long lines; on wraps them at the pane edge.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Notifications</h2>
+                    <p class="card-desc">Email from Fixture Docs. Security and account mail still sends either way.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="weekly_digest" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Weekly digest</span>
+                      <span class="help">A summary of new and updated pages, every Monday.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="release_notes">
+                    <span class="switch-text">
+                      <span class="switch-title">Release notes</span>
+                      <span class="help">Product news, no more than once a month.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reset</h2>
+                    <p class="card-desc">Restore the defaults on this page. Your profile is not affected.</p>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Default preferences</span>
+                    <span class="field-control">
+                      <button class="btn ghost" type="button">Reset preferences…</button>
+                    </span>
+                  </div>
+                </section>
+
+                <div class="banner is-error" role="alert">
+                  <svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5 15.2 14.5H.8L8 1.5Z"/><path fill="var(--paper)" d="M7.25 6h1.5v4.2h-1.5zM7.25 11.4h1.5v1.6h-1.5z"/></svg>
+                  <div>
+                    <p class="banner-title">We couldn't save your changes.</p>
+                    <p class="banner-body">Your edits are still here. Try again, or refresh the page if this keeps happening.</p>
+                  </div>
+                  <button class="btn ghost" type="button">Try again</button>
+                </div>
+
+                <div class="savebar is-dirty">
+                  <div class="savebar-inner">
+                    <p class="save-status" role="status">You have unsaved changes.</p>
+                    <div class="save-actions">
+                      <button class="btn ghost" type="button">Discard changes</button>
+                      <button class="btn primary" type="submit">Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">06</span> Desktop 1280 · loading<span class="panel-note">Skeleton shown only if the fetch passes 150 ms, in the exact shape content will occupy. Nav and h1 remain. No save bar until data resolves — an action bar over unknown state is a lie. Announced as “Loading settings…” in a polite status region.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main" aria-busy="true">
+            <div class="page">
+              <p class="sr-only" role="status">Loading settings…</p>
+              <div class="sk sk-h1"></div>
+              <div class="sk sk-sub"></div>
+              <div class="form">
+                <section class="card">
+                  <div class="sk sk-title"></div>
+                  <div class="sk sk-field"></div>
+                  <div class="sk sk-field"></div>
+                </section>
+                <section class="card">
+                  <div class="sk sk-title"></div>
+                  <div class="sk sk-field"></div>
+                  <div class="sk sk-line"></div>
+                </section>
+                <section class="card">
+                  <div class="sk sk-title"></div>
+                  <div class="sk sk-line"></div>
+                  <div class="sk sk-line short"></div>
+                </section>
+                <section class="card">
+                  <div class="sk sk-title"></div>
+                  <div class="sk sk-line"></div>
+                  <div class="sk sk-line short"></div>
+                </section>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">07</span> Desktop 1280 · load error<span class="panel-note">The form is replaced, never half-rendered. Page chrome and h1 stay; the error says what failed and offers one action. Announced as an alert.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main">
+            <div class="page">
+              <h1>Settings</h1>
+              <div class="state-block" role="alert">
+                <h2>Settings didn't load.</h2>
+                <p>We couldn't reach the settings service. Check your connection and try again.</p>
+                <button class="btn primary" type="button">Try again</button>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">08</span> Desktop · partial failure (focused region)<span class="panel-note">One section's fetch failed; the other cards render normally and are omitted here for space. The failed card explains itself and offers Retry. Save pauses so a partial record is never written over known-good values; Discard stays available.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <main class="site-main">
+            <div class="page">
+              <form class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions.</p>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <input class="input" type="text" name="display_name" value="Ada Nakamura" autocomplete="nickname">
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </label>
+                </section>
+                <section class="card is-failed">
+                  <div class="card-head">
+                    <h2>Appearance</h2>
+                    <p class="card-desc">Applies as soon as you change it; saved when you choose Save.</p>
+                  </div>
+                  <div class="card-error">
+                    <p class="card-error-title">This section didn't load.</p>
+                    <p class="help">Appearance preferences are unavailable right now.</p>
+                    <button class="btn ghost" type="button">Retry</button>
+                  </div>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reading</h2>
+                    <p class="card-desc">How guide and reference pages render for you.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="line_numbers" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Code line numbers</span>
+                      <span class="help">Show numbers beside code samples.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="wrap_code">
+                    <span class="switch-text">
+                      <span class="switch-title">Wrap long code lines</span>
+                      <span class="help">Off scrolls long lines; on wraps them at the pane edge.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <div class="savebar">
+                  <div class="savebar-inner">
+                    <p class="save-status" role="status">Some settings didn't load. Save is paused.</p>
+                    <div class="save-actions">
+                      <button class="btn ghost" type="button">Discard changes</button>
+                      <button class="btn primary" type="submit" disabled>Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">09</span> Desktop 1280 · view-only (denied)<span class="panel-note">No edit affordance exists — values are static text, switches show their state without a control, the Reset card and the save bar are absent. One notice explains why. Disabled controls would be the wrong answer here.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main">
+            <div class="page">
+              <h1>Settings</h1>
+              <p class="intro">Preferences for how you read the Fixture Docs. Changes save to your account.</p>
+              <div class="banner is-info" role="status">
+                <svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4.5 7V5.5a3.5 3.5 0 0 1 7 0V7H13v7H3V7h1.5Zm1.5 0h4V5.5a2 2 0 0 0-4 0V7Zm-1 1.5v4h6v-4H5Z"/></svg>
+                <div>
+                  <p class="banner-title">View-only access</p>
+                  <p class="banner-body">Ask a workspace admin if you need to change these settings.</p>
+                </div>
+              </div>
+              <div class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions.</p>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <span class="static-value">Ada Nakamura</span>
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Email</span>
+                    <span class="field-control">
+                      <span class="static-value">ada@example.com</span>
+                      <span class="help">Used for docs notifications only. Never shown publicly.</span>
+                    </span>
+                  </div>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Appearance</h2>
+                    <p class="card-desc">Applies as soon as you change it; saved when you choose Save.</p>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Text size</span>
+                    <span class="field-control">
+                      <span class="static-value">Comfortable</span>
+                      <span class="help">Sets the base size for guide and reference pages.</span>
+                    </span>
+                  </div>
+                  <div class="switch is-static">
+                    <span class="switch-text">
+                      <span class="switch-title">Reduce motion</span>
+                      <span class="help">Minimizes animation across the site.</span>
+                    </span>
+                    <span class="static-state">Off</span>
+                  </div>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reading</h2>
+                    <p class="card-desc">How guide and reference pages render for you.</p>
+                  </div>
+                  <div class="switch is-static">
+                    <span class="switch-text">
+                      <span class="switch-title">Code line numbers</span>
+                      <span class="help">Show numbers beside code samples.</span>
+                    </span>
+                    <span class="static-state">On</span>
+                  </div>
+                  <div class="switch is-static">
+                    <span class="switch-text">
+                      <span class="switch-title">Wrap long code lines</span>
+                      <span class="help">Off scrolls long lines; on wraps them at the pane edge.</span>
+                    </span>
+                    <span class="static-state">Off</span>
+                  </div>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Notifications</h2>
+                    <p class="card-desc">Email from Fixture Docs. Security and account mail still sends either way.</p>
+                  </div>
+                  <div class="switch is-static">
+                    <span class="switch-text">
+                      <span class="switch-title">Weekly digest</span>
+                      <span class="help">A summary of new and updated pages, every Monday.</span>
+                    </span>
+                    <span class="static-state">On</span>
+                  </div>
+                  <div class="switch is-static">
+                    <span class="switch-text">
+                      <span class="switch-title">Release notes</span>
+                      <span class="help">Product news, no more than once a month.</span>
+                    </span>
+                    <span class="static-state">Off</span>
+                  </div>
+                </section>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">10</span> Desktop · long content (focused region)<span class="panel-note">Year-three values: long name, long address, long card and help copy. Input values scroll horizontally inside the field; cards grow vertically; labels top-align. Nothing reflows into nonsense and the measure never widens past 720 px.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <main class="site-main">
+            <div class="page">
+              <form class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions, including on drafts shared with your team.</p>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <input class="input" type="text" name="display_name" value="Alexandria-Cassandra de la Fontaine-Okonkwo" autocomplete="nickname">
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Email</span>
+                    <span class="field-control">
+                      <input class="input" type="email" name="email" value="alexandria-cassandra.delafontaine-okonkwo@research-institute.example.org" autocomplete="email">
+                      <span class="help">Used for docs notifications only. Never shown publicly.</span>
+                    </span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Notifications</h2>
+                    <p class="card-desc">Email from Fixture Docs. Security and account mail still sends either way, including password resets and workspace invitations.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="weekly_digest" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Weekly digest</span>
+                      <span class="help">A weekly summary of every new and updated page, including drafts shared with your team. Sent Monday around 09:00 UTC.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <div class="savebar is-dirty">
+                  <div class="savebar-inner">
+                    <p class="save-status" role="status">You have unsaved changes.</p>
+                    <div class="save-actions">
+                      <button class="btn ghost" type="button">Discard changes</button>
+                      <button class="btn primary" type="submit">Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+    <div class="strip strip-measure">
+      <span class="strip-label">Saved toast with long copy — wraps at 420 px, never wider</span>
+      <div class="toast" role="status">
+        <span class="toast-badge"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.7 11.6 2.8 7.7l1.2-1.2 2.7 2.7 5.3-5.3 1.2 1.2z"/></svg></span>
+        <p>Settings saved. Your reading preferences now apply to every guide, reference page, and code sample.</p>
+        <button class="toast-close" type="button" aria-label="Dismiss">×</button>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">11</span> Desktop 1280 · reset confirmation<span class="panel-note">Confirming only stages the defaults in the form — it marks the page dirty and does not save. Focus enters the dialog and is trapped; Esc and Cancel close it; focus returns to the “Reset preferences…” button. Backdrop is ink at 45%.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-d desktop">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main">
+            <div class="page">
+              <h1>Settings</h1>
+              <p class="intro">Preferences for how you read the Fixture Docs. Changes save to your account.</p>
+              <form class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions.</p>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <input class="input" type="text" name="display_name" value="Ada Nakamura" autocomplete="nickname">
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Email</span>
+                    <span class="field-control">
+                      <input class="input" type="email" name="email" value="ada@example.com" autocomplete="email">
+                      <span class="help">Used for docs notifications only. Never shown publicly.</span>
+                    </span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Appearance</h2>
+                    <p class="card-desc">Applies as soon as you change it; saved when you choose Save.</p>
+                  </div>
+                  <fieldset class="field">
+                    <legend class="field-label">Text size</legend>
+                    <div class="field-control">
+                      <div class="seg">
+                        <label class="seg-opt"><input type="radio" name="text_size" value="compact"><span>Compact</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="comfortable" checked><span>Comfortable</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="large"><span>Large</span></label>
+                      </div>
+                      <p class="help">Sets the base size for guide and reference pages.</p>
+                    </div>
+                  </fieldset>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="reduce_motion">
+                    <span class="switch-text">
+                      <span class="switch-title">Reduce motion</span>
+                      <span class="help">Minimizes animation across the site.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reset</h2>
+                    <p class="card-desc">Restore the defaults on this page. Your profile is not affected.</p>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Default preferences</span>
+                    <span class="field-control">
+                      <button class="btn ghost is-focus" type="button">Reset preferences…</button>
+                    </span>
+                  </div>
+                </section>
+                <div class="savebar">
+                  <div class="savebar-inner">
+                    <p class="save-status">All changes saved.</p>
+                    <div class="save-actions">
+                      <button class="btn ghost" type="button" disabled>Discard changes</button>
+                      <button class="btn primary" type="submit" disabled>Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </main>
+          <div class="overlay">
+            <div class="backdrop"></div>
+            <div class="dialog" role="dialog" aria-modal="true" aria-label="Reset preferences?">
+              <h2 class="dialog-title">Reset preferences?</h2>
+              <p class="dialog-body">Restores the defaults for Appearance, Reading, and Notifications. Your profile and email are not changed.</p>
+              <div class="dialog-actions">
+                <button class="btn ghost" type="button">Cancel</button>
+                <button class="btn danger" type="button">Reset preferences</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">12</span> Mobile 375 · default<span class="panel-note">Below 640 px the graph re-routes: fields stack (label above control), cards keep 16 px padding, and the bar’s status sits above a full-width action row. No horizontal scroll at 320 px.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-m">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main">
+            <div class="page">
+              <h1>Settings</h1>
+              <p class="intro">Preferences for how you read the Fixture Docs. Changes save to your account.</p>
+              <form class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions.</p>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <input class="input" type="text" name="display_name" value="Ada Nakamura" autocomplete="nickname">
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Email</span>
+                    <span class="field-control">
+                      <input class="input" type="email" name="email" value="ada@example.com" autocomplete="email">
+                      <span class="help">Used for docs notifications only. Never shown publicly.</span>
+                    </span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Appearance</h2>
+                    <p class="card-desc">Applies as soon as you change it; saved when you choose Save.</p>
+                  </div>
+                  <fieldset class="field">
+                    <legend class="field-label">Text size</legend>
+                    <div class="field-control">
+                      <div class="seg">
+                        <label class="seg-opt"><input type="radio" name="text_size" value="compact"><span>Compact</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="comfortable" checked><span>Comfortable</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="large"><span>Large</span></label>
+                      </div>
+                      <p class="help">Sets the base size for guide and reference pages.</p>
+                    </div>
+                  </fieldset>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="reduce_motion">
+                    <span class="switch-text">
+                      <span class="switch-title">Reduce motion</span>
+                      <span class="help">Minimizes animation across the site.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reading</h2>
+                    <p class="card-desc">How guide and reference pages render for you.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="line_numbers" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Code line numbers</span>
+                      <span class="help">Show numbers beside code samples.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="wrap_code">
+                    <span class="switch-text">
+                      <span class="switch-title">Wrap long code lines</span>
+                      <span class="help">Off scrolls long lines; on wraps them at the pane edge.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Notifications</h2>
+                    <p class="card-desc">Email from Fixture Docs. Security and account mail still sends either way.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="weekly_digest" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Weekly digest</span>
+                      <span class="help">A summary of new and updated pages, every Monday.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="release_notes">
+                    <span class="switch-text">
+                      <span class="switch-title">Release notes</span>
+                      <span class="help">Product news, no more than once a month.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reset</h2>
+                    <p class="card-desc">Restore the defaults on this page. Your profile is not affected.</p>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Default preferences</span>
+                    <span class="field-control">
+                      <button class="btn ghost" type="button">Reset preferences…</button>
+                    </span>
+                  </div>
+                </section>
+                <div class="savebar">
+                  <div class="savebar-inner">
+                    <p class="save-status">All changes saved.</p>
+                    <div class="save-actions">
+                      <button class="btn ghost" type="button" disabled>Discard changes</button>
+                      <button class="btn primary" type="submit" disabled>Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+
+  <figure class="panel">
+    <figcaption><span class="panel-no">13</span> Mobile 375 · dirty<span class="panel-note">Same page, one edit pending. The bar stacks: status line above a single row where the primary action takes the remaining width. Buttons stay ≥44 px tall.</span></figcaption>
+    <div class="frame-scroll">
+      <div class="frame frame-m">
+        <div class="site">
+          <header class="site-head">
+            <a class="brand" href="/">Fixture Docs</a>
+            <nav class="site-nav" aria-label="Primary">
+              <a href="/">Home</a>
+              <a href="/guide">Guide</a>
+              <a href="/settings" aria-current="page">Settings</a>
+            </nav>
+          </header>
+          <main class="site-main">
+            <div class="page">
+              <h1>Settings</h1>
+              <p class="intro">Preferences for how you read the Fixture Docs. Changes save to your account.</p>
+              <form class="form">
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Profile</h2>
+                    <p class="card-desc">How you appear on comments and suggestions.</p>
+                  </div>
+                  <label class="field">
+                    <span class="field-label">Display name</span>
+                    <span class="field-control">
+                      <input class="input" type="text" name="display_name" value="Ada Nakamura" autocomplete="nickname">
+                      <span class="help">Shown on comments and suggestions.</span>
+                    </span>
+                  </label>
+                  <label class="field">
+                    <span class="field-label">Email</span>
+                    <span class="field-control">
+                      <input class="input" type="email" name="email" value="ada@example.com" autocomplete="email">
+                      <span class="help">Used for docs notifications only. Never shown publicly.</span>
+                    </span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Appearance</h2>
+                    <p class="card-desc">Applies as soon as you change it; saved when you choose Save.</p>
+                  </div>
+                  <fieldset class="field">
+                    <legend class="field-label">Text size</legend>
+                    <div class="field-control">
+                      <div class="seg">
+                        <label class="seg-opt"><input type="radio" name="text_size" value="compact"><span>Compact</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="comfortable"><span>Comfortable</span></label>
+                        <label class="seg-opt"><input type="radio" name="text_size" value="large" checked><span>Large</span></label>
+                      </div>
+                      <p class="help">Sets the base size for guide and reference pages.</p>
+                    </div>
+                  </fieldset>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="reduce_motion">
+                    <span class="switch-text">
+                      <span class="switch-title">Reduce motion</span>
+                      <span class="help">Minimizes animation across the site.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reading</h2>
+                    <p class="card-desc">How guide and reference pages render for you.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="line_numbers" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Code line numbers</span>
+                      <span class="help">Show numbers beside code samples.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="wrap_code">
+                    <span class="switch-text">
+                      <span class="switch-title">Wrap long code lines</span>
+                      <span class="help">Off scrolls long lines; on wraps them at the pane edge.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Notifications</h2>
+                    <p class="card-desc">Email from Fixture Docs. Security and account mail still sends either way.</p>
+                  </div>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="weekly_digest" checked>
+                    <span class="switch-text">
+                      <span class="switch-title">Weekly digest</span>
+                      <span class="help">A summary of new and updated pages, every Monday.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                  <label class="switch">
+                    <input type="checkbox" role="switch" name="release_notes">
+                    <span class="switch-text">
+                      <span class="switch-title">Release notes</span>
+                      <span class="help">Product news, no more than once a month.</span>
+                    </span>
+                    <span class="switch-track" aria-hidden="true"></span>
+                  </label>
+                </section>
+                <section class="card">
+                  <div class="card-head">
+                    <h2>Reset</h2>
+                    <p class="card-desc">Restore the defaults on this page. Your profile is not affected.</p>
+                  </div>
+                  <div class="field">
+                    <span class="field-label">Default preferences</span>
+                    <span class="field-control">
+                      <button class="btn ghost" type="button">Reset preferences…</button>
+                    </span>
+                  </div>
+                </section>
+                <div class="savebar is-dirty">
+                  <div class="savebar-inner">
+                    <p class="save-status" role="status">You have unsaved changes.</p>
+                    <div class="save-actions">
+                      <button class="btn ghost" type="button">Discard changes</button>
+                      <button class="btn primary" type="submit">Save changes</button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </figure>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="components">
+  <h2>Component states (grammar) — the tree is C, these are V</h2>
+  <p class="note">Forced states are marked with <code>.is-hover</code>, <code>.is-focus</code>, <code>.is-active</code>; real pseudo-classes behave identically. Every state a control can render is listed here — none is left to browser default.</p>
+
+  <div class="specimens">
+    <div class="specimen">
+      <span class="spec-label">Input · rest</span>
+      <input class="input" type="text" value="Ada Nakamura">
+      <span class="help">1 px <code>--line-strong</code>, radius 6, 40/44 px tall</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Input · hover</span>
+      <input class="input is-hover" type="text" value="Ada Nakamura">
+      <span class="help">Border <code>--line-hover</code>, 120 ms</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Input · focus-visible</span>
+      <input class="input is-focus" type="text" value="Ada Nakamura">
+      <span class="help">Ink outline 2 px, offset 1 px</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Input · invalid</span>
+      <input class="input is-error" type="text" value="ada@example" aria-invalid="true">
+      <span class="error-text"><svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0a8 8 0 1 1 0 16A8 8 0 0 1 8 0Zm.75 4h-1.5v5h1.5V4Zm0 6.5h-1.5V12h1.5v-1.5Z"/></svg>Danger border + message; icon and sentence, never color alone</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Input · disabled</span>
+      <input class="input" type="text" value="Ada Nakamura" disabled>
+      <span class="help">Wash fill, muted text; exempt from contrast</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Value · read-only (view-only page)</span>
+      <span class="static-value">Ada Nakamura</span>
+      <span class="help">No control at all — a disabled input would still advertise “type here”</span>
+    </div>
+
+    <div class="specimen">
+      <span class="spec-label">Switch · off / on</span>
+      <label class="switch">
+        <input type="checkbox" role="switch">
+        <span class="switch-text"><span class="switch-title">Off</span></span>
+        <span class="switch-track" aria-hidden="true"></span>
+      </label>
+      <label class="switch">
+        <input type="checkbox" role="switch" checked>
+        <span class="switch-text"><span class="switch-title">On</span></span>
+        <span class="switch-track" aria-hidden="true"></span>
+      </label>
+      <span class="help">Track 40×24; thumb 18 px, 3 px inset, 16 px travel</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Switch · focus-visible</span>
+      <label class="switch is-focus">
+        <input type="checkbox" role="switch" checked>
+        <span class="switch-text"><span class="switch-title">On, focused</span></span>
+        <span class="switch-track" aria-hidden="true"></span>
+      </label>
+      <span class="help">Ring sits on the track, 2 px offset</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Switch · disabled</span>
+      <label class="switch">
+        <input type="checkbox" role="switch" disabled>
+        <span class="switch-text"><span class="switch-title">Unavailable</span></span>
+        <span class="switch-track" aria-hidden="true"></span>
+      </label>
+    </div>
+
+    <div class="specimen">
+      <span class="spec-label">Segmented · rest / selected</span>
+      <div class="seg">
+        <label class="seg-opt"><input type="radio" name="spec_text_1" value="compact"><span>Compact</span></label>
+        <label class="seg-opt"><input type="radio" name="spec_text_1" value="comfortable" checked><span>Comfortable</span></label>
+        <label class="seg-opt"><input type="radio" name="spec_text_1" value="large"><span>Large</span></label>
+      </div>
+      <span class="help">Selected fill <code>--cyan-ink</code>, ink text 4.6:1</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Segmented · focus-visible / disabled</span>
+      <div class="seg is-focus">
+        <label class="seg-opt"><input type="radio" name="spec_text_2" value="compact"><span>Compact</span></label>
+        <label class="seg-opt"><input type="radio" name="spec_text_2" value="comfortable" checked><span>Comfortable</span></label>
+        <label class="seg-opt"><input type="radio" name="spec_text_2" value="large"><span>Large</span></label>
+      </div>
+      <div class="seg is-disabled">
+        <label class="seg-opt"><input type="radio" name="spec_text_3" value="compact" disabled><span>Compact</span></label>
+        <label class="seg-opt"><input type="radio" name="spec_text_3" value="comfortable" checked disabled><span>Comfortable</span></label>
+        <label class="seg-opt"><input type="radio" name="spec_text_3" value="large" disabled><span>Large</span></label>
+      </div>
+    </div>
+
+    <div class="specimen">
+      <span class="spec-label">Buttons · primary</span>
+      <div class="btn-row">
+        <button class="btn primary" type="button">Rest</button>
+        <button class="btn primary is-hover" type="button">Hover</button>
+        <button class="btn primary is-active" type="button">Active</button>
+        <button class="btn primary is-focus" type="button">Focus</button>
+        <button class="btn primary" type="button" disabled>Disabled</button>
+        <button class="btn primary is-loading" type="button" aria-busy="true"><span class="spinner" aria-hidden="true"></span>Saving…</button>
+      </div>
+      <span class="help">Ink on <code>--cyan-ink</code> 4.6:1; hover 5.3:1; active 4.8:1</span>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Buttons · ghost / danger</span>
+      <div class="btn-row">
+        <button class="btn ghost" type="button">Rest</button>
+        <button class="btn ghost is-hover" type="button">Hover</button>
+        <button class="btn ghost is-active" type="button">Active</button>
+        <button class="btn ghost" type="button" disabled>Disabled</button>
+        <button class="btn danger" type="button">Danger</button>
+        <button class="btn danger is-hover" type="button">Danger hover</button>
+      </div>
+      <span class="help">Ghost border 3.2:1; danger paper text 6.0:1</span>
+    </div>
+
+    <div class="specimen">
+      <span class="spec-label">Banner · info</span>
+      <div class="banner is-info" role="status">
+        <svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M4.5 7V5.5a3.5 3.5 0 0 1 7 0V7H13v7H3V7h1.5Zm1.5 0h4V5.5a2 2 0 0 0-4 0V7Zm-1 1.5v4h6v-4H5Z"/></svg>
+        <div>
+          <p class="banner-title">View-only access</p>
+          <p class="banner-body">Ask a workspace admin if you need to change these settings.</p>
+        </div>
+      </div>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Banner · error with action</span>
+      <div class="banner is-error" role="alert">
+        <svg class="icon" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 1.5 15.2 14.5H.8L8 1.5Z"/><path fill="var(--paper)" d="M7.25 6h1.5v4.2h-1.5zM7.25 11.4h1.5v1.6h-1.5z"/></svg>
+        <div>
+          <p class="banner-title">We couldn't save your changes.</p>
+          <p class="banner-body">Your edits are still here.</p>
+        </div>
+        <button class="btn ghost" type="button">Try again</button>
+      </div>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Toast · saved</span>
+      <div class="toast" role="status">
+        <span class="toast-badge"><svg width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.7 11.6 2.8 7.7l1.2-1.2 2.7 2.7 5.3-5.3 1.2 1.2z"/></svg></span>
+        <p>Settings saved.</p>
+        <button class="toast-close" type="button" aria-label="Dismiss">×</button>
+      </div>
+    </div>
+    <div class="specimen">
+      <span class="spec-label">Skeleton · card</span>
+      <div class="sk sk-title"></div>
+      <div class="sk sk-line"></div>
+      <div class="sk sk-line short"></div>
+      <span class="help">Wash-strong blocks, radius 3, exact content shapes</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="contract">
+  <h2>Handoff contract</h2>
+  <table class="spec-table">
+    <tbody>
+      <tr><td>Artifact</td><td><code>design/wireframes/settings.html</code> — authoritative; do not deviate. If the implementation needs a different value, the artifact changes first.</td></tr>
+      <tr><td>Scope</td><td>New <code>docs/settings.html</code> and its stylesheet. <code>assets/tokens.css</code> is never edited. Existing <code>docs/</code> pages are untouched except the optional nav link (open item 1).</td></tr>
+      <tr><td>Verify — design gate</td><td><code>bash scripts/check-wireframes.sh</code> must exit 0 after any <code>design/</code> change</td></tr>
+      <tr><td>Verify — implementation</td><td>Compare the built page against panels 01–13 and the specimen grammar at 1280 px and 375 px, including every void state, before calling it done</td></tr>
+      <tr><td>Drift</td><td>Any material deviation returns here for a design pass; update the artifact, then re-hand off</td></tr>
+    </tbody>
+  </table>
+
+  <h3>File map (paths are the contract)</h3>
+  <table class="spec-table">
+    <thead><tr><th>File</th><th>Work</th></tr></thead>
+    <tbody>
+      <tr><td><code>docs/settings.html</code></td><td>New page. Markup follows the happy path (C) exactly; state containers stay empty until data arrives.</td></tr>
+      <tr><td><code>docs/settings.css</code></td><td>New stylesheet. Keep page CSS in <code>docs/</code>; <code>assets/</code> stays the untouched token authority.</td></tr>
+      <tr><td><code>docs/index.html</code></td><td>Optional follow-up: add the Settings link to the primary nav (open item 1).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Build order</h3>
+  <ol>
+    <li>Tokens and base layout: page measure, cards, field grid, breakpoint 640.</li>
+    <li>Field units: text inputs, labels, help, segmented control, switch, buttons — every state from the specimen grammar.</li>
+    <li>Dirty tracking and the save bar (panels 02, 03).</li>
+    <li>Save flow: saving, toast, failure banner (panels 03, 04, 05).</li>
+    <li>Void states: loading skeleton, load error, partial section error, view-only (panels 06, 07, 08, 09).</li>
+    <li>Reset flow and dialog (panels 11, 13).</li>
+    <li>Long-content pass (panel 10) and accessibility pass.</li>
+    <li>Motion and reduced-motion.</li>
+  </ol>
+</section>
+
+<!-- ============================================================ -->
+<section class="spec" id="open">
+  <h2>Open items for the parent</h2>
+  <ol>
+    <li><strong>Nav link:</strong> the design assumes Settings is added to the docs shell nav and marked <code>aria-current="page"</code>. Confirm, or point this at the intended navigation pattern.</li>
+    <li><strong>Derived semantic values:</strong> muted/line/danger fills, type sizes, and motion tokens live in this artifact because <code>assets/tokens.css</code> defines none of them and must not be edited. Promote them to the token file in a dedicated token task, or keep them page-local?</li>
+    <li><strong>No theme control, by design:</strong> the token set defines one light palette. A Light/Dark/System control would promise a dark mode the design system does not define. If dark mode is wanted, it needs a full token pass before any control appears.</li>
+    <li><strong>Explicit save:</strong> saving is a deliberate action, with a browser unload guard while dirty. Confirm — an autosave variant would change the flow graph, not just the bar.</li>
+    <li><strong>Reset scope:</strong> the “Reset preferences” card and confirmation dialog are included. Drop them if the page should carry no destructive action.</li>
+    <li><strong>Single page, not tabs:</strong> all sections live on one scroll. If the section count grows, tabs would re-route the flow graph (needs a new panel set).</li>
+  </ol>
+</section>
+
+</div>
+</body>
+</html>
