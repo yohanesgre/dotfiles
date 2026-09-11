@@ -12,7 +12,7 @@ This skill layers your persona, subagent constraints, routing rules, and wrap-up
 
 ## Inputs
 
-- If a spec exists (from the `brainstorming`/brainstormer flow): read it first — at the location the project's `AGENTS.md`/convention declares, or wherever the user points.
+- If a spec exists (from the `brainstorm-studio` flow): read it first — at the location the project's `AGENTS.md`/convention declares, or wherever the user points.
 - Requirements vague? Ask targeted questions (question tool) or state assumptions explicitly in the plan.
 
 ## Subagent constraints (read-only)
