@@ -34,8 +34,8 @@ You MUST create a task for each of these items and complete them in order:
 5. **Present design** — present each section as its graph, scaled to complexity (see Graph-first design); get user approval after each section
 6. **Write design doc** — save to `.agents/brainstorm-studio/specs/YYYY-MM-DD-<topic>-design.md`
 7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
-8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation (optional)** — ask whether the user wants an implementation plan; if yes invoke writing-plans, if no stop at the approved spec
+8. **User reviews written spec** — ask user to review the spec, then choose: just approve (no implementation), approve + implementation plan, or request changes
+9. **Transition to implementation (optional)** — if the user chose a plan, invoke writing-plans; if they chose just approve, stop at the final spec
 
 ## Process Flow
 
@@ -49,9 +49,8 @@ digraph brainstorming {
     "Write design doc" [shape=box];
     "Spec self-review\n(fix inline)" [shape=box];
     "User reviews spec?" [shape=diamond];
-    "User wants a plan?" [shape=diamond];
     "Invoke writing-plans skill" [shape=doublecircle];
-    "Approve spec and stop" [shape=doublecircle];
+    "Approve spec and stop\n(no implementation)" [shape=doublecircle];
 
     "Explore project context" -> "Ask clarifying questions";
     "Ask clarifying questions" -> "Propose 2-3 approaches";
@@ -62,13 +61,12 @@ digraph brainstorming {
     "Write design doc" -> "Spec self-review\n(fix inline)";
     "Spec self-review\n(fix inline)" -> "User reviews spec?";
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "User wants a plan?" [label="approved"];
-    "User wants a plan?" -> "Invoke writing-plans skill" [label="yes"];
-    "User wants a plan?" -> "Approve spec and stop" [label="no"];
+    "User reviews spec?" -> "Invoke writing-plans skill" [label="approve + plan"];
+    "User reviews spec?" -> "Approve spec and stop\n(no implementation)" [label="just approve"];
 }
 ```
 
-**The approved spec is a valid terminal state.** If the user wants a plan, the ONLY skill you invoke next is writing-plans. Do NOT invoke frontend-design, mcp-builder, or any other implementation skill.
+**The approved spec is a valid terminal state.** At the spec review gate the user picks one of three paths: request changes (revise), **just approve** (stop — spec is final, no plan or implementation), or **approve + plan** (the ONLY skill you invoke next is writing-plans). Do NOT invoke frontend-design, mcp-builder, or any other implementation skill.
 
 ## The Process
 
@@ -143,19 +141,25 @@ After writing the spec document, look at it with fresh eyes:
 Fix any issues inline. No need to re-review — just fix and move on.
 
 **User Review Gate:**
-After the spec review loop passes, ask the user to review the written spec before proceeding:
+After the spec review loop passes, ask the user to review the written spec and choose a path. Offer all three explicitly — do not assume they want implementation:
 
-> "Spec written to `<path>` (not committed). Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec written to `<path>` (not committed). Please review it, then tell me which you'd like:
+> - **Just approve** — the spec is final; I stop here, no plan or implementation.
+> - **Approve + plan** — I write the implementation plan next.
+> - **Changes** — tell me what to fix and I'll revise."
 
-Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
+Wait for the user's response.
+
+- **Changes requested:** make them and re-run the spec review loop.
+- **Just approve:** the spec is the terminal deliverable. Finalize the spec file, do not write a plan, do not invoke any implementation skill, and stop.
+- **Approve + plan:** proceed to the implementation step below.
 
 **Implementation (optional):**
 
 The approved spec is a complete deliverable; a plan is not required.
 
-- Ask the user whether they want an implementation plan now
-- If yes: invoke the writing-plans skill — and no other skill
-- If no: stop here. The spec is ready for later planning or direct implementation.
+- **Just approve:** stop here. The spec is ready for later planning or direct implementation — but that is a separate, user-initiated step, not part of this skill.
+- **Approve + plan:** invoke the writing-plans skill — and no other skill.
 
 ## Visual Companion
 

@@ -2,7 +2,7 @@
 
 Use this template when dispatching a spec document reviewer subagent.
 
-**Purpose:** Verify the spec is complete, consistent, graph-shaped, and ready for implementation planning.
+**Purpose:** Verify the spec is complete, consistent, graph-shaped, and ready to finalize (as the terminal deliverable) or hand to implementation planning.
 
 **Dispatch after:** Spec document is written to .agents/brainstorm-studio/specs/
 
