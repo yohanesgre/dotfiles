@@ -77,14 +77,15 @@ Measured results (2026-09-11, one run per lane, inline verbatim skill text):
 | 1 authority/gate | pass | pass |
 | 2 tokens | pass | pass |
 | 3 void states | pass | **fail** (no empty/loading/partial/long-content) |
-| 4 matrix | pass | pass |
+| 4 matrix | pass | pass (error/hover/focus-visible/disabled) |
 | 5 gate exit 0 | pass | pass |
 | 6 handoff contract | pass | **fail** (no contract) |
 | 7 no impl edits | pass | pass |
-| 8 graph vocabulary | pass | **fail** |
+| 8 graph vocabulary | pass | **fail** (no flow/void graph, no graph cites) |
 
-First run: 8/8 new vs 5/8 old (assertion 4 regraded pass-for-old on the rerun —
-it carries hover/focus/disabled/error). No-hint rerun (eval-1): both lanes
-discover the authority, so discovery does not discriminate; void states and
-handoff still do.
+First run: 8/8 new vs 5/8 old. No-hint rerun (eval-1, new artifact set):
+8/8 new — assertion 8 passes via explicit "Flow graph (C)" / "Void states (V)"
+sections and a surfaces table; the literal `Surface<C,V,N>` string is not
+required. Old 5/8 on the same discriminating set; discovery does not
+discriminate (both read `AGENTS.md`), void states and handoff still do.
 
