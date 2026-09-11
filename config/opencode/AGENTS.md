@@ -39,11 +39,12 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 ## Tool Selection
 - For shell output, prefer token-optimized form: `rtk <cmd>` prefix in shell, or `run_command` (rtk MCP, allowlisted cmds only). Raw shell only when rtk lacks the command.
 - **ALWAYS check community support before installing new tools or MCP servers**: minimum 100+ GitHub stars, active maintenance (updated within 3 months), multiple contributors. Skip tools with weak community support unless explicitly requested by user.
-- For codebase exploration, use `codebase-memory-mcp` first (`get_architecture`, `get_graph_schema`, `detect_changes`), then delegate to `researcher` agent if needed.
-- For web research, delegate to `researcher` agent (webfetch, websearch).
+- **Delegate exploration and research to the `researcher` subagent by default** — primary/build sessions must not hand-explore multi-file code or run web searches inline. `researcher` owns the codebase-memory-mcp graph, the `explorer`/`call-graph` routing, and `librarian` web research. Keep inline only cheap single-file lookups (one read/grep you can act on immediately); delegate anything spanning files, callers, impact, or the web.
+- Codebase-exploration prompt: name the project, the exact question, known `qualified_name`s/paths, and the evidence expected (`path:line` + snippet). researcher routes internally: locate → `explorer`, trace → `call-graph`, structure/impact → codebase-memory-mcp.
+- Web-research prompt: state the library + pinned version, the exact question, and the source expectation (versioned official docs first). researcher fetches; never invent APIs.
+- For parallel research, use background `task()` calls to `researcher`.
 - For planning a feature or refactor before implementation, use `architect` agent.
 - For UI/styling work, delegate to `designer` agent.
-- For parallel research, use background `task()` calls.
 
 ## Codebase Knowledge Graph (codebase-memory-mcp)
 
@@ -101,8 +102,8 @@ Query the indexed code graph instead of re-grepping/re-reading files. Structural
 | Vague idea / concept | `architect` | Structured exploration before code |
 | Feature planning / refactor >50 lines | `architect` | Phased plans with verify gates |
 | Architecture design / ADR / missing design | `architect` | Wraps system-design + architecture skills; owns design + ADR |
-| API/library research | `researcher` | webfetch, websearch |
-| Codebase exploration | `researcher` + `codebase-memory-mcp` | Graph-based discovery |
+| API/library research | `researcher` (default — always delegate) | webfetch/websearch; versioned sources; never invent APIs |
+| Codebase exploration (build/primary) | `researcher` (default — always delegate) | Owns codebase-memory graph + `explorer`/`call-graph` routing; primary keeps only cheap single-file lookups inline |
 | UI/styling changes | `designer` | Specialized in frontend |
 | Design artifacts | `designer` | Owns the project's declared design artifacts (wireframes, design system); swe implements from them |
 | Code review before merge | `reviewer` | Adversarial, severity-graded findings |
