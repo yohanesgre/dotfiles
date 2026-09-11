@@ -1,6 +1,7 @@
 ---
 description: Code reviewer. Reviews diffs or files for correctness, security, performance, edge cases, and maintainability. Flags issues with location, severity, and concrete fix. Use before merging or committing.
 mode: all
+model: opencode-go/deepseek-v4.1-flash#max
 steps: 40
 permissions:
   - action: "*"

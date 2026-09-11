@@ -3,6 +3,6 @@
     "name": "opencode"
   },
   "tabs": {
-    "layout": "vertical"
+    "layout": "horizontal"
   }
 }

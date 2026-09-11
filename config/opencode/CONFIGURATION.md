@@ -1,13 +1,17 @@
 # OpenCode Configuration
 
-> Last updated: 2026-09-08 — subagents TUI crash fix (prop-drilled context, `@opencode/plugin/tui` specifier, dropped `@opencode-ai/plugin` dep)
+> Last updated: 2026-09-11 — model pins (quality-first): architect/reviewer `opencode-go/deepseek-v4.1-flash#max`, swe/designer `#high`; researcher/vision `opencode-go/mimo-v2.5`
+> 2026-09-11 — agent consolidation: explorer+librarian→`researcher`; architect+brainstormer+planner→`architect`; `designer` design-only (no app code); `swe` sole implementer
+> 2026-09-11 — agent IDs renamed: `designer`, `explorer`, `librarian` (dropped `-jr` suffix); agent files + AGENTS.md + goal skill refs updated
+> 2026-09-10 — cbm-augment V2 fix (default export id + setup/setup, V1 server kept)
+> 2026-09-08 — subagents TUI crash fix (prop-drilled context, `@opencode/plugin/tui` specifier, dropped `@opencode-ai/plugin` dep)
 > 2026-09-07 — no pinned `model` (session follows TUI selection, subagents inherit); cli.json syncs `tabs.layout: vertical`
 > 2026-09-06 — v2 cleanup (v1 archived, plugins removed except herdr, rtk MCP added, agents V2-native)
 
 ## Stack Overview
 
 ```
-opencode2 (@opencode-ai/cli beta) + OpenCode Go provider ($10/mo)
+opencode2 (@opencode/cli@beta) + OpenCode Go provider ($10/mo)
 ├── ~/.config/opencode/          → harness config
 │   ├── opencode.jsonc           → main config (v2 minimal, home-manager managed)
 │   ├── cli.json                 → CLI prefs (managed)
@@ -46,22 +50,19 @@ opencode2 (@opencode-ai/cli beta) + OpenCode Go provider ($10/mo)
 }
 ```
 
-Key: no `plugin` entries (only live-local herdr-agent-state, not in config); no presets/providers (gmicloud removed with v1); built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom explorer-jr/librarian-jr kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
+Key: no `plugin` entries (only live-local herdr-agent-state, not in config); no presets/providers (gmicloud removed with v1); built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
 
 ## Agents (`~/projects/dotfiles/config/opencode/agents/*.md`)
 
-All: `mode: all` (vision: subagent), model-agnostic except librarian-jr + explorer-jr (both `model: opencode-go/mimo-v2.5`, cheapest clean quota: 30.1k req/5h, 0 retention), thin shells (identity + guardrails + skill pointer by name), deny-by-default `permissions` ordered rules, `steps` caps. Native V2 frontmatter only (`description`/`mode`/`steps`/`permissions` — legacy top-level `temperature` + V1 `permission` blocks removed 2026-09-06; per V2 docs, request overlays like temperature are not applied by the runner, so effective tuning lives on provider/model/variant). All prompts end with a caveman output mandate: ultra-terse fragments, no filler/narration, substance-only reports; vision keeps transcriptions verbatim.
+All custom: `mode: all` (vision: subagent). Model pins (quality-first): `architect`/`reviewer` = `opencode-go/deepseek-v4.1-flash#max`; `swe`/`designer` = `opencode-go/deepseek-v4.1-flash#high`; `researcher`/`vision` = `opencode-go/mimo-v2.5` (cheapest clean quota: 30.1k req/5h, 0 retention; no variants). An agent's `model` applies to child/subagent sessions only — a primary `opencode2 run --agent` session has its own model, so lanes pass `--model provider/model#variant` explicitly. Agents are thin skills routers: identity + permission envelope + skill pointer by name, deny-by-default `permissions` ordered rules, `steps` caps. Consolidated 2026-09-11 (explorer+librarian→`researcher`; architect+brainstormer+planner→`architect`; `designer` design-only; `swe` sole implementer). Native V2 frontmatter only (`description`/`mode`/`steps`/`permissions` — legacy top-level `temperature` + V1 `permission` blocks removed 2026-09-06; per V2 docs, request overlays like temperature are not applied by the runner, so effective tuning lives on provider/model/variant). All prompts end with a caveman output mandate: ultra-terse fragments, no filler/narration, substance-only reports; vision keeps transcriptions verbatim.
 
 | Agent | Steps | Guardrails |
 |-------|-------|------------|
-| swe | 60 | read/glob/grep/list/edit/shell allow; web+question+subagent deny; external_directory `*` allow (all dirs). Skill: `agents-swe` (routing hub) |
-| planner | 40 | read-only; web ask; question allow; subagent deny. Skill: `agents-planner` (wraps `writing-plans` process; expects designed input) |
-| architect | 40 | read-only; web ask; question allow; subagent deny. Skill: `agents-architect` (wraps `system-design` + `architecture`; owns design + ADR) |
+| swe | 60 | read/glob/grep/list/edit/shell allow; web+question+subagent deny; external_directory `*` allow (all dirs). Sole implementer (`app/`/`server/`/`shared/`/`cli/`); UI from wireframes. Skill: `agents-swe` (routing hub) |
+| researcher | 40 | read/glob/grep/list + webfetch/websearch allow; subagent deny; model `opencode-go/mimo-v2.5`. Routes: `agents-explorer` (codebase) / `agents-librarian` (external) |
+| architect | 50 | read-only; web ask; question allow; subagent deny. Routes by stage: `agents-brainstormer` / `agents-architect` (design+ADR) / `agents-planner` |
+| designer | 50 | read + edit `wireframes/**` + `docs/design-system.html` only; shell limited to `git submodule update --init wireframes` + `bash wireframes/build.sh`; web ask; question; subagent deny. Design only — no `app/` code |
 | reviewer | 40 | read-only + skill(agents-reviewer, caveman) + graph read (search_graph/trace_path/get_code_snippet/check_index_coverage); shell: git diff/status/log/show/blame allow (bare + `*`), rest ask; edit/question/subagent deny |
-| brainstormer | 30 | read-only; web ask; question allow; subagent deny. Skill: `agents-brainstormer` (wraps `brainstorming` process) |
-| designer-jr | 50 | edit+shell allow; web ask; question; subagent deny. Owns wireframes |
-| explorer-jr | 30 | read/glob/grep/list only; model `opencode-go/mimo-v2.5` |
-| librarian-jr | 40 | read tools + webfetch/websearch allow; no bash; model `opencode-go/mimo-v2.5` |
 | vision | 10 | read only; model `opencode-go/mimo-v2.5` (unverified vision; fallback `deepseek-v4-flash-vision-exp`) |
 
 ## Skills System (2026-08-13 overhaul)
@@ -82,7 +83,7 @@ All: `mode: all` (vision: subagent), model-agnostic except librarian-jr + explor
 
 ## AGENTS.md Sections
 
-Memory (engram: session start → mem_current_project + mem_context; conflicts via mem_judge), Caveman Mode (incl. subagent inheritance: delegation prompts must carry "reply caveman-compressed" line; custom agent prompts embed the mandate), Tool Selection (incl. rtk preference), Codebase Knowledge Graph (codebase-memory-mcp: session-start index check, tool routing table — search_graph/get_code_snippet/trace_path×3/query_graph/search_code/detect_changes, grep fallback rules, delegation qualified_name passing), Agent-Browser, Code Style, Quality, Error Recovery, Quality Gates (agent selection table incl. wireframes→designer-jr, design/ADR→architect), Prompt Templates, Commit Rules, Safety, Tool Installation Automation.
+Memory (engram: session start → mem_current_project + mem_context; conflicts via mem_judge), Caveman Mode (incl. subagent inheritance: delegation prompts must carry "reply caveman-compressed" line; custom agent prompts embed the mandate), Tool Selection (incl. rtk preference), Codebase Knowledge Graph (codebase-memory-mcp: session-start index check, tool routing table — search_graph/get_code_snippet/trace_path×3/query_graph/search_code/detect_changes, grep fallback rules, delegation qualified_name passing), Agent-Browser, Code Style, Quality, Error Recovery, Quality Gates (agent selection table incl. wireframes→designer, design/ADR→architect), Prompt Templates, Commit Rules, Safety, Tool Installation Automation.
 
 ## DCP (`dcp.jsonc` — archived 2026-09-06)
 
@@ -135,6 +136,7 @@ Agent files: .opencode/, opencode.json, .cursor*, .claude/, CLAUDE.md, .codex/, 
 3. TUI plugins are not logged by the plugin loader; failures show only as an in-TUI banner. To debug headless: run `opencode2 serve --port <p>` in a fake HOME, create a session via its OpenAPI (`POST /api/session`, basic auth `opencode:<password from serve log>`), then `opencode2 --server http://127.0.0.1:<p> -s <ses_id>` in a pty.
 4. Never `usePlugin()` inside a slot render (2026-09-08, host beta-19289): the host binary only provides `@opencode/plugin/tui` while the plugin depended on `@opencode-ai/plugin@beta` (resolved beta-19271), whose bundled `solid-js` copy differs from the host's — `useContext` misses the host's provider and the slot crashes with `PluginContextProvider is missing`. Fix: import `Plugin` from `@opencode/plugin/tui` (host-resolved, zero-install — same as `herdr-agent-state`), drop the `@opencode-ai/plugin` dep, and prop-drill `setup(context)` values (`data`, `theme`) into slot components. `bun.lock` stays live-only/untracked.
 - `herdr-agent-state` (restored 2026-09-06 from beta profile, V2-native TUI pane reporter; live only, not in dotfiles). Everything else removed 2026-09-06, pending rebuild.
+- `cbm-augment` (fixed 2026-09-10, live only `~/.config/opencode/plugins/cbm-augment.ts`, not in dotfiles): was V1-only named export `CodebaseMemory`, failed server load `err_789908a8` (`SchemaError(Missing key at ["default"])`). Rewrote as plain-object default export `{ id: 'cbm-augment', setup(), server() }` (no SDK import, same as herdr stub pattern). V2 `setup` uses `ctx.tool.hook('execute.after')`, skips errors, maps grep/glob case-insensitive, resolves spawn cwd from `args.path` (hook binary resolves repo from cwd; without this, server-cwd dotfiles/unindexed always yields empty), appends `hook-augment` output to `event.result.output`; V1 `server()` keeps `tool.execute.after` with fixed `input.args` source. Generator markers removed (ownership taken); `codebase-memory-mcp install/update` may recreate V1 file — dedupe if it returns.
 Dropped 2026-09-06: engram V2 port attempt (`plugins/engram/index.ts`, ported from upstream v1) — failed to load (server can't resolve `@opencode-ai/plugin` bare import; plain-object export then hit a transpile syntax error). Safe without it: memory works fully via MCP; the plugin only added automation (prompt/passive capture, nudges, compaction checkpoint). Revisit when V2 plugin API stabilizes.
 Archived under `~/.config/opencode-archive-v1-20260906/`:
 - `plugins-live/`: background-agents.ts, engram.ts, herdr-agent-state.js, herdr-agent-state-v2.js, kdco-primitives/, notify/, notify.ts, rtk.ts, worktree/, worktree.ts (+ `*.backup` files)
@@ -181,6 +183,6 @@ Beta profile deleted: `~/.config/opencode-beta/opencode/`, `~/.local/bin/o2` (us
 - Chose engram over opencode-mem (no API key)
 - Agent family + routing skills (2026-08-13): thin agents, thick skills, deny-by-default
 - Nested skill dirs: opencode uses dir basename as ID — collisions displace (tested); variants keep unique names
-- DB folded into backend (no separate skill); system design → planner, wireframes → designer-jr
+- DB folded into backend (no separate skill); system design → architect, wireframes → designer
 - Skills installed globally only; never vendored in repos (gitignore `.agents/`)
 - Removed 2026-08-13: Cloudflare MCP×6, Postgres MCP, lexa MCP, commandcode Go-proxy, cloudflared
