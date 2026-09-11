@@ -20,7 +20,6 @@
   },
   "mcp": {
     "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": true, "type": "local" },
-    "playwright": { "command": ["bun", "x", "@playwright/mcp"], "enabled": true, "type": "local" },
     "codebase-memory-mcp": { "enabled": true, "type": "local", "command": ["codebase-memory-mcp"] },
     "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" }
   },

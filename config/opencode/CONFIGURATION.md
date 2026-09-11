@@ -1,5 +1,6 @@
 # OpenCode Configuration
 
+> 2026-09-11 — dropped the `playwright` MCP (`bun x @playwright/mcp`): browser automation is the `agent-browser` CLI skill (0.27.0, `~/.local/bin/agent-browser`), already the AGENTS.md-mandated workflow (snapshot-first, no vision). Removes the stray `.playwright-mcp/` browser-state dir from workspaces; `.gitignore` guards it anyway. `extract-design-system` keeps its own Node `npx playwright install chromium` — unaffected. Live `opencode.jsonc` takes effect at next hm-switch (nix store symlink).
 > 2026-09-11 — designer skill rewritten graph-first (design-thinking method): two modes (Produce/Review) with explicit break points (no authority → ask; gate fails → no handoff; artifact vs project system → project wins; implementation better → update artifact), Project authority section (project-declared system/paths/gate win), Produce pipeline (authority → design-graph for flows/void states → tokens → exact-value artifact → gate → handoff), artifact anatomy (tokens, surfaces + Surface<C,V,N> void states, state matrix, layout, motion, a11y, copy), and a Handoff contract making the artifact the thing swe implements verbatim; specialist routing (design-graph / frontend-design / design-system-patterns / extract-design-system) replaces the duplicated frontend-design aesthetics prose; Review mode with severity+evidence grading and drift-routes-back-to-design rule; description now carries the trigger list ("Load before touching any design artifact or reviewing UI"). Agent deduped to a single skill pointer (removed the redundant workflow/build-gate line and the dead skill-load-fallback clause). Eval suite persisted at `config/skills/designer/evals/` (2 prompts, 8 assertions; smoke + no-hint runs 8/8 new vs 5/8 old — void states, handoff contract, graph routing the discriminators; authority discovery non-discriminating).
 > 2026-09-11 — reviewer hardened: `reviewer` skill now enforces CONFIRMED/SUSPECTED evidence, no-diff handling (never invent findings on an empty change), change-vs-pre-existing scope split, explicit verdict criteria, and severity calibration by impact; permissions add `external_directory *` (reads outside the workspace, incl. /tmp) plus `cd *` and read-only git expansion (grep/ls-files/rev-parse/rev-list/merge-base/cat-file/describe/shortlog/stash list+show/worktree list/remote -v+show/branch --show-current+--list); skill `*` allow so a project-local review skill can load, and a Project authority section makes project-declared review rules win over the skill's defaults; reviewer is now caveman-exempt (full-prose output; `caveman` skill denied) so findings keep their nuance; on-request-only HTML report mode (bundled `assets/review-report.html`; sole permitted writes are `.reviews/*` (repos) and `~/.local/share/opencode/reviews/*` (non-repos), dirs created via allowlisted `mkdir -p`). Eval suite persisted at `config/skills/reviewer/evals/` (7 fixtures; iteration 2 separated revised vs old skill 92% vs 81%).
 > 2026-09-11 — exported the architect process to the repo-authored, harness-agnostic `architect` skill (harness contract, stage-by-artifact router, ADR status-graph lifecycle, wrap-up format). The opencode `architect` agent is now a thin envelope (identity + permissions + skill pointer); other harnesses wire the same skill into their own agent. Re-added `architect` to the repo-authored exceptions.
@@ -32,7 +33,7 @@ opencode2 (@opencode/cli@beta) + OpenCode Go provider ($10/mo)
 │   ├── tools/                   → image.py only (manual, unmanaged; image.ts archived)
 │   ├── plugins/                 → herdr-agent-state only (live, unmanaged; rest archived)
 │   └── (no skills/ dir — single root `~/.agents/skills/`, restored 2026-09-06)
-│   └── MCP (4)                  → engram, playwright, codebase-memory-mcp, rtk
+│   └── MCP (3)                  → engram, codebase-memory-mcp, rtk
 ├── ~/.agents/skills/            → cross-harness skills (canonical)
 └── ~/.config/opencode-archive-v1-20260906/ → v1 archive (see below)
 ```
@@ -50,9 +51,13 @@ opencode2 (@opencode/cli@beta) + OpenCode Go provider ($10/mo)
   },
   "lsp": true,
   "compaction": { "auto": true, "buffer": 10000 },
+  "providers": {
+    "opencode-go": { "settings": { "baseURL": "http://127.0.0.1:8787/v1" } },
+    "opencode": { "settings": { "baseURL": "http://127.0.0.1:8788/v1" } },
+    "openrouter": { "settings": { "baseURL": "http://127.0.0.1:8789/v1" } }
+  },
   "mcp": {
     "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": true, "type": "local" },
-    "playwright": { "command": ["bun", "x", "@playwright/mcp"], "enabled": true, "type": "local" },
     "codebase-memory-mcp": { "enabled": true, "type": "local", "command": ["codebase-memory-mcp"] },
     "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" }
   },
@@ -60,7 +65,7 @@ opencode2 (@opencode/cli@beta) + OpenCode Go provider ($10/mo)
 }
 ```
 
-Key: no `plugin` entries (only live-local herdr-agent-state, not in config); no presets/providers (gmicloud removed with v1); built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
+Key: no `plugin` entries (only live-local herdr-agent-state, not in config); provider baseURLs point at the local proxy ports (787/788/789); three MCPs only — browser automation is agent-browser CLI (skill `agent-browser`; preferred per AGENTS.md), not an MCP; built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
 
 ## Agents (`~/projects/dotfiles/config/opencode/agents/*.md`)
 
@@ -98,17 +103,17 @@ Memory (engram: session start → mem_current_project + mem_context; conflicts v
 
 Removed with the plugin purge. Upstream DCP slowed (focus moved to Sleev), V1-only (V2 breaks all V1 plugins), and our copy referenced stale V1 tool names. V2 native compaction (`buffer: 10000` in opencode.jsonc) covers the basics. File archived at `~/.config/opencode-archive-v1-20260906/dcp.jsonc`; mapping dropped from default.nix. Revisit if a V2-compatible DCP/Sleev integration appears.
 
-## MCP Servers (4)
+## MCP Servers (3)
 
 | Server | Type | Purpose |
 |--------|------|---------|
 | engram | Go binary `~/go/bin/engram` | Memory: SQLite+FTS5 `~/.engram/engram.db`, agent-only tools. `~/.engram/config.json` pins project_name=`opencode-dotfiles` for home-cwd writes (fixes ambiguous_project from lexa-* worktrees in $HOME; HOME config doesn't leak into repos) |
-| playwright | `bun x @playwright/mcp` | Browser automation |
 | codebase-memory-mcp | static C binary | Knowledge graph, 14 tools, 66 langs |
 | rtk | `~/.local/bin/rtk-mcp` (added 2026-09-06) | Token-optimized shell via `run_command` (allowlisted cmds, 60-90% savings). AGENTS.md Tool Selection: prefer `rtk` prefix / `run_command`, raw shell only when rtk lacks the command. Auto-rewrite plugin deferred (V2 plugin API unstable) |
 
 
 Removed with v1 2026-09-06: `context7`, `grep_app`, `websearch` (remote MCPs from old `opencode.json`).
+Removed 2026-09-11: `playwright` MCP (`bun x @playwright/mcp`) — replaced by the `agent-browser` CLI skill (0.27.0 at `~/.local/bin/agent-browser`), preferred by AGENTS.md and already the mandated browser workflow (snapshot-first, no vision). `extract-design-system` keeps its own `npx playwright install chromium` (Node, independent of the MCP).
 
 ## Removed 2026-09-07
 
