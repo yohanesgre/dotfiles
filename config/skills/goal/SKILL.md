@@ -22,9 +22,14 @@ the execution gate pre-authorizes exactly the lifecycle it enumerates
 (branch → commit → push → PR → auto-merge on green CI) for exactly the
 named lanes/branches. The gate approves scope and waves.
 
-Runtime: opencode2 (v2) only. Assumed surfaces: herdr CLI (`pane
-split/run/close`, `agent start/prompt/wait/read`), opencode2 flags (`--auto`,
-`--prompt`, `--session`, `--agent`, `--model`), V2 command frontmatter
+Runtime: opencode2 (v2) only. Assumed surfaces: herdr CLI and opencode2
+flags — exact pinned signatures live in `references/cli-reference.md` and
+are the ONLY forms to use. Never probe `--help` for syntax (herdr nested
+help prints only top-level text; it is a wasted, nondeterministic step).
+Surfaces: herdr `pane split/run/read/close/layout`, `tab create`,
+`agent start/prompt/wait/read` (native kinds only — /goal lanes use
+`pane run`); opencode2 `run --auto --model --agent [--session]` (prompt is
+positional, no `--prompt`), plus V2 command frontmatter
 (`description/agent/model/subagent`), project skill dir `.agents/skills/`,
 project commands dir `.opencode/commands/`. If this session is not
 opencode2, STOP and flag before doing anything.
@@ -309,14 +314,17 @@ denied): act outside the assigned worktree, exfiltrate data beyond
 declared fetches, `--force` or history rewrites on shared branches,
 commit secrets. Violation kills the lane.
 
-herdr has no opencode2 kind: drive opencode2 with `opencode2 run --auto
---model ... --agent <role>`; warm a fresh agent with one trivial prompt
-before the brief. The lane runs foreground in its own pane — the user
-watches progress there; it is never detached or backgrounded, and the pane
-persists after DONE so scrollback stays and the pane can be reused for a
-resume/follow-up. Completion is still a durable file, not pane scrollback:
+Dispatch is deterministic (pinned forms in `references/cli-reference.md`
+and `references/lane-dispatch.md`; never probe `--help`). herdr has no
+opencode2 kind, so lanes are driven with the canonical runner via
+`herdr pane run <pane> "bash <runner>"`, which in turn calls
+`opencode2 run --auto --model <...> --agent <role> "<brief>"` (message
+positional, no `--prompt`). The lane runs foreground in its own pane — the
+user watches progress there; it is never detached or backgrounded, and the
+pane persists after DONE so scrollback stays and the pane can be reused for
+a resume/follow-up. Completion is still a durable file, not pane scrollback:
 the runner atomically writes the lane report/return to `<slug>-return.md`
-LAST, then returns the pane to its shell. Wait with
+LAST, then `exec`s the shell. Wait with
 `bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file> [timeout-ms]`
 (file-sentinel watch + Effect timeout — never fixed `sleep`, never
 `pane wait-output`); the runner-file vehicle is prescribed in

@@ -10,6 +10,10 @@ read-only → collision-free).
 Order matters — run top to bottom, one lane at a time (review is the one
 async fan-out). Any FAST EXIT stops that lane only; others continue.
 
+All CLI syntax is pinned in `references/cli-reference.md`. Use ONLY those
+signatures; never run `--help` (herdr nested help prints only top-level
+text — a wasted, nondeterministic step).
+
 1. Guards (control checkout, before worktree creation):
    ```bash
    test "${HERDR_ENV:-}" = 1          # else FAST EXIT, required: herdr session
@@ -41,39 +45,43 @@ async fan-out). Any FAST EXIT stops that lane only; others continue.
    returns per lane `{pane_id, tab_id}` (+ grid) — use those in step 4. Each
    lane runs foreground in its pane (visible progress); the pane persists at
    DONE for inspection + reuse.
-4. Agent: `herdr agent start <name> --kind <backend> --pane <pane-id>`
-   (role travels in the brief, not the kind; mutation roles: `swe`,
-   `designer` — read-only roles run as `subagent`, not lanes).
-   No opencode2 kind exists — drive opencode2 without it: write the lane
-   brief to a runner file `<worktree>/../<slug>-runner.sh` (or
-   `/tmp/opencode/<slug>-runner.sh`). Run
-   `herdr pane run <pane> "bash <runner>"` so the lane runs foreground in
-   that pane — the user watches live progress there; never detach or
-   background a lane. At the end the runner writes the lane report/return to
-   `<slug>-return.md.tmp` and atomically `mv`s it onto `<slug>-return.md` as
-   the LAST step, then returns the pane to its shell — DO NOT close the
-   pane: it persists so scrollback stays and the pane is reusable. The
-   return file — not scrollback — is the record, and the atomic rename means
-   the file's appearance can only mean real completion. Wait with
+4. Dispatch (deterministic — use the pinned forms in
+   `references/cli-reference.md`; NEVER run `--help`, herdr nested help
+   prints only the top-level text and adds nondeterministic steps):
+   mutation roles are `swe`/`designer`; read-only roles run as `subagent`,
+   not lanes. There is no opencode2 kind, so do NOT call `herdr agent
+   start/prompt` for a lane. Write the brief to
+   `<worktree>/../<slug>-brief.md` and the canonical runner
+   (`cli-reference.md` § Canonical lane runner) to
+   `<worktree>/../<slug>-runner.sh`, then dispatch with
+   `herdr pane run <pane> "bash <abs-runner>"` so the lane runs foreground
+   in that pane — the user watches live progress there; never detach or
+   background a lane. At the end the runner writes the report to
+   `<slug>-return.md.tmp` and atomically `mv`s it onto
+   `<slug>-return.md` as the LAST step, then `exec`s the shell — DO NOT
+   close the pane: it persists so scrollback stays and the pane is
+   reusable. The return file — not scrollback — is the record; the atomic
+   rename means the file's appearance can only mean real completion. Wait
+   with
    `bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file>
    [timeout-ms]` (file-sentinel watch + Effect timeout — never fixed
    `sleep`, never `pane wait-output`).
-   `--model provider/model#variant` is required on every lane —
-   read it from the role agent's md `model:` field
-   (`~/.config/opencode/agents/<role>.md`) and pass it verbatim. The
+   Dispatch invokes exactly
+   `opencode2 run --auto --model <provider/model#variant> --agent <role>
+   "<brief>"` (message is positional; there is no `--prompt`). Read
+   `--model` verbatim from the role agent's md `model:` field
+   (`~/.config/opencode/agents/<role>.md`) and pass it explicitly. The
    default model needs cookie auth (`No cookie auth cred`), and an agent's
    md `model:` pin does NOT auto-apply to a primary `opencode2 run --agent`
    session (child/subagent sessions only). Check `opencode2 auth list`
-   first. Warm up with one trivial prompt first;
-   a fresh `opencode` boot can fail with a postinstall error — record
-   it and switch paths instead of retrying blindly.
+   once up front; a fresh `opencode` boot can fail with a postinstall
+   error — record it and switch paths instead of retrying blindly.
    Approved model errors here → FAST EXIT naming the model, never substitute.
-5. Drive: `herdr agent prompt <name> "<brief>" --wait --timeout 120000`.
-   The agent exits at DONE and the runner returns its pane to the shell; the
-   pane stays open — no live agent afterward, but the scrollback and the
-   pane itself persist for inspection/reuse. A lane that dies BEFORE done
-   resumes with opencode2 `--session` in the same pane (state lives in the
-   worktree).
+5. The lane exits at DONE, the runner persists the return and `exec`s the
+   shell; the pane stays open — no live agent afterward, but the scrollback
+   and the pane itself persist for inspection/reuse. A lane that dies
+   BEFORE done resumes with opencode2 `--session` in the same pane (state
+   lives in the worktree).
 6. Brief = the delegated subgraph (`goal/SKILL.md` §4.2): WHY, Nodes (files
    + lines, one owner), Edges (inputs consumed / outputs produced),
    Governing docs, Acceptance (frozen), Gate (verify commands), Forbidden,
