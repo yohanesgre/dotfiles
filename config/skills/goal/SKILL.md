@@ -23,7 +23,7 @@ the execution gate pre-authorizes exactly the lifecycle it enumerates
 named lanes/branches. The gate approves scope and waves.
 
 Runtime: opencode2 (v2) only. Assumed surfaces: herdr CLI (`pane
-split/run`, `agent start/prompt/wait/read`), opencode2 flags (`--auto`,
+split/run/close`, `agent start/prompt/wait/read`), opencode2 flags (`--auto`,
 `--prompt`, `--session`, `--agent`, `--model`), V2 command frontmatter
 (`description/agent/model/subagent`), project skill dir `.agents/skills/`,
 project commands dir `.opencode/commands/`. If this session is not
@@ -34,18 +34,24 @@ opencode2, STOP and flag before doing anything.
 ```
 A — happy path (execution graph)
 goal → intake → classify → design → protocol → track → GATE
-     → isolate → wave{lanes} → verify → review → close(PR) → merge
-     → loop: next wave | DONE
+     → isolate → wave{lanes} → verify → review-wave{reviewer_i ∥}
+     → per-lane close(PR) → merge → loop: next wave | DONE
+
+Lane node lifecycle (short-lived)
+spawn → work → persist return to <slug>-return.md → self-close (pane gone)
 
 E — break points (coordinator failures, not worker failures)
 wrong context · missing input (invisible edge) · misinterpretation
 herdr/env/binary/model/agent gap · secrets · no progress
+lane pane closed before return persisted · reviewer fail/timeout ·
+reviewer ↔ lane drift
 
 R — every worker prompt carries
 subgraph (nodes+edges) · WHY · governing docs · acceptance · gate · forbidden
 
-Boundary: prompt = delegated subgraph IN → return = implemented graph OUT.
-Verify: compare implemented graph vs delegated subgraph; extra/missing node = deviation.
+Boundary: prompt = delegated subgraph IN → return = implemented graph OUT (on
+disk: the pane self-closes at DONE). Verify: compare implemented graph vs
+delegated subgraph; extra/missing node = deviation.
 ```
 
 Nodes are tasks; edges are data dependencies. Independent nodes run
@@ -68,12 +74,15 @@ isolate, gates, review, PR, CI, and merge — it does not produce the diff.
 Delegation by node type (matches the graph):
 - **Mutation nodes → herdr lane(s) only.** Lane roles: `swe`
   (implementation), `designer` (design artifacts). Simple = exactly one
-  lane. Complex = one lane per track (1..N).
-- **Read-only nodes → `subagent` tool only.** Single foreground (inline,
-  blocking) call; background/parallel fan-out banned. Roles: `architect`
-  (design/plan), `researcher` (codebase/web lookup), `reviewer` (review).
-  They never mutate; their agent md `model:` pin applies to child sessions
-  automatically — no `--model` needed.
+  lane. Complex = one lane per track (1..N). A lane pane is short-lived:
+  it self-closes at DONE, so its return lands on disk first (§4.2).
+- **Read-only nodes → `subagent` tool.** `architect`/`researcher` = single
+  foreground (inline, blocking) call. `reviewer` = one per lane, fanned out
+  background/async across the review wave (read-only → collision-free),
+  each joined to its own lane before that lane closes out. Roles:
+  `architect` (design/plan), `researcher` (codebase/web lookup), `reviewer`
+  (review). They never mutate; their agent md `model:` pin applies to child
+  sessions automatically — no `--model` needed.
 
 A mutation the orchestrator makes itself is a violation: stop, revert it
 before proceeding, and re-dispatch the work to a lane. Design artifacts
@@ -251,11 +260,21 @@ rejection or change request ("gas", "oke", "lanjut", 👍 all count;
 ### 4.2 Dispatch — the prompt IS the delegated subgraph
 
 Follow `references/lane-dispatch.md` for the exact order (guards →
-worktree → pane → agent → prompt → read). Lane roles by DISCOVERY, never
-hardcoded IDs: `swe` (implement/fix), `designer` (design artifacts). herdr
-kinds name backends, not roles — the role travels in the brief. If no
-fitting agent exists, keep the lane WAIT and report the gap; never invent
-an agent name.
+worktrees → master+grid layout → agent → prompt → read return file). Lane
+roles by DISCOVERY, never hardcoded IDs: `swe` (implement/fix), `designer`
+(design artifacts). herdr kinds name backends, not roles — the role travels
+in the brief. If no fitting agent exists, keep the lane WAIT and report the
+gap; never invent an agent name.
+
+Layout (design-graph variant C, built once per wave by
+`scripts/lane-layout.ts`): the orchestrator keeps a fixed left master column
+at full height; lanes tile a balanced grid to the right (target tile aspect
+~2:1), never a widening row of skinny columns. Tile minimum 60x16; N beyond
+one tab's capacity moves to extra lane-only tabs — never squeezed. One lane,
+one pane, one owner; each pane's cwd is its worktree. The grid holds across
+N=0 (planning: no lane panes, master full width), N=1 (master + one lane),
+and overflow; a finished lane's pane closes and the grid reflows with no
+orphan tiles.
 
 Brief (subgraph IN — every lane, self-contained):
 ```
@@ -288,15 +307,21 @@ commit secrets. Violation kills the lane.
 
 herdr has no opencode2 kind: drive opencode2 with `opencode2 run --auto
 --model ... --agent <role>`; warm a fresh agent with one trivial prompt
-before the brief. Wait for lane output with
-`bun ~/.agents/skills/goal/scripts/lane-wait.ts` (reactive sentinel wait —
-never fixed `sleep`); the runner-file vehicle is prescribed in
-`references/lane-dispatch.md` step 4.
+before the brief. A lane pane is short-lived — it self-closes at DONE, so
+its scrollback is gone. Completion is a durable file, not pane output: the
+runner atomically writes the lane report/return to `<slug>-return.md` LAST,
+then closes its own pane. Wait with
+`bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file> [timeout-ms]`
+(file-sentinel watch + Effect timeout — never fixed `sleep`, never
+`pane wait-output`, which dies with the pane); the runner-file vehicle is
+prescribed in `references/lane-dispatch.md` step 4.
 
 ### 4.3 Return — the reply IS the implemented graph
 
-Lane reply style: caveman-compressed EXCEPT `reviewer`, which runs full
-prose (compression drops review nuance). Every lane return carries:
+The lane persists its return to `<slug>-return.md` (the sentinel) before it
+closes its pane; that file — not pane scrollback (gone at DONE) — is the
+implemented graph. Reply style: caveman-compressed EXCEPT `reviewer`, which
+runs full prose (compression drops review nuance). Every lane return carries:
 ```
 Implemented: <files changed + what changed>
 Evidence:    <gate output tails + full log path>
@@ -310,13 +335,15 @@ inline subagents while files/scopes don't collide. The orchestrator's
 `subagent` calls are read-only and MUST NOT touch anything already
 delegated; the orchestrator never edits files itself.
 
-Lane lifecycle: keep worktree + branch until its PR merges (never delete
-early); removal needs explicit user approval. Resume a dead lane agent
-with opencode2 `--session` (state lives in the worktree, re-brief from the
-lane file). Each lane runs `git status` FIRST inside its own worktree —
-clean expected there; dirty from an unknown source → WAIT + report, never
-build on top of it (control-checkout dirt is irrelevant — lanes never
-touch it).
+Lane lifecycle: the lane pane self-closes at DONE — no live agent or
+scrollback remains, so the persisted `<slug>-return.md` is the record.
+Keep worktree + branch until its PR merges (never delete early; the
+reviewer still reads it); removal needs explicit user approval. Resume a
+lane that died BEFORE done with opencode2 `--session` (state lives in the
+worktree, re-brief from the lane file). Each lane runs `git status` FIRST
+inside its own worktree — clean expected there; dirty from an unknown
+source → WAIT + report, never build on top of it (control-checkout dirt is
+irrelevant — lanes never touch it).
 
 ## Phase 5 — Verify + loop (guarded)
 
@@ -347,31 +374,39 @@ if declared.
 Missing tool: `command -v` first, then the closest equivalent, and
 declare the deviation.
 
-End of every wave: gates + FROZEN acceptance + graph compare. Green +
-met → reviewer pass → report + DONE + `mem_save`. Red or unmet → adjust
-the plan, record the deviation, next loop iteration.
+End of every wave: gates + FROZEN acceptance + graph compare per lane. A
+lane green + met → spawn its reviewer immediately (async) and let it run;
+a lane red or unmet → adjust the plan, record the deviation, next loop
+iteration.
 
-Reviewer pass: every lane gets a reviewer pass (correctness, scope, edge
-cases) before its PR; findings return to the lane, not around it. Run the
-`reviewer` as a read-only `subagent` (full prose). No reviewer
-discoverable → orchestrator self-reviews against a checklist (diff
-matches lane scope, acceptance re-checked, edge cases probed, staged
-names secret-free) and records it in the report. Lane findings live in
-the lane file (+ TIMELINE line); `report.md` is owned by the orchestrator
-and aggregates lanes.
+Review wave (async, per lane): every lane gets a reviewer pass
+(correctness, scope, edge cases) before its PR. Spawn one `reviewer` per
+lane as a background `subagent` at once — read-only, so the fan-out is
+collision-free. Bind each reviewer to its own lane (stable reviewer↔lane
+map); findings return to that lane only, never around it. A lane closes out
+(commit/push/PR) as soon as its own reviewer is green — lanes are
+edge-independent; `report.md`/DONE stay wave-level (all lanes closed). A
+reviewer that fails or times out is NOT green — retry it or self-review
+that lane; a missing reviewer is never a pass. No reviewer discoverable →
+orchestrator self-reviews against a checklist (diff matches lane scope,
+acceptance re-checked, edge cases probed, staged names secret-free) and
+records it in the report. Lane findings live in the lane file (+ TIMELINE
+line); `report.md` is owned by the orchestrator and aggregates lanes.
 
-Auto close-out: a wave that is green + met with its reviewer pass
-recorded always commits on its branch (conventional message, body = WHY),
-pushes (`git push -u origin <branch>`), and opens a PR (base `main`, body
-= result + gate tails + deviations). Invoking `/goal` plus the approved
-gate is the explicit ask for exactly the enumerated lifecycle. Then the
-merge gate takes over: PR auto-merges when CI is green. CI red → fix loop
-(counts toward the loop guard); unfixable within budget → leave open +
-report. Merge BLOCKED BY POLICY (e.g. required-human-review rule, not red
-CI) → leave open + report immediately, never burn loop iterations polling
-it. Worktree/branch removal after merge needs no approval inside
-`/goal`; keep them until merged, then clean up. `status/` is gitignored —
-reports travel via the PR body, not the repo.
+Auto close-out (per lane): a lane that is green + met with its own reviewer
+pass recorded always commits on its branch (conventional message, body =
+WHY), pushes (`git push -u origin <branch>`), and opens a PR (base `main`,
+body = result + gate tails + deviations). Lanes are edge-independent, so
+each closes out the moment its own review clears — no waiting on sibling
+lanes. Invoking `/goal` plus the approved gate is the explicit ask for
+exactly the enumerated lifecycle. Then the merge gate takes over: PR
+auto-merges when CI is green. CI red → fix loop (counts toward the loop
+guard); unfixable within budget → leave open + report. Merge BLOCKED BY
+POLICY (e.g. required-human-review rule, not red CI) → leave open + report
+immediately, never burn loop iterations polling it. Worktree/branch removal
+after merge needs no approval inside `/goal`; keep them until merged, then
+clean up. `status/` is gitignored — reports travel via the PR body, not the
+repo.
 
 Report progress per wave as: state, commit sha, one-line test summary,
 concerns (if any) — nothing else.
@@ -386,6 +421,12 @@ concerns (if any) — nothing else.
 - **WAIT** (park the lane, continue others, report the blocker): contract
   mismatch; needs out-of-scope files; no fitting agent; clean-check
   failure inside the worktree from an unknown source.
+- **Lane closed before return persisted**: the sentinel fired but
+  `<slug>-return.md` is missing/empty → WAIT + re-dispatch; never read
+  scrollback (the pane is gone at DONE).
+- **Reviewer fan-out**: a reviewer that times out or fails is not green —
+  retry it or self-review that lane; the reviewer↔lane map stays stable, a
+  review never crosses to a sibling lane.
 - **Loop guard**: max 3 iterations on the same wave without progress —
   progress means ≥1 newly-green acceptance item or gate since the last
   iteration. No progress → park that lane WAIT, continue others, note the

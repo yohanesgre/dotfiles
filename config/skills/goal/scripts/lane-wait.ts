@@ -1,108 +1,73 @@
 #!/usr/bin/env bun
 /**
- * lane-wait.ts — reactive wait for a herdr lane-pane sentinel.
+ * lane-wait.ts — reactive wait for a herdr lane's persisted return file.
  *
- *   bun ~/.agents/skills/goal/scripts/lane-wait.ts <pane-id> <sentinel> [timeout-ms]
+ *   bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file> [timeout-ms]
  *
- * Runs `herdr pane wait-output --match` (herdr-side blocking match, no
- * orchestrator sleep loop) with an Effect outer timeout. Exit 0 = sentinel
- * seen (+ elapsed printed), 1 = timeout/pane failure, 2 = bad argv.
+ * A `/goal` lane pane is short-lived: opencode2 runs one-shot and the
+ * runner closes the pane at DONE, so its scrollback is gone. Completion is
+ * a durable artifact instead: the runner writes the lane report/output to
+ * `<return-file>.tmp` and atomically renames it onto `<return-file>` as the
+ * LAST step before closing its pane — so the file's appearance can only
+ * mean real completion. This script waits for that file (bounded 200ms
+ * poll + Effect timeout) and prints its contents on success.
  *
- * Pair with the runner-file vehicle from lane-dispatch.md: the lane brief
- * lives in a file executed via `herdr pane run <pane> "bash <runner>"`, so
- * the echoed command line never contains the sentinel and the match can
- * only fire on real completion.
+ * Exit 0 = return file appeared (+ elapsed, contents printed), 1 = timeout,
+ * 2 = bad argv.
  */
 import { Data, Effect } from "effect";
+import { existsSync, readFileSync } from "node:fs";
 
 export class InvalidArgs extends Data.TaggedError("InvalidArgs")<{ reason: string }> {}
-export class PaneError extends Data.TaggedError("PaneError")<{ message: string }> {}
 export class LaneTimeout extends Data.TaggedError("LaneTimeout")<{
-  pane: string;
-  sentinel: string;
+  file: string;
   timeoutMs: number;
 }> {}
 
 interface Args {
-  pane: string;
-  sentinel: string;
+  file: string;
   timeoutMs: number;
 }
 
 const decodeArgs = (argv: Array<string>): Effect.Effect<Args, InvalidArgs> => {
-  const pane = argv[0];
-  const sentinel = argv[1];
-  if (pane === undefined || pane === "") {
-    return Effect.fail(new InvalidArgs({ reason: "usage: lane-wait.ts <pane-id> <sentinel> [timeout-ms]" }));
+  const file = argv[0];
+  if (file === undefined || file === "") {
+    return Effect.fail(new InvalidArgs({ reason: "usage: lane-wait.ts <return-file> [timeout-ms]" }));
   }
-  if (sentinel === undefined || sentinel === "") {
-    return Effect.fail(new InvalidArgs({ reason: "usage: lane-wait.ts <pane-id> <sentinel> [timeout-ms]" }));
-  }
-  const rawTimeout = argv[2] ?? "120000";
+  const rawTimeout = argv[1] ?? "120000";
   const timeoutMs = Number.parseInt(rawTimeout, 10);
   if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
     return Effect.fail(new InvalidArgs({ reason: `timeout-ms must be a positive integer, got ${rawTimeout}` }));
   }
-  return Effect.succeed({ pane, sentinel, timeoutMs });
+  return Effect.succeed({ file, timeoutMs });
 };
 
-interface HerdrResult {
-  out: string;
-  err: string;
-  code: number;
-}
-
-const runHerdr = (args: Array<string>): Effect.Effect<HerdrResult, PaneError> =>
-  Effect.tryPromise({
-    try: async () => {
-      const proc = Bun.spawn(["herdr", ...args], { stdout: "pipe", stderr: "pipe" });
-      if (proc.stdout === null || proc.stderr === null) {
-        throw new Error("herdr stdio unavailable");
+const awaitFile = (args: Args): Effect.Effect<void, LaneTimeout> =>
+  Effect.gen(function* () {
+    const deadline = Date.now() + args.timeoutMs;
+    while (!existsSync(args.file)) {
+      if (Date.now() >= deadline) {
+        return yield* new LaneTimeout({ file: args.file, timeoutMs: args.timeoutMs });
       }
-      const [out, err, code] = await Promise.all([
-        new Response(proc.stdout).text(),
-        new Response(proc.stderr).text(),
-        proc.exited,
-      ]);
-      return { out, err, code };
-    },
-    catch: (u) => new PaneError({ message: `herdr spawn failed: ${u instanceof Error ? u.message : String(u)}` }),
+      yield* Effect.sleep("200 millis");
+    }
   });
 
 const program = Effect.gen(function* () {
   const args = yield* decodeArgs(Bun.argv.slice(2));
   const started = Date.now();
-  const res = yield* runHerdr([
-    "pane",
-    "wait-output",
-    args.pane,
-    "--match",
-    args.sentinel,
-    "--source",
-    "recent-unwrapped",
-    "--lines",
-    "200",
-    "--timeout",
-    String(args.timeoutMs),
-  ]).pipe(
-    Effect.timeoutFail({
-      duration: args.timeoutMs + 5000,
-      onTimeout: () => new LaneTimeout({ pane: args.pane, sentinel: args.sentinel, timeoutMs: args.timeoutMs }),
-    }),
-  );
-  if (res.code !== 0) {
-    return yield* new PaneError({ message: res.err.trim() || res.out.trim() || `herdr exit ${res.code}` });
-  }
+  yield* awaitFile(args);
   const elapsed = Date.now() - started;
-  console.log(`lane-wait: sentinel seen in ${elapsed}ms`);
-  console.log(res.out.slice(-2000));
+  const body = readFileSync(args.file, "utf8");
+  console.log(`lane-wait: return file seen in ${elapsed}ms`);
+  console.log(body.slice(-4000));
 });
 
 Effect.runPromise(
-  Effect.catchAll(program, (e: InvalidArgs | PaneError | LaneTimeout) =>
+  Effect.catchAll(program, (e: InvalidArgs | LaneTimeout) =>
     Effect.sync(() => {
       const detail =
-        e._tag === "InvalidArgs" ? e.reason : e._tag === "PaneError" ? e.message : `${e.pane} ${e.sentinel} ${e.timeoutMs}ms`;
+        e._tag === "InvalidArgs" ? e.reason : `${e.file} not written within ${e.timeoutMs}ms`;
       console.error(`lane-wait: ${e._tag}: ${detail}`);
       return e._tag === "InvalidArgs" ? 2 : 1;
     }),

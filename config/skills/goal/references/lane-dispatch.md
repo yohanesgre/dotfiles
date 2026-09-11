@@ -3,11 +3,12 @@
 Every `/goal` mutation runs through a herdr lane. Simple route = exactly
 one lane in `.worktrees/<plan>`; complex route = one lane per track
 (`.worktrees/<plan>-<lane>`). The `subagent` tool is read-only only
-(research/review) and never mutates; background or parallel `subagent`
-fan-out is banned.
+(research/review) and never mutates: `architect`/`researcher` run as single
+foreground calls; `reviewer` may fan out background/async (one per lane,
+read-only → collision-free).
 
-Order matters — run top to bottom, one lane at a time. Any FAST EXIT
-stops that lane only; others continue.
+Order matters — run top to bottom, one lane at a time (review is the one
+async fan-out). Any FAST EXIT stops that lane only; others continue.
 
 1. Guards (control checkout, before worktree creation):
    ```bash
@@ -28,20 +29,33 @@ stops that lane only; others continue.
    them — never commit them).
    2b. Clean check INSIDE the worktree: `git status --porcelain` — clean
    expected; dirty from an unknown source → WAIT + report.
-3. Pane: `herdr pane split --current --direction right --cwd <worktree> --no-focus`
-   (read the new pane ID from `.result.pane.pane_id`).
+3. Layout (once per wave, after all worktrees exist): build the master+grid
+   with
+   `bun ~/.agents/skills/goal/scripts/lane-layout.ts --anchor "$HERDR_PANE_ID"
+   --lanes '<json>'`, where `<json>` = `[{"name":"<lane>","cwd":"<worktree>"}]`
+   per lane. It resizes the orchestrator pane to a fixed left master column
+   (full height) and tiles the lanes in a balanced grid to the right — never
+   repeated `--direction right` splits into skinny columns. Tile minimum is
+   60x16; overflow (N beyond one tab's capacity) goes to extra lane-only
+   tabs, never squeezed. The script sets each pane's cwd to its worktree and
+   returns per lane `{pane_id, tab_id}` (+ grid) — use those in step 4. Every
+   pane is short-lived; its runner closes it at DONE.
 4. Agent: `herdr agent start <name> --kind <backend> --pane <pane-id>`
    (role travels in the brief, not the kind; mutation roles: `swe`,
    `designer` — read-only roles run as `subagent`, not lanes).
    No opencode2 kind exists — drive opencode2 without it: write the lane
    brief to a runner file `<worktree>/../<slug>-runner.sh` (or
-   `/tmp/opencode/<slug>-runner.sh`), run `herdr pane run <pane>
-   "bash <runner>"`, then wait with
-   `bun ~/.agents/skills/goal/scripts/lane-wait.ts <pane> <sentinel>
-   [timeout-ms]`. The runner file keeps the sentinel out of the pane's
-   command echo, so `wait-output --match` can only fire on real
-   completion — never match on text that also appears in the dispatched
-   command. `--model provider/model#variant` is required on every lane —
+   `/tmp/opencode/<slug>-runner.sh`) that also closes the pane. Run
+   `herdr pane run <pane> "bash <runner>"`; at the end the runner writes
+   the lane report/return to `<slug>-return.md.tmp` and atomically `mv`s it
+   onto `<slug>-return.md` as the LAST step before `herdr pane close
+   "$HERDR_PANE_ID"`. The pane is gone at DONE, so the return file — not
+   scrollback — is the record, and the atomic rename means the file's
+   appearance can only mean real completion. Wait with
+   `bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file>
+   [timeout-ms]` (file-sentinel watch + Effect timeout — never fixed
+   `sleep`, never `pane wait-output`, which dies with the pane).
+   `--model provider/model#variant` is required on every lane —
    read it from the role agent's md `model:` field
    (`~/.config/opencode/agents/<role>.md`) and pass it verbatim. The
    default model needs cookie auth (`No cookie auth cred`), and an agent's
@@ -51,15 +65,17 @@ stops that lane only; others continue.
    a fresh `opencode` boot can fail with a postinstall error — record
    it and switch paths instead of retrying blindly.
    Approved model errors here → FAST EXIT naming the model, never substitute.
-5. Drive: `herdr agent prompt <name> "<brief>" --wait --timeout 120000`;
-   read via `herdr agent read <name> --source recent-unwrapped --lines 120`.
-   Dead agent resumes with opencode2 `--session` (state lives in the worktree).
+5. Drive: `herdr agent prompt <name> "<brief>" --wait --timeout 120000`.
+   The agent is ephemeral: it exits at DONE and the runner closes its pane,
+   so read no live agent afterward. A lane that dies BEFORE done resumes
+   with opencode2 `--session` (state lives in the worktree).
 6. Brief = the delegated subgraph (`goal/SKILL.md` §4.2): WHY, Nodes (files
    + lines, one owner), Edges (inputs consumed / outputs produced),
    Governing docs, Acceptance (frozen), Gate (verify commands), Forbidden,
    Boundary (absolute worktree path, branch, no-commit). Include the lane's
    `--agent` + `--model` (model read from the role agent's md `model:` field).
-7. Return = the implemented graph (`goal/SKILL.md` §4.3): Implemented
-   (files + what changed), Evidence (gate tails + log path), Deviations
-   (extra/missing nodes vs the delegated subgraph), Open. Replies
-   caveman-compressed, except `reviewer` (full prose).
+7. Return = the implemented graph (`goal/SKILL.md` §4.3), read from
+   `<slug>-return.md` (the pane is gone at DONE): Implemented (files + what
+   changed), Evidence (gate tails + log path), Deviations (extra/missing
+   nodes vs the delegated subgraph), Open. Replies caveman-compressed,
+   except `reviewer` (full prose).
