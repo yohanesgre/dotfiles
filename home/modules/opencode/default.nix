@@ -6,6 +6,7 @@
 }:
 {
   xdg.configFile."opencode/opencode.jsonc".source = ../../../config/opencode/opencode.jsonc;
+  xdg.configFile."opencode/AGENTS.md".source = ../../../config/opencode/AGENTS.md;
   xdg.configFile."opencode/cli.json".source = ../../../config/opencode/cli.json;
   xdg.configFile."opencode/CONFIGURATION.md".source = ../../../config/opencode/CONFIGURATION.md;
   xdg.configFile."opencode/agents".source = ../../../config/opencode/agents;

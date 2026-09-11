@@ -34,3 +34,6 @@ config/nvim/lazyvim.json
 
 # agents-swe per-project memory (local, never commit)
 .agents/memory/
+
+# config-level agent rules: track this one AGENTS.md despite the global ~/.gitignore
+!config/opencode/AGENTS.md

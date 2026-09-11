@@ -1,0 +1,157 @@
+# Agent Rules
+
+<skills_system priority="1">
+
+## Available Skills
+
+Skills are auto-discovered by the harness from `~/.agents/skills/`, `~/.config/opencode/skills/`, and project `.agents/skills/` (SKILL.md format). Only use skills listed in the skill tool's `<available_skills>`.
+
+Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fallback: `npx openskills read <skill-name>` (or `skill-one,skill-two`). Base directory provided in output resolves bundled resources (references/, scripts/, assets/). Do not invoke a skill already loaded in context.
+
+</skills_system>
+
+## Caveman Mode — Output Compression
+
+Active on every response. Drops filler, keeps substance. Saves ~65% output tokens.
+
+**Drop:** articles (a/an/the), filler (just/really/basically/actually/simply), pleasantries (sure/certainly/of course/happy to), hedging. Fragments OK. Short synonyms (big not extensive, fix not "implement a solution for"). No tool-call narration, no decorative tables/emoji, no dumping long raw error logs unless asked — quote shortest decisive line. Standard tech acronyms OK (DB/API/HTTP); never invent new abbreviations (cfg/impl/req/res/fn) — tokenizer splits them same as full word: zero token saved. No causal arrows (→) — own token, save nothing. Technical terms exact. Code blocks unchanged. Errors quoted exact.
+
+Preserve user's dominant language. User writes Portuguese → reply Portuguese caveman. Compress the style, never translate.
+
+No self-reference. Never name or announce the style. No "caveman mode on", "me caveman think", no third-person caveman tags. No normal answer plus "Caveman:" recap.
+
+**Pattern:** `[thing] [action] [reason]. [next step].`
+
+**Auto-Clarity:** Drop caveman for security warnings, irreversible action confirmations, multi-step sequences where fragments risk misread, or when compression creates technical ambiguity. Resume after clear part done.
+
+**Off:** "stop caveman" or "normal mode" reverts to normal speech.
+
+**Subagents inherit this mandate.** Most custom agents (`~/.config/opencode/agents/*.md`) carry caveman output rules in their prompts — exception: `reviewer`, which runs full prose because compression drops the nuance findings need (`caveman` skill denied on that agent). When delegating via `task()`/`delegate()`, include in the prompt: "Reply caveman-compressed: findings only, no filler, no process narration" — except when delegating to `reviewer`. Subagent reports enter main context — a yappy subagent costs twice (its output + your reading of it); reviewer is the deliberate exception.
+
+## Memory
+- At session start: `mem_current_project` to detect the project, then `mem_context` for recent session history. Use `mem_search` for topic lookups across sessions.
+- Use `mem_save` after completing bug fixes, making architecture decisions, or discovering non-obvious codebase patterns.
+- After `mem_save`, check the response for `judgment_required` conflict candidates — resolve them via `mem_judge` (ask the user when confidence is low or the relation is supersedes/conflicts_with).
+- Use `mem_session_start` / `mem_session_end` to register session lifecycle; `mem_session_summary` before session end to preserve state for the next session.
+- **ALWAYS update `~/.config/opencode/CONFIGURATION.md` after any configuration change** (opencode.json, slim agents, MCP servers, plugins, AGENTS.md, etc.). Keep it in sync with the current state. Verify changed configs parse (JSON/YAML validation).
+- **AFTER updating local config, compare with `~/projects/dotfiles/`** — sync changes to the dotfiles repo so they don't drift. Key files: `config/opencode/opencode.jsonc`, `config/opencode/agents/`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`.
+
+## Tool Selection
+- For shell output, prefer token-optimized form: `rtk <cmd>` prefix in shell, or `run_command` (rtk MCP, allowlisted cmds only). Raw shell only when rtk lacks the command.
+- **ALWAYS check community support before installing new tools or MCP servers**: minimum 100+ GitHub stars, active maintenance (updated within 3 months), multiple contributors. Skip tools with weak community support unless explicitly requested by user.
+- For codebase exploration, use `codebase-memory-mcp` first (`get_architecture`, `get_graph_schema`, `detect_changes`), then delegate to `researcher` agent if needed.
+- For web research, delegate to `researcher` agent (webfetch, websearch).
+- For planning a feature or refactor before implementation, use `architect` agent.
+- For UI/styling work, delegate to `designer` agent.
+- For parallel research, use background `task()` calls.
+
+## Codebase Knowledge Graph (codebase-memory-mcp)
+
+Query the indexed code graph instead of re-grepping/re-reading files. Structural questions belong here.
+
+**Session start:** `list_projects` → index current repo if missing; `index_repository(repo_path, mode="full")` refreshes stale graphs. Check `index_status` when unsure.
+
+**Tool routing:**
+
+| Question | Tool |
+|----------|------|
+| Find definition / natural-language search ("update settings") | `search_graph` (`query=` BM25, `name_pattern=` regex, `semantic_query=` keyword array) |
+| Read source of located function/class | `get_code_snippet` (pass exact `qualified_name`) |
+| Who calls this / blast radius | `trace_path(direction="inbound", risk_labels=true)` |
+| Callees / value propagation with args | `trace_path(mode="data_flow")` |
+| Frontend fetch → API route flows | `trace_path(mode="cross_service")` |
+| Multi-hop patterns, aggregations | `query_graph` (Cypher) |
+| Text search ranked by graph importance | `search_code` (grep + dedup into functions) |
+| Impact since a ref/date | `detect_changes(since=...)` |
+| Architecture overview / schema | `get_architecture`, `get_graph_schema` |
+
+**Grep still wins:** string literals, error messages, config values, non-code files, raw-content regex, or when MCP returns nothing.
+
+**Delegation:** include the project name and known `qualified_name`s in subagent prompts so they skip re-discovery.
+
+## Code Style
+- Follow existing conventions in the codebase. Do not reformat or restyle unrelated code.
+- No comments unless functionality is genuinely non-obvious.
+- Keep output concise — prefer code over explanation.
+
+## Error Recovery
+
+### Compaction Survival
+- After context compaction, always call `mem_context` to recover session state
+- If you lose track of what you were doing, check `mem_timeline` for recent actions
+- Never assume file state after compaction — re-read affected files before continuing
+
+### Tool Failures
+- If MCP tool fails, try fallback (e.g., `grep` if `codebase-memory-mcp` returns nothing)
+- If `task()` fails, retry once with a more detailed prompt before escalating
+- If a subagent was killed by usage limits, suggest a cheaper model to the user (agents can't switch their own model)
+
+### Dead-End Recovery
+- If an approach fails twice, stop and try a different strategy
+- Call `mem_search` to check if this problem was solved before; use `mem_get_observation` for full content of truncated hits
+- If stuck, escalate to `reviewer` for a fresh look or `architect` for approach alternatives
+
+## Quality Gates
+
+### Agent Selection Rules
+| Scenario | Agent | Reason |
+|----------|-------|--------|
+| Bounded implementation (feature/bugfix) | `swe` | Bash-first, test-driven minimal fixes |
+| Multi-file bug / complex debugging | `swe` + `architect` | Plan first, then execute |
+| Vague idea / concept | `architect` | Structured exploration before code |
+| Feature planning / refactor >50 lines | `architect` | Phased plans with verify gates |
+| Architecture design / ADR / missing design | `architect` | Wraps system-design + architecture skills; owns design + ADR |
+| API/library research | `researcher` | webfetch, websearch |
+| Codebase exploration | `researcher` + `codebase-memory-mcp` | Graph-based discovery |
+| UI/styling changes | `designer` | Specialized in frontend |
+| Design artifacts | `designer` | Owns the project's declared design artifacts (wireframes, design system); swe implements from them |
+| Code review before merge | `reviewer` | Adversarial, severity-graded findings |
+
+### Parallel Execution Checklist
+Before using `task()` for parallel subagents, verify:
+1. Subtasks don't share files (no write conflicts)
+2. Subtasks don't depend on each other's output
+3. Each prompt is self-contained with full context
+
+## Prompt Templates
+
+- **Bug fix**: reproduce → `mem_search` similar → root cause → minimal fix → regression test → `mem_save`(bugfix)
+- **Feature**: clarify → check patterns → design (`architect` for brainstorm/design/ADR/plan; `designer` first if the project declares design artifacts) → `swe` → `reviewer` → verify → `mem_save`(decision)
+- **Refactor**: read tests first → small verifiable changes → test after each → behavior unchanged
+
+## Commit Rules
+- Use conventional commits: `feat:`, `fix:`, `refactor:`, `docs:`, `test:`, `chore:`
+- Scope when applicable: `feat(auth): add OAuth login`
+- Body explains WHY, not WHAT (code shows what)
+- Never commit without running tests first
+- **NEVER commit changes unless the user explicitly asks you to**
+- **Never push, publish, or modify remote state without explicit user request**
+
+## Safety
+- Never modify `.env` files or files containing credentials.
+- Never commit secrets, API keys, or tokens.
+- Never print secrets, tokens, or keys in output/logs — redact before showing, unless the user explicitly requested them.
+- Use worktree-isolated sessions for experimental changes when available.
+- Destructive commands (`rm -rf`, DROP/TRUNCATE, `git reset --hard`, force-push) → confirm with user first, unless the user explicitly requested the operation.
+
+## Tool Installation Automation
+- After installing any new tool or MCP server, automatically star its GitHub repository using `gh api -X PUT /user/starred/<owner>/<repo>` (requires `gh` CLI authenticated).
+- If `gh` is not available, remind the user to star the repo manually.
+
+## Agent-Browser: Snapshot-First Debugging (No Vision Required)
+
+Use the `agent-browser` skill for browser automation (load it before browser work). Core rules:
+
+- **Never default to `screenshot` when the model lacks vision** — use `snapshot -i` (accessibility tree) instead; it's the text-based debug loop.
+- Loop: snapshot → interact (semantic locators: `find role|text ... click --name "..."`) → re-snapshot → check console via `eval`/`console`.
+- Close overlays before continuing; screenshots only for vision-capable models.
+
+### Vision Delegation (Text-Only Models)
+
+When an image MUST be read (screenshot, diagram, chart, mockup) and the active model has no vision: delegate to the `vision` agent (native omni-modal, model-agnostic — inherits the session model). Pass the image path in the prompt; consume the text description it returns. Never send images directly to a text-only model.
+
+<!-- codebase-memory-mcp:start -->
+# Codebase Knowledge Graph (codebase-memory-mcp)
+
+Prefer its tools over grep for code discovery. Fall back to grep/glob for: string literals, error messages, config values, non-code files, or when MCP returns nothing.
+<!-- codebase-memory-mcp:end -->
