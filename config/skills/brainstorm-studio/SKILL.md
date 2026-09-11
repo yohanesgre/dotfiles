@@ -21,6 +21,8 @@ Every project goes through this process. A todo list, a single-function utility,
 
 The visual companion, the spec write, and the commit assume shell, browser, and write access. In a read-only or headless context — a subagent, a CI sandbox, no display — those tools are absent: skip the companion, keep the flow text-only, and return the design and its graphs as the deliverable. The parent persists the spec, commits it, and runs the user review gate. The HARD-GATE and the graph discipline still apply.
 
+Text-only is a first-class mode here, not a downgrade: when a parent routes work here without shell/browser, stay in this skill and finish the process text-only — do not hand off to another brainstorming skill.
+
 ## Checklist
 
 You MUST create a task for each of these items and complete them in order:
@@ -115,7 +117,7 @@ Route by material before drawing:
 - **Multi-step work or delegation** (subagents, parallel waves) → draw the task graph per `design-thinking`'s graph-protocol.
 - **"How does X work / what calls X / trace a flow"** → load `call-graph`.
 
-Carry the graph into the spec: each design section states its graph (A/E/R for logic, C/V/N for interface), so the planner and swe build the drawn graph instead of re-inventing it. A section with no graph yet is not ready to present.
+Carry the graph into the spec: each design section states its graph (A/E/R for logic, C/V/N for interface), so the plan and the implementation build the drawn graph instead of re-inventing it. A section with no graph yet is not ready to present.
 
 ## After the Design
 
