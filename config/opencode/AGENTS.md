@@ -10,6 +10,14 @@ Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fall
 
 </skills_system>
 
+## Tool Calling (V2)
+
+Built-in tools: `read`, `glob`, `grep`, `edit`, `write`, `shell`, `webfetch`, `websearch`, `question`, `skill`, `subagent`, `execute`.
+
+- **Subagent delegation uses the `subagent` tool** — `subagent(agent, description, prompt, background?)`. Set `background: true` for async; pass the returned `sessionID` to continue that child. V2 has no `task()` or `delegate()`.
+- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.engram.<tool>(...)`, `tools["codebase-memory-mcp"].<tool>(...)`, `tools.rtk.<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
+- **Shell runs through the `shell` tool** — set `workdir` instead of `cd`; prefer the `rtk` token-optimized prefix.
+
 ## Caveman Mode — Output Compression
 
 Active on every response. Drops filler, keeps substance. Saves ~65% output tokens.
@@ -26,7 +34,7 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 
 **Off:** "stop caveman" or "normal mode" reverts to normal speech.
 
-**Subagents inherit this mandate.** Most custom agents (`~/.config/opencode/agents/*.md`) carry caveman output rules in their prompts — exception: `reviewer`, which runs full prose because compression drops the nuance findings need (`caveman` skill denied on that agent). When delegating via `task()`/`delegate()`, include in the prompt: "Reply caveman-compressed: findings only, no filler, no process narration" — except when delegating to `reviewer`. Subagent reports enter main context — a yappy subagent costs twice (its output + your reading of it); reviewer is the deliberate exception.
+**Subagents inherit this mandate.** Most custom agents (`~/.config/opencode/agents/*.md`) carry caveman output rules in their prompts — exception: `reviewer`, which runs full prose because compression drops the nuance findings need (`caveman` skill denied on that agent). When delegating via `subagent`, include in the prompt: "Reply caveman-compressed: findings only, no filler, no process narration" — except when delegating to `reviewer`. Subagent reports enter main context — a yappy subagent costs twice (its output + your reading of it); reviewer is the deliberate exception.
 
 ## Memory
 - At session start: `mem_current_project` to detect the project, then `mem_context` for recent session history. Use `mem_search` for topic lookups across sessions.
@@ -37,18 +45,18 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 - **AFTER updating local config, compare with `~/projects/dotfiles/`** — sync changes to the dotfiles repo so they don't drift. Key files: `config/opencode/opencode.jsonc`, `config/opencode/agents/`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`.
 
 ## Tool Selection
-- For shell output, prefer token-optimized form: `rtk <cmd>` prefix in shell, or `run_command` (rtk MCP, allowlisted cmds only). Raw shell only when rtk lacks the command.
+- For shell output, prefer token-optimized form: `rtk <cmd>` prefix in the `shell` tool, or `tools.rtk.run_command(...)` via `execute` (allowlisted cmds only). Raw shell only when rtk lacks the command.
 - **ALWAYS check community support before installing new tools or MCP servers**: minimum 100+ GitHub stars, active maintenance (updated within 3 months), multiple contributors. Skip tools with weak community support unless explicitly requested by user.
 - **Delegate exploration and research to the `researcher` subagent by default** — primary/build sessions must not hand-explore multi-file code or run web searches inline. `researcher` owns the codebase-memory-mcp graph, the `explorer`/`call-graph` routing, and `librarian` web research. Keep inline only cheap single-file lookups (one read/grep you can act on immediately); delegate anything spanning files, callers, impact, or the web.
 - Codebase-exploration prompt: name the project, the exact question, known `qualified_name`s/paths, and the evidence expected (`path:line` + snippet). researcher routes internally: locate → `explorer`, trace → `call-graph`, structure/impact → codebase-memory-mcp.
 - Web-research prompt: state the library + pinned version, the exact question, and the source expectation (versioned official docs first). researcher fetches; never invent APIs.
-- For parallel research, use background `task()` calls to `researcher`.
+- For parallel research, use background `subagent` calls to `researcher` (`background: true`).
 - For planning a feature or refactor before implementation, use `architect` agent.
 - For UI/styling work, delegate to `designer` agent.
 
 ## Codebase Knowledge Graph (codebase-memory-mcp)
 
-Query the indexed code graph instead of re-grepping/re-reading files. Structural questions belong here.
+Query the indexed code graph instead of re-grepping/re-reading files. Structural questions belong here. These tools are Code Mode — call them via `execute` as `tools["codebase-memory-mcp"].<tool>(...)`.
 
 **Session start:** `list_projects` → index current repo if missing; `index_repository(repo_path, mode="full")` refreshes stale graphs. Check `index_status` when unsure.
 
@@ -84,7 +92,7 @@ Query the indexed code graph instead of re-grepping/re-reading files. Structural
 
 ### Tool Failures
 - If MCP tool fails, try fallback (e.g., `grep` if `codebase-memory-mcp` returns nothing)
-- If `task()` fails, retry once with a more detailed prompt before escalating
+- If `subagent` fails, retry once with a more detailed prompt before escalating
 - If a subagent was killed by usage limits, suggest a cheaper model to the user (agents can't switch their own model)
 
 ### Dead-End Recovery
@@ -110,7 +118,7 @@ Query the indexed code graph instead of re-grepping/re-reading files. Structural
 | Code review before merge | `reviewer` | Adversarial, severity-graded findings |
 
 ### Parallel Execution Checklist
-Before using `task()` for parallel subagents, verify:
+Before using `subagent` (background) for parallel subagents, verify:
 1. Subtasks don't share files (no write conflicts)
 2. Subtasks don't depend on each other's output
 3. Each prompt is self-contained with full context
