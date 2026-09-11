@@ -86,7 +86,7 @@ Write the brief to `<slug>-brief.md` and this runner to `<slug>-runner.sh`
 #!/usr/bin/env bash
 # /goal lane runner — generated, do not hand-edit. <slug>
 set -uo pipefail
-ROLE="<swe|designer>"
+ROLE="<swe|designer|steward>"
 MODEL="<provider/model#variant>"      # read from ~/.config/opencode/agents/<role>.md model:
 WORKTREE="<abs worktree path>"
 SLUG="<slug>"

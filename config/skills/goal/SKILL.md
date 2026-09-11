@@ -81,7 +81,9 @@ isolate, gates, review, PR, CI, and merge — it does not produce the diff.
 
 Delegation by node type (matches the graph):
 - **Mutation nodes → herdr lane(s) only.** Lane roles: `swe`
-  (implementation), `designer` (design artifacts). Simple = exactly one
+  (implementation), `designer` (design artifacts), `steward` (non-behavior
+  upkeep: deps, docs sync, hygiene, release chores, gate runs — cheap model,
+  never an application-behavior change). Simple = exactly one
   lane. Complex = one lane per track (1..N). A lane runs foreground in its
   own herdr pane so progress is visible; the pane persists through the loop
   for inspection + reuse (never detached, never background) and is closed
@@ -273,7 +275,8 @@ rejection or change request ("gas", "oke", "lanjut", 👍 all count;
 Follow `references/lane-dispatch.md` for the exact order (guards →
 worktrees → master+grid layout → agent → prompt → read return file). Lane
 roles by DISCOVERY, never hardcoded IDs: `swe` (implement/fix), `designer`
-(design artifacts). herdr kinds name backends, not roles — the role travels
+(design artifacts), `steward` (non-behavior upkeep; behavior change →
+WAIT + re-dispatch). herdr kinds name backends, not roles — the role travels
 in the brief. If no fitting agent exists, keep the lane WAIT and report the
 gap; never invent an agent name.
 
@@ -455,6 +458,10 @@ concerns (if any) — nothing else.
 - **WAIT** (park the lane, continue others, report the blocker): contract
   mismatch; needs out-of-scope files; no fitting agent; clean-check
   failure inside the worktree from an unknown source.
+- **Steward lane scope bleed**: a `steward` lane meets an application-
+  behavior change → WAIT + report and re-dispatch that node to a
+  `swe`/`designer` lane; steward never absorbs behavior changes (its remit
+  is non-behavior upkeep only).
 - **Lane dead before return persisted**: `<slug>-return.md` is
   missing/empty → WAIT + re-dispatch (resume the pane with opencode2
   `--session` when state remains); the return file — not scrollback — is
@@ -503,7 +510,7 @@ concerns (if any) — nothing else.
   `status/` tracking plane (`status/<plan>/**`, `status/TIMELINE.md`) +
   memory. Implementation code and design docs (whatever the project's
   `AGENTS.md` declares) are never edited by the main session — mutation
-  goes to a herdr lane (`swe`/`designer`), read-only work to a `subagent`
+  goes to a herdr lane (`swe`/`designer`/`steward`), read-only work to a `subagent`
   (`architect`/`researcher`/`reviewer`). A self-made edit is a violation:
   revert it + re-dispatch.
 - Repo bindings, before touching code: load the project's declared design

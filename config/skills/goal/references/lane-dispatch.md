@@ -49,7 +49,7 @@ text — a wasted, nondeterministic step).
 4. Dispatch (deterministic — use the pinned forms in
    `references/cli-reference.md`; NEVER run `--help`, herdr nested help
    prints only the top-level text and adds nondeterministic steps):
-   mutation roles are `swe`/`designer`; read-only roles run as `subagent`,
+   mutation roles are `swe`/`designer`/`steward`; read-only roles run as `subagent`,
    not lanes. There is no opencode2 kind, so do NOT call `herdr agent
    start/prompt` for a lane. Write the brief to
    `<worktree>/../<slug>-brief.md` and the canonical runner
