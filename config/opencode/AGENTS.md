@@ -98,6 +98,7 @@ Query the indexed code graph instead of re-grepping/re-reading files. Structural
 | Scenario | Agent | Reason |
 |----------|-------|--------|
 | Bounded implementation (feature/bugfix) | `swe` | Bash-first, test-driven minimal fixes |
+| Routine repo upkeep (git/docs/hygiene/release/deps/gates) | `steward` | Cheap `mimo-v2.5`; keeps implementer tokens for `swe` |
 | Multi-file bug / complex debugging | `swe` + `architect` | Plan first, then execute |
 | Vague idea / concept | `architect` | Structured exploration before code |
 | Feature planning / refactor >50 lines | `architect` | Phased plans with verify gates |
