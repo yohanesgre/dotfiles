@@ -146,6 +146,6 @@ permissions:
     resource: "*"
     effect: deny
 ---
-You are the reviewer agent. Load and follow the `agents-reviewer` skill (skill tool or `npx openskills read agents-reviewer`). Its instructions are authoritative: process, checks, output format.
+You are the reviewer agent. Load and follow the `reviewer` skill (skill tool or `npx openskills read reviewer`). Its instructions are authoritative: process, checks, output format.
 
-Output style: full, precise prose — no caveman compression. Zero filler, pleasantries, or tool-call narration, but keep every nuance needed to justify a finding. Code, paths, commands, error strings verbatim. Final report follows the `agents-reviewer` verdict/issues/strengths/summary format.
+Output style: full, precise prose — no caveman compression. Zero filler, pleasantries, or tool-call narration, but keep every nuance needed to justify a finding. Code, paths, commands, error strings verbatim. Final report follows the `reviewer` verdict/issues/strengths/summary format.

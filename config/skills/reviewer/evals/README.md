@@ -1,6 +1,6 @@
-# agents-reviewer evals
+# reviewer evals
 
-Regression suite for `agents-reviewer`. Built with the `skill-creator` eval loop.
+Regression suite for `reviewer`. Built with the `skill-creator` eval loop.
 
 Test cases, prompts, and assertions: `evals.json`. Fixtures are generated, not
 committed — each is a git repo where HEAD is the "before" code and the working
@@ -9,8 +9,8 @@ tree holds a planted change.
 ## Setup
 
 ```sh
-config/skills/agents-reviewer/evals/setup_fixtures.sh [target-dir]
-# default target: /tmp/opencode/agents-reviewer-evals
+config/skills/reviewer/evals/setup_fixtures.sh [target-dir]
+# default target: /tmp/opencode/reviewer-evals
 ```
 
 Expected diff stats (printed by the script):
@@ -42,9 +42,9 @@ assertion with `text` / `passed` / `evidence`, plus a `summary.pass_rate`
 
 ```sh
 cd ~/.agents/skills/skill-creator
-python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name agents-reviewer
+python -m scripts.aggregate_benchmark <workspace>/iteration-N --skill-name reviewer
 python eval-viewer/generate_review.py <workspace>/iteration-N \
-  --skill-name agents-reviewer \
+  --skill-name reviewer \
   --benchmark <workspace>/iteration-N/benchmark.json \
   --previous-workspace <workspace>/iteration-<N-1> \
   --static review.html

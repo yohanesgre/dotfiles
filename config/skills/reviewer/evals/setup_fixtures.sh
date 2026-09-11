@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Recreate the agents-reviewer evaluation fixtures (skill-creator eval suite).
+# Recreate the reviewer evaluation fixtures (skill-creator eval suite).
 #
 # Each fixture is a git repo: HEAD holds the "before" code, the working tree
 # holds the planted change. The last echo table prints the resulting diff stat,
 # which must match the expected values printed at the end.
 #
 # Usage: setup_fixtures.sh [target-dir]
-# Default target: /tmp/opencode/agents-reviewer-evals
+# Default target: /tmp/opencode/reviewer-evals
 set -euo pipefail
 
-root="${1:-/tmp/opencode/agents-reviewer-evals}"
+root="${1:-/tmp/opencode/reviewer-evals}"
 rm -rf "$root"
 mkdir -p "$root"
 
