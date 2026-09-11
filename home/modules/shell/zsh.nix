@@ -38,6 +38,11 @@
           source "''${XDG_CACHE_HOME:-$HOME/.cache}/p10k-instant-prompt-''${(%):-%n}.zsh"
         fi
 
+        # Separate completion dump for HM's oh-my-zsh. The CachyOS oh-my-zsh
+        # sourced later (config/zsh/extra.zsh) stamps the same $ZSH_COMPDUMP with
+        # a different fpath, forcing compinit to rebuild the dump every shell.
+        export ZSH_COMPDUMP="''${ZDOTDIR:-$HOME}/.zcompdump-hm-''${HOST%%.*}-''${ZSH_VERSION}"
+
         # PATH priority (Nix/upstream > pacman) — see config/zsh/path.zsh
         ${builtins.readFile ../../../config/zsh/path.zsh}
       '')

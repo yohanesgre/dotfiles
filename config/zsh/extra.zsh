@@ -3,6 +3,8 @@
 # CachyOS config provides extra aliases but clobbers HM's oh-my-zsh — save HM vars
 local _HM_ZSH="$ZSH" _HM_ZSH_CUSTOM="$ZSH_CUSTOM"
 if [[ -f /usr/share/cachyos-zsh-config/cachyos-config.zsh ]]; then
+  # CachyOS oh-my-zsh gets its own completion dump — see zsh.nix ZSH_COMPDUMP.
+  export ZSH_COMPDUMP="${ZDOTDIR:-$HOME}/.zcompdump-cachyos-${HOST%%.*}-${ZSH_VERSION}"
   source /usr/share/cachyos-zsh-config/cachyos-config.zsh
   export ZSH="$_HM_ZSH"
   export ZSH_CUSTOM="$_HM_ZSH_CUSTOM"
