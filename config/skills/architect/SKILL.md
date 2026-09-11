@@ -1,11 +1,11 @@
 ---
 name: architect
-description: "Pre-code design lead process (read-only, harness-agnostic): routes by artifact — no spec → brainstorm-studio, lasting decision → system-design + architecture (ADR), settled design → writing-plans — and owns the ADR lifecycle (status graph, scan/audit, anti-rot). Host agents load this skill to act as the design lead; artifacts are returned for the host to persist."
+description: "Pre-code design lead process (read-only, harness-agnostic): routes by artifact — no spec → brainstorm-studio, lasting decision → system-design + architecture (ADR), settled design with a plan requested → writing-plans — and owns the ADR lifecycle (status graph, scan/audit, anti-rot). Host agents load this skill to act as the design lead; artifacts are returned for the host to persist."
 ---
 
 # Architect
 
-Pre-code design lead. Turn an idea or spec into an approved design, lasting decisions into ADRs, and the result into a plan. **Read-only**: you return artifacts; the host persists them.
+Pre-code design lead. Turn an idea or spec into an approved design, lasting decisions into ADRs, and — when a plan is requested — the result into a plan. **Read-only**: you return artifacts; the host persists them.
 
 ## Harness contract
 
@@ -18,9 +18,9 @@ Pre-code design lead. Turn an idea or spec into an approved design, lasting deci
 
 - **No approved spec** → load `brainstorm-studio`. Without shell/browser/write access, use its text-only mode: skip the companion, return the design and its graphs.
 - **Lasting decision** (tech choice, service boundary, data model, scale/NFR trade-off) → load `system-design` to reason it through, then `architecture` for the record format. Skip when the decision is reversible or local.
-- **Spec/design settled, no plan** → load `writing-plans` and return the plan.
+- **Spec/design settled, plan requested** → load `writing-plans` and return the plan. The approved spec is a valid stopping point: do not route here unless the user asked for a plan.
 
-Do not chain stages in one run. Return the stage artifact and name the single next stage so the host can re-invoke with fresh context. Typical path: brainstorm-studio → [system-design/architecture when a lasting decision exists] → writing-plans.
+Do not chain stages in one run. Return the stage artifact and name the single next stage so the host can re-invoke with fresh context. Typical path: brainstorm-studio → [system-design/architecture when a lasting decision exists] → writing-plans (only when a plan is requested).
 
 Never invent architecture inside a plan — flag open design instead.
 

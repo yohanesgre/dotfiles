@@ -1,6 +1,6 @@
 ---
 name: brainstorm-studio
-description: "Guide a user from a fuzzy idea to an approved design with a browser visual companion — one-question-at-a-time dialogue, 2-3 approaches with trade-offs, and HTML mockups, diagrams, and side-by-side comparisons pushed to a live tab. Draws the design as a graph first (the `design-thinking` paradigm), so the spec is graph-shaped and implementation can match it. Use this when brainstorming, exploring, or shaping an idea, feature, component, or design direction before any code is written, and especially when the topic is visual (UI layout, wireframes, architecture diagrams, look-and-feel) or a decision is genuinely clearer shown than told. Prefer the plain `brainstorming` process for text-only conceptual questions; use this when the user should see options as they decide. Hands off to writing-plans after approval; never implement before the user approves the design."
+description: "Guide a user from a fuzzy idea to an approved design with a browser visual companion — one-question-at-a-time dialogue, 2-3 approaches with trade-offs, and HTML mockups, diagrams, and side-by-side comparisons pushed to a live tab. Draws the design as a graph first (the `design-thinking` paradigm), so the spec is graph-shaped and implementation can match it. Use this when brainstorming, exploring, or shaping an idea, feature, component, or design direction before any code is written, and especially when the topic is visual (UI layout, wireframes, architecture diagrams, look-and-feel) or a decision is genuinely clearer shown than told. Prefer the plain `brainstorming` process for text-only conceptual questions; use this when the user should see options as they decide. After approval, optionally hands off to writing-plans; the approved spec is a valid stopping point, and implementation never starts before approval."
 ---
 
 # Brainstorming Ideas Into Designs
@@ -19,7 +19,7 @@ Every project goes through this process. A todo list, a single-function utility,
 
 ## Environment
 
-The visual companion, the spec write, and the commit assume shell, browser, and write access. In a read-only or headless context — a subagent, a CI sandbox, no display — those tools are absent: skip the companion, keep the flow text-only, and return the design and its graphs as the deliverable. The parent persists the spec, commits it, and runs the user review gate. The HARD-GATE and the graph discipline still apply.
+The visual companion and the spec write assume shell, browser, and write access. In a read-only or headless context — a subagent, a CI sandbox, no display — those tools are absent: skip the companion, keep the flow text-only, and return the design and its graphs as the deliverable. The parent persists the spec and runs the user review gate. The HARD-GATE and the graph discipline still apply.
 
 Text-only is a first-class mode here, not a downgrade: when a parent routes work here without shell/browser, stay in this skill and finish the process text-only — do not hand off to another brainstorming skill.
 
@@ -32,10 +32,10 @@ You MUST create a task for each of these items and complete them in order:
 3. **Ask clarifying questions** — one at a time, understand purpose/constraints/success criteria
 4. **Propose 2-3 approaches** — with trade-offs and your recommendation
 5. **Present design** — present each section as its graph, scaled to complexity (see Graph-first design); get user approval after each section
-6. **Write design doc** — save to `.agents/brainstorm-studio/specs/YYYY-MM-DD-<topic>-design.md` and commit
+6. **Write design doc** — save to `.agents/brainstorm-studio/specs/YYYY-MM-DD-<topic>-design.md`
 7. **Spec self-review** — quick inline check for placeholders, contradictions, ambiguity, scope (see below)
 8. **User reviews written spec** — ask user to review the spec file before proceeding
-9. **Transition to implementation** — invoke writing-plans skill to create implementation plan
+9. **Transition to implementation (optional)** — ask whether the user wants an implementation plan; if yes invoke writing-plans, if no stop at the approved spec
 
 ## Process Flow
 
@@ -49,7 +49,9 @@ digraph brainstorming {
     "Write design doc" [shape=box];
     "Spec self-review\n(fix inline)" [shape=box];
     "User reviews spec?" [shape=diamond];
+    "User wants a plan?" [shape=diamond];
     "Invoke writing-plans skill" [shape=doublecircle];
+    "Approve spec and stop" [shape=doublecircle];
 
     "Explore project context" -> "Ask clarifying questions";
     "Ask clarifying questions" -> "Propose 2-3 approaches";
@@ -60,11 +62,13 @@ digraph brainstorming {
     "Write design doc" -> "Spec self-review\n(fix inline)";
     "Spec self-review\n(fix inline)" -> "User reviews spec?";
     "User reviews spec?" -> "Write design doc" [label="changes requested"];
-    "User reviews spec?" -> "Invoke writing-plans skill" [label="approved"];
+    "User reviews spec?" -> "User wants a plan?" [label="approved"];
+    "User wants a plan?" -> "Invoke writing-plans skill" [label="yes"];
+    "User wants a plan?" -> "Approve spec and stop" [label="no"];
 }
 ```
 
-**The terminal state is invoking writing-plans.** Do NOT invoke frontend-design, mcp-builder, or any other implementation skill. The ONLY skill you invoke after brainstorm-studio is writing-plans.
+**The approved spec is a valid terminal state.** If the user wants a plan, the ONLY skill you invoke next is writing-plans. Do NOT invoke frontend-design, mcp-builder, or any other implementation skill.
 
 ## The Process
 
@@ -126,7 +130,7 @@ Carry the graph into the spec: each design section states its graph (A/E/R for l
 - Write the validated design (spec) to `.agents/brainstorm-studio/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
 - Use elements-of-style:writing-clearly-and-concisely skill if available
-- Commit the design document to git
+- Do NOT commit or push the design document — leave it unstaged for the user to review and commit themselves
 
 **Spec Self-Review:**
 After writing the spec document, look at it with fresh eyes:
@@ -141,14 +145,17 @@ Fix any issues inline. No need to re-review — just fix and move on.
 **User Review Gate:**
 After the spec review loop passes, ask the user to review the written spec before proceeding:
 
-> "Spec written and committed to `<path>`. Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
+> "Spec written to `<path>` (not committed). Please review it and let me know if you want to make any changes before we start writing out the implementation plan."
 
 Wait for the user's response. If they request changes, make them and re-run the spec review loop. Only proceed once the user approves.
 
-**Implementation:**
+**Implementation (optional):**
 
-- Invoke the writing-plans skill to create a detailed implementation plan
-- Do NOT invoke any other skill. writing-plans is the next step.
+The approved spec is a complete deliverable; a plan is not required.
+
+- Ask the user whether they want an implementation plan now
+- If yes: invoke the writing-plans skill — and no other skill
+- If no: stop here. The spec is ready for later planning or direct implementation.
 
 ## Visual Companion
 
