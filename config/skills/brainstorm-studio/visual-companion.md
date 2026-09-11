@@ -89,7 +89,7 @@ Save `screen_dir` and `state_dir`. With `--open` the browser opens itself when t
 
 **Finding connection info:** the server writes its startup JSON to `$STATE_DIR/server-info`. If you launched it in the background without capturing stdout, read that file. With `--project-dir`, sessions live under `<project>/.agents/brainstorm-studio/`.
 
-**Note:** pass the project root as `--project-dir` so mockups persist and survive restarts. Without it files go to `/tmp` and are cleaned up. Tell the user to gitignore the session artifacts but keep the specs: ignore `.agents/brainstorm-studio/*` and re-include `!.agents/brainstorm-studio/specs/` (git needs the negation because an excluded parent directory can't be re-included piecemeal).
+**Note:** pass the project root as `--project-dir` so mockups persist and survive restarts. Without it files go to `/tmp` and are cleaned up. Tell the user to gitignore the whole studio directory — session artifacts and specs are local-only working files, never committed: ignore `.agents/brainstorm-studio/`.
 
 **Launching by platform:**
 

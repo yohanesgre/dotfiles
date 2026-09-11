@@ -130,7 +130,7 @@ Carry the graph into the spec: each design section states its graph (A/E/R for l
 - Write the validated design (spec) to `.agents/brainstorm-studio/specs/YYYY-MM-DD-<topic>-design.md`
   - (User preferences for spec location override this default)
 - Use elements-of-style:writing-clearly-and-concisely skill if available
-- Do NOT commit or push the design document — leave it unstaged for the user to review and commit themselves
+- Do NOT commit or push the design document — it is a local working artifact, never a repo change; leave it unstaged for the user to review
 
 **Spec Self-Review:**
 After writing the spec document, look at it with fresh eyes:
