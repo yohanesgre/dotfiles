@@ -43,8 +43,9 @@ text — a wasted, nondeterministic step).
    60x16; overflow (N beyond one tab's capacity) goes to extra lane-only
    tabs, never squeezed. The script sets each pane's cwd to its worktree and
    returns per lane `{pane_id, tab_id}` (+ grid) — use those in step 4. Each
-   lane runs foreground in its pane (visible progress); the pane persists at
-   DONE for inspection + reuse.
+   lane runs foreground in its pane (visible progress); the pane persists
+   through the loop for inspection + reuse, and the orchestrator closes it
+   at plan DONE/FAILED (step 8).
 4. Dispatch (deterministic — use the pinned forms in
    `references/cli-reference.md`; NEVER run `--help`, herdr nested help
    prints only the top-level text and adds nondeterministic steps):
@@ -58,9 +59,10 @@ text — a wasted, nondeterministic step).
    in that pane — the user watches live progress there; never detach or
    background a lane. At the end the runner writes the report to
    `<slug>-return.md.tmp` and atomically `mv`s it onto
-   `<slug>-return.md` as the LAST step, then `exec`s the shell — DO NOT
-   close the pane: it persists so scrollback stays and the pane is
-   reusable. The return file — not scrollback — is the record; the atomic
+   `<slug>-return.md` as the LAST step, then `exec`s the shell — the pane
+   persists so scrollback stays and the pane is reusable; close it only at
+   plan DONE/FAILED (step 8), never per lane mid-loop. The return file —
+   not scrollback — is the record; the atomic
    rename means the file's appearance can only mean real completion. Wait
    with
    `bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file>
@@ -78,17 +80,26 @@ text — a wasted, nondeterministic step).
    error — record it and switch paths instead of retrying blindly.
    Approved model errors here → FAST EXIT naming the model, never substitute.
 5. The lane exits at DONE, the runner persists the return and `exec`s the
-   shell; the pane stays open — no live agent afterward, but the scrollback
-   and the pane itself persist for inspection/reuse. A lane that dies
-   BEFORE done resumes with opencode2 `--session` in the same pane (state
-   lives in the worktree).
+   shell; the pane stays open through the loop — no live agent afterward,
+   but the scrollback and the pane itself persist for inspection/reuse. A
+   lane that dies BEFORE done resumes with opencode2 `--session` in the
+   same pane (state lives in the worktree).
 6. Brief = the delegated subgraph (`goal/SKILL.md` §4.2): WHY, Nodes (files
    + lines, one owner), Edges (inputs consumed / outputs produced),
    Governing docs, Acceptance (frozen), Gate (verify commands), Forbidden,
    Boundary (absolute worktree path, branch, no-commit). Include the lane's
    `--agent` + `--model` (model read from the role agent's md `model:` field).
 7. Return = the implemented graph (`goal/SKILL.md` §4.3), read from
-   `<slug>-return.md` (the pane persists, but the file is the record):
-   Implemented (files + what changed), Evidence (gate tails + log path),
-   Deviations (extra/missing nodes vs the delegated subgraph), Open.
-   Replies caveman-compressed, except `reviewer` (full prose).
+   `<slug>-return.md` (the pane persists through the loop, but the file is
+   the record): Implemented (files + what changed), Evidence (gate tails +
+   log path), Deviations (extra/missing nodes vs the delegated subgraph),
+   Open. Replies caveman-compressed, except `reviewer` (full prose).
+8. Plan close-out (goal reached) — once every lane is closed out (PRs
+   merged, or terminally parked/reported) or the plan closes FAILED, the
+   orchestrator closes the panes it created:
+   `herdr pane close <pane-id>` for each lane in the plan's grid (never a
+   pane it did not create), then removes each merged lane's worktree +
+   branch and finalizes tracking (`report.md`/`status.md`/`mem_save`). A
+   pane-close failure is non-fatal: report it and continue. Closing panes
+   is part of DONE/FAILED close-out — never leave lane panes open after the
+   goal is reached or the plan is closed.

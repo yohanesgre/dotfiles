@@ -42,8 +42,9 @@ goal → intake → classify → design → protocol → track → GATE
      → isolate → wave{lanes} → verify → review-wave{reviewer_i ∥}
      → per-lane close(PR) → merge → loop: next wave | DONE
 
-Lane node lifecycle (visible pane, persists for reuse)
-spawn → work live in pane → persist return to <slug>-return.md → pane stays
+Lane node lifecycle (visible pane, persists through the loop)
+spawn → work live in pane → persist return to <slug>-return.md
+     → pane persists through loop → plan DONE/FAILED: close all lane panes
 
 E — break points (coordinator failures, not worker failures)
 wrong context · missing input (invisible edge) · misinterpretation
@@ -55,7 +56,8 @@ R — every worker prompt carries
 subgraph (nodes+edges) · WHY · governing docs · acceptance · gate · forbidden
 
 Boundary: prompt = delegated subgraph IN → return = implemented graph OUT
-(on disk: `<slug>-return.md` is the sentinel; the pane persists). Verify:
+(on disk: `<slug>-return.md` is the sentinel; the pane persists through
+the loop). Verify:
 compare implemented graph vs delegated subgraph; extra/missing node =
 deviation.
 ```
@@ -81,8 +83,9 @@ Delegation by node type (matches the graph):
 - **Mutation nodes → herdr lane(s) only.** Lane roles: `swe`
   (implementation), `designer` (design artifacts). Simple = exactly one
   lane. Complex = one lane per track (1..N). A lane runs foreground in its
-  own herdr pane so progress is visible, and the pane persists after DONE
-  for inspection + reuse (never detached, never background); its return
+  own herdr pane so progress is visible; the pane persists through the loop
+  for inspection + reuse (never detached, never background) and is closed
+  only when the plan reaches DONE/FAILED (§5 plan close-out); its return
   still lands on disk first (§4.2).
 - **Read-only nodes → `subagent` tool.** `architect`/`researcher` = single
   foreground (inline, blocking) call. `reviewer` = one per lane, fanned out
@@ -281,9 +284,10 @@ at full height; lanes tile a balanced grid to the right (target tile aspect
 one tab's capacity moves to extra lane-only tabs — never squeezed. One lane,
 one pane, one owner; each pane's cwd is its worktree. The grid holds across
 N=0 (planning: no lane panes, master full width), N=1 (master + one lane),
-and overflow; a finished lane's pane persists (scrollback for inspection,
-reusable for a follow-up), so the grid reflows only when you close a pane
-manually — never an orphan tile.
+and overflow; a finished lane's pane persists through the loop (scrollback
+for inspection, reusable for a follow-up), so the grid reflows only when a
+pane closes — and the orchestrator closes every lane pane at plan
+DONE/FAILED (the only close point), never leaving an orphan tile.
 
 Brief (subgraph IN — every lane, self-contained):
 ```
@@ -321,8 +325,10 @@ opencode2 kind, so lanes are driven with the canonical runner via
 `opencode2 run --auto --model <...> --agent <role> "<brief>"` (message
 positional, no `--prompt`). The lane runs foreground in its own pane — the
 user watches progress there; it is never detached or backgrounded, and the
-pane persists after DONE so scrollback stays and the pane can be reused for
-a resume/follow-up. Completion is still a durable file, not pane scrollback:
+pane persists through the loop so scrollback stays and the pane can be
+reused for a resume/follow-up; it closes only at plan DONE/FAILED (the
+orchestrator's close point, §5). Completion is still a durable file, not
+pane scrollback:
 the runner atomically writes the lane report/return to `<slug>-return.md`
 LAST, then `exec`s the shell. Wait with
 `bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file> [timeout-ms]`
@@ -333,8 +339,8 @@ LAST, then `exec`s the shell. Wait with
 ### 4.3 Return — the reply IS the implemented graph
 
 The lane persists its return to `<slug>-return.md` (the sentinel) at DONE;
-the pane stays open, but that file — not pane scrollback — is the
-implemented graph. Reply style: caveman-compressed EXCEPT `reviewer`, which
+the pane stays open through the loop, but that file — not pane scrollback —
+is the implemented graph. Reply style: caveman-compressed EXCEPT `reviewer`, which
 runs full prose (compression drops review nuance). Every lane return carries:
 ```
 Implemented: <files changed + what changed>
@@ -350,13 +356,14 @@ inline subagents while files/scopes don't collide. The orchestrator's
 delegated; the orchestrator never edits files itself.
 
 Lane lifecycle: the lane agent exits at DONE and the runner returns its
-pane to the shell — the pane persists (live progress was visible there and
-the scrollback stays for inspection/reuse), so the persisted
-`<slug>-return.md` is still the record. Reuse the pane for a follow-up or
-resume a lane that died BEFORE done with opencode2 `--session` (state lives
-in the worktree, re-brief from the lane file). Keep worktree + branch until
-its PR merges (never delete early; the reviewer still reads it); removal
-needs explicit user approval. Each lane runs `git status` FIRST
+pane to the shell — the pane persists through the loop (live progress was
+visible there and the scrollback stays for inspection/reuse), so the
+persisted `<slug>-return.md` is still the record. Reuse the pane for a
+follow-up or resume a lane that died BEFORE done with opencode2 `--session`
+(state lives in the worktree, re-brief from the lane file). Keep worktree +
+branch until its PR merges (never delete early; the reviewer still reads
+it); removal needs explicit user approval. The pane is closed only at plan
+close-out (§5), never per lane mid-loop. Each lane runs `git status` FIRST
 inside its own worktree — clean expected there; dirty from an unknown
 source → WAIT + report, never build on top of it (control-checkout dirt is
 irrelevant — lanes never touch it).
@@ -424,6 +431,17 @@ after merge needs no approval inside `/goal`; keep them until merged, then
 clean up. `status/` is gitignored — reports travel via the PR body, not the
 repo.
 
+Plan close-out (goal reached): once every lane in the plan is closed out
+(PRs merged, or terminally parked/reported), or the plan closes FAILED at
+the hard cap, the orchestrator runs cleanup in this order — (1) close every
+lane pane it created: `herdr pane close <pane-id>` for each lane in the
+plan's grid (never a pane it did not create); (2) remove each merged lane's
+worktree + branch; (3) finalize `report.md` / `status.md` (`state: DONE` or
+`FAILED`) / `status/TIMELINE.md` + `mem_save`. Closing panes is part of
+DONE/FAILED close-out — never leave lane panes open once the goal is
+reached or the plan is closed. A pane-close failure is non-fatal: report it
+and continue cleanup. The plan is not DONE until its panes are closed.
+
 Report progress per wave as: state, commit sha, one-line test summary,
 concerns (if any) — nothing else.
 
@@ -467,7 +485,7 @@ concerns (if any) — nothing else.
 - Rebase before PR: main moves under lanes. Rebase each lane on latest
   `main` + re-run its gate before opening the PR. CI red caused by the
   rebase → fix loop (counts toward the loop guard).
-- Files are truth: a pane persists but is not durable (it can be closed,
+- Files are truth: a pane persists through the loop but is not durable (it can be closed,
   and the orchestrator's own view is compacted). Lane progress lives
   in lane files + `report.md`. After context compaction, re-read
   `plan.md` + lane files AND run `mem_context` before continuing — never

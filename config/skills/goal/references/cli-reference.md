@@ -33,7 +33,8 @@ herdr tab create --no-focus --cwd <dir>            # -> .result.tab.tab_id, .res
 herdr pane current --current                       # -> .result.pane.pane_id (caller)
 ```
 
-Drive a lane (foreground, visible, pane persists):
+Drive a lane (foreground, visible; pane persists through the loop, closed
+by the orchestrator at plan DONE/FAILED):
 
 ```bash
 herdr pane run <pane-id> "bash /abs/path/<slug>-runner.sh"   # sends text + Enter
@@ -104,7 +105,8 @@ rc=${PIPESTATUS[0]}
 mv "$TMP" "$RETURN"
 echo "lane $SLUG done rc=$rc -> $RETURN"
 
-# hand the pane back to an interactive shell (pane persists; never close it)
+# hand the pane back to an interactive shell (pane persists through the
+# loop; the orchestrator closes it at plan DONE/FAILED close-out)
 exec "${SHELL:-bash}" -i
 ```
 
