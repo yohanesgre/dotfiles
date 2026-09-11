@@ -1,0 +1,113 @@
+<!doctype html>
+<!--
+  agents-reviewer HTML report template.
+
+  Fill {{PLACEHOLDERS}}, set the verdict class, and copy/delete the ISSUE CARD
+  block once per issue. Keep the file self-contained: inline CSS only, no
+  external scripts, fonts, or CDN links. Escape code as &lt; &gt; &amp;.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{TITLE}}</title>
+<style>
+  :root {
+    --bg: #0f1115; --card: #171a21; --line: #262b36; --fg: #e6e9ef;
+    --muted: #9aa4b2; --sev: #e5484d; --med: #f5a623; --nit: #4c9aff;
+    --ok: #30a46c; --radius: 10px;
+  }
+  @media (prefers-color-scheme: light) {
+    :root { --bg: #f7f8fa; --card: #ffffff; --line: #e3e6eb; --fg: #1c2029; --muted: #5b6472; }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 36px 0 12px; }
+  .top { display: flex; gap: 16px; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+  .meta { margin: 0; color: var(--muted); font-size: 13px; }
+  .verdict { display: inline-block; padding: 6px 14px; border-radius: 999px; font-weight: 700; font-size: 13px; letter-spacing: .04em; }
+  .verdict-approve { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); border: 1px solid var(--ok); }
+  .verdict-nits { background: color-mix(in srgb, var(--med) 16%, transparent); color: var(--med); border: 1px solid var(--med); }
+  .verdict-request { background: color-mix(in srgb, var(--sev) 16%, transparent); color: var(--sev); border: 1px solid var(--sev); }
+  .counts { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+  .pill { padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--line); }
+  .pill.sev { color: var(--sev); border-color: var(--sev); }
+  .pill.med { color: var(--med); border-color: var(--med); }
+  .pill.nit { color: var(--nit); border-color: var(--nit); }
+  .pill.zero { color: var(--muted); }
+  .issue { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin: 10px 0; }
+  .issue.sev { border-left-color: var(--sev); }
+  .issue.med { border-left-color: var(--med); }
+  .issue.nit { border-left-color: var(--nit); }
+  .issue header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .badge { font-size: 11px; font-weight: 800; letter-spacing: .06em; padding: 2px 8px; border-radius: 6px; }
+  .badge.sev { background: var(--sev); color: #fff; }
+  .badge.med { background: var(--med); color: #1c2029; }
+  .badge.nit { background: var(--nit); color: #fff; }
+  .loc { font-size: 13px; color: var(--fg); background: color-mix(in srgb, var(--fg) 8%, transparent); padding: 2px 8px; border-radius: 6px; }
+  .chip { font-size: 11px; color: var(--muted); border: 1px solid var(--line); padding: 1px 8px; border-radius: 999px; }
+  .problem { margin: 10px 0 6px; }
+  .fix { margin: 0; color: var(--muted); }
+  .fix strong { color: var(--fg); }
+  pre.snippet { margin: 10px 0 0; padding: 10px 12px; overflow: auto; border-radius: 8px; background: color-mix(in srgb, var(--fg) 7%, transparent); font-size: 13px; }
+  ul { padding-left: 20px; }
+  footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <header class="top">
+    <div>
+      <h1>{{TITLE}}</h1>
+      <p class="meta">{{REPO}} &middot; {{RANGE}} &middot; {{DATE}}</p>
+    </div>
+    <!-- verdict class: verdict-approve | verdict-nits | verdict-request -->
+    <span class="verdict verdict-request">{{VERDICT}}</span>
+  </header>
+
+  <section class="counts">
+    <span class="pill sev">{{N_SEV}} SEV</span>
+    <span class="pill med">{{N_MED}} MED</span>
+    <span class="pill nit">{{N_NIT}} NIT</span>
+  </section>
+
+  <section>
+    <h2>Issues</h2>
+
+    <!-- ISSUE CARD (copy per issue; classes: sev | med | nit) -->
+    <article class="issue sev">
+      <header>
+        <span class="badge sev">SEV</span>
+        <code class="loc">file:line</code>
+        <span class="chip">CONFIRMED</span>
+      </header>
+      <p class="problem">{{PROBLEM}}</p>
+      <p class="fix"><strong>Fix:</strong> {{FIX}}</p>
+      <pre class="snippet"><code>{{OPTIONAL SNIPPET}}</code></pre>
+    </article>
+    <!-- /ISSUE CARD -->
+
+  </section>
+
+  <section>
+    <h2>Strengths</h2>
+    <ul>
+      <li>{{STRENGTH}}</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Summary</h2>
+    <p>{{SUMMARY}}</p>
+  </section>
+
+  <footer>Generated by agents-reviewer &middot; {{DATE}}</footer>
+</main>
+</body>
+</html>

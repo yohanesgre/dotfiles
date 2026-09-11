@@ -31,3 +31,6 @@ result
 result-*
 # LazyVim generated state
 config/nvim/lazyvim.json
+
+# agents-swe per-project memory (local, never commit)
+.agents/memory/

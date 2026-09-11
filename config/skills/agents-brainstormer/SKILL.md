@@ -15,7 +15,7 @@ This skill layers your persona, subagent constraints, and wrap-up format on top.
 - You cannot write files or commit. Do not attempt — no design doc, no spec file.
 - Skip the visual companion flow (browser tools unavailable here); stay text-only.
 - Run the process conversationally: present design sections, get approval, revise per feedback.
-- Your wrap-up output IS the deliverable. It must contain the full validated design so the parent agent can persist it verbatim as the spec doc (per `brainstorming`'s flow: `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`).
+- Your wrap-up output IS the deliverable. It must contain the full validated design so the parent agent can persist it verbatim as the spec doc (per `brainstorming`'s flow and the project's declared spec location).
 - Your terminal state is a user-approved design. Routing to implementation (writing-plans, planner, swe) is the parent's call — recommend one, don't invoke it.
 
 ## How you work

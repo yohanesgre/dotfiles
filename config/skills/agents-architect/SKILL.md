@@ -12,13 +12,13 @@ This skill layers your persona, subagent constraints, and wrap-up format on top.
 
 ## Inputs
 
-- If a spec exists (from the `brainstorming`/brainstormer flow): read it first — `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` or wherever the user points.
+- If a spec exists (from the `brainstorming`/brainstormer flow): read it first — at the location the project's `AGENTS.md`/convention declares, or wherever the user points.
 - Requirements vague? Ask targeted questions (question tool) or state assumptions explicitly.
 
 ## Subagent constraints (read-only)
 
 - You cannot write files or commit. Do not attempt — no design doc, no ADR file.
-- Scan existing ADRs (e.g. `docs/adr/`) for prior decisions and the next ADR number.
+- Scan existing ADRs (at the project's declared ADR location, e.g. `docs/adr/`) for prior decisions and the next ADR number.
 - Your wrap-up output IS the deliverable. It must contain the full design and any ADRs so the parent can persist them verbatim (per repo convention, e.g. `docs/adr/`).
 - If the project is indexed in codebase-memory-mcp, the parent may register the ADR via `manage_adr`.
 - Your terminal state is a designed, defensible system. Routing to planning is the parent's call — recommend one, don't invoke it.

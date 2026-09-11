@@ -1,5 +1,5 @@
 ---
-description: Code reviewer. Reviews diffs or files for correctness, security, performance, edge cases, and maintainability. Flags issues with location, severity, and concrete fix. Use before merging or committing.
+description: 'Code review role — adversarially reviews diffs or files for correctness, security, performance, edge cases, and maintainability. Flags each issue with exact file:line, a severity, and a concrete fix, then gives a clear verdict; renders a human-friendly HTML report only when the user asks for one. Use before merging or committing, when reviewing a PR/diff/patch, or for a focused security or performance pass.'
 mode: all
 model: opencode-go/deepseek-v4.1-flash#max
 steps: 40
@@ -19,12 +19,15 @@ permissions:
   - action: list
     resource: "*"
     effect: allow
+  - action: external_directory
+    resource: "*"
+    effect: allow
   - action: skill
-    resource: "agents-reviewer"
+    resource: "*"
     effect: allow
   - action: skill
     resource: "caveman"
-    effect: allow
+    effect: deny
   - action: codebase_memory_mcp_search_graph
     resource: "*"
     effect: allow
@@ -40,6 +43,15 @@ permissions:
   - action: shell
     resource: "*"
     effect: ask
+  - action: shell
+    resource: "cd *"
+    effect: allow
+  - action: shell
+    resource: "mkdir -p .reviews"
+    effect: allow
+  - action: shell
+    resource: "mkdir -p ~/.local/share/opencode/reviews"
+    effect: allow
   - action: shell
     resource: "git diff"
     effect: allow
@@ -70,9 +82,63 @@ permissions:
   - action: shell
     resource: "git blame *"
     effect: allow
+  - action: shell
+    resource: "git grep *"
+    effect: allow
+  - action: shell
+    resource: "git ls-files *"
+    effect: allow
+  - action: shell
+    resource: "git rev-parse *"
+    effect: allow
+  - action: shell
+    resource: "git rev-list *"
+    effect: allow
+  - action: shell
+    resource: "git merge-base *"
+    effect: allow
+  - action: shell
+    resource: "git cat-file *"
+    effect: allow
+  - action: shell
+    resource: "git describe *"
+    effect: allow
+  - action: shell
+    resource: "git shortlog *"
+    effect: allow
+  - action: shell
+    resource: "git stash list *"
+    effect: allow
+  - action: shell
+    resource: "git stash show *"
+    effect: allow
+  - action: shell
+    resource: "git worktree list *"
+    effect: allow
+  - action: shell
+    resource: "git remote -v *"
+    effect: allow
+  - action: shell
+    resource: "git remote show *"
+    effect: allow
+  - action: shell
+    resource: "git branch --show-current *"
+    effect: allow
+  - action: shell
+    resource: "git branch --list *"
+    effect: allow
   - action: edit
     resource: "*"
     effect: deny
+  - action: edit
+    resource: ".reviews/*"
+    effect: allow
+  - action: edit
+    resource: "*/.reviews/*"
+    effect: allow
+  - action: edit
+    resource: "~/.local/share/opencode/reviews/*"
+    effect: allow
   - action: question
     resource: "*"
     effect: deny
@@ -82,4 +148,4 @@ permissions:
 ---
 You are the reviewer agent. Load and follow the `agents-reviewer` skill (skill tool or `npx openskills read agents-reviewer`). Its instructions are authoritative: process, checks, output format.
 
-Output style: caveman-compressed (follow the `caveman` skill rules). Ultra-terse fragments. Zero filler, pleasantries, hedging, tool-call narration, or task restating. Code, paths, commands, error strings verbatim. Final report = substance only: findings, decisions, file:line refs.
+Output style: full, precise prose — no caveman compression. Zero filler, pleasantries, or tool-call narration, but keep every nuance needed to justify a finding. Code, paths, commands, error strings verbatim. Final report follows the `agents-reviewer` verdict/issues/strengths/summary format.

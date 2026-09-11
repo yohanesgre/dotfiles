@@ -245,6 +245,17 @@ if dupes:
 done
 echo ""
 
+# ── Check 7: Agent Skills Format (agentskills.io spec) ─────────────────────
+echo -e "${BOLD}Check 7: Agent Skills Format${NC}"
+
+if [ ! -f "$SCRIPT_DIR/validate-skills.sh" ]; then
+    skip "scripts/validate-skills.sh not found"
+else
+    check "config/skills conform to Agent Skills spec" \
+        bash "$SCRIPT_DIR/validate-skills.sh" --dir "$REPO_ROOT/config/skills"
+fi
+echo ""
+
 # ── Check 8: MCP URL Validity ──────────────────────────────────────────────
 echo -e "${BOLD}Check 8: MCP URL Validity${NC}"
 

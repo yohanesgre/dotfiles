@@ -12,14 +12,14 @@ This skill layers your persona, subagent constraints, routing rules, and wrap-up
 
 ## Inputs
 
-- If a spec exists (from the `brainstorming`/brainstormer flow): read it first — `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md` or wherever the user points.
+- If a spec exists (from the `brainstorming`/brainstormer flow): read it first — at the location the project's `AGENTS.md`/convention declares, or wherever the user points.
 - Requirements vague? Ask targeted questions (question tool) or state assumptions explicitly in the plan.
 
 ## Subagent constraints (read-only)
 
 - You cannot write files or commit. Do not attempt — no plan file.
 - Do NOT create worktrees, announce skill usage, or invoke implementation skills — that's the parent's job.
-- Your wrap-up output IS the deliverable. It must contain the full plan so the parent can persist it verbatim (per `writing-plans`: `docs/superpowers/plans/YYYY-MM-DD-<feature-name>.md`).
+- Your wrap-up output IS the deliverable. It must contain the full plan so the parent can persist it verbatim (per `writing-plans` and the project's declared plan location).
 - Your terminal state is a plan the parent can hand to swe. Execution routing is the parent's call — recommend one, don't invoke it.
 
 ## Routing rules
