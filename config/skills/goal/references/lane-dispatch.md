@@ -38,23 +38,26 @@ async fan-out). Any FAST EXIT stops that lane only; others continue.
    repeated `--direction right` splits into skinny columns. Tile minimum is
    60x16; overflow (N beyond one tab's capacity) goes to extra lane-only
    tabs, never squeezed. The script sets each pane's cwd to its worktree and
-   returns per lane `{pane_id, tab_id}` (+ grid) — use those in step 4. Every
-   pane is short-lived; its runner closes it at DONE.
+   returns per lane `{pane_id, tab_id}` (+ grid) — use those in step 4. Each
+   lane runs foreground in its pane (visible progress); the pane persists at
+   DONE for inspection + reuse.
 4. Agent: `herdr agent start <name> --kind <backend> --pane <pane-id>`
    (role travels in the brief, not the kind; mutation roles: `swe`,
    `designer` — read-only roles run as `subagent`, not lanes).
    No opencode2 kind exists — drive opencode2 without it: write the lane
    brief to a runner file `<worktree>/../<slug>-runner.sh` (or
-   `/tmp/opencode/<slug>-runner.sh`) that also closes the pane. Run
-   `herdr pane run <pane> "bash <runner>"`; at the end the runner writes
-   the lane report/return to `<slug>-return.md.tmp` and atomically `mv`s it
-   onto `<slug>-return.md` as the LAST step before `herdr pane close
-   "$HERDR_PANE_ID"`. The pane is gone at DONE, so the return file — not
-   scrollback — is the record, and the atomic rename means the file's
-   appearance can only mean real completion. Wait with
+   `/tmp/opencode/<slug>-runner.sh`). Run
+   `herdr pane run <pane> "bash <runner>"` so the lane runs foreground in
+   that pane — the user watches live progress there; never detach or
+   background a lane. At the end the runner writes the lane report/return to
+   `<slug>-return.md.tmp` and atomically `mv`s it onto `<slug>-return.md` as
+   the LAST step, then returns the pane to its shell — DO NOT close the
+   pane: it persists so scrollback stays and the pane is reusable. The
+   return file — not scrollback — is the record, and the atomic rename means
+   the file's appearance can only mean real completion. Wait with
    `bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file>
    [timeout-ms]` (file-sentinel watch + Effect timeout — never fixed
-   `sleep`, never `pane wait-output`, which dies with the pane).
+   `sleep`, never `pane wait-output`).
    `--model provider/model#variant` is required on every lane —
    read it from the role agent's md `model:` field
    (`~/.config/opencode/agents/<role>.md`) and pass it verbatim. The
@@ -66,16 +69,18 @@ async fan-out). Any FAST EXIT stops that lane only; others continue.
    it and switch paths instead of retrying blindly.
    Approved model errors here → FAST EXIT naming the model, never substitute.
 5. Drive: `herdr agent prompt <name> "<brief>" --wait --timeout 120000`.
-   The agent is ephemeral: it exits at DONE and the runner closes its pane,
-   so read no live agent afterward. A lane that dies BEFORE done resumes
-   with opencode2 `--session` (state lives in the worktree).
+   The agent exits at DONE and the runner returns its pane to the shell; the
+   pane stays open — no live agent afterward, but the scrollback and the
+   pane itself persist for inspection/reuse. A lane that dies BEFORE done
+   resumes with opencode2 `--session` in the same pane (state lives in the
+   worktree).
 6. Brief = the delegated subgraph (`goal/SKILL.md` §4.2): WHY, Nodes (files
    + lines, one owner), Edges (inputs consumed / outputs produced),
    Governing docs, Acceptance (frozen), Gate (verify commands), Forbidden,
    Boundary (absolute worktree path, branch, no-commit). Include the lane's
    `--agent` + `--model` (model read from the role agent's md `model:` field).
 7. Return = the implemented graph (`goal/SKILL.md` §4.3), read from
-   `<slug>-return.md` (the pane is gone at DONE): Implemented (files + what
-   changed), Evidence (gate tails + log path), Deviations (extra/missing
-   nodes vs the delegated subgraph), Open. Replies caveman-compressed,
-   except `reviewer` (full prose).
+   `<slug>-return.md` (the pane persists, but the file is the record):
+   Implemented (files + what changed), Evidence (gate tails + log path),
+   Deviations (extra/missing nodes vs the delegated subgraph), Open.
+   Replies caveman-compressed, except `reviewer` (full prose).

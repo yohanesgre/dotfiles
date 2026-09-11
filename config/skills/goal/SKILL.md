@@ -37,21 +37,22 @@ goal → intake → classify → design → protocol → track → GATE
      → isolate → wave{lanes} → verify → review-wave{reviewer_i ∥}
      → per-lane close(PR) → merge → loop: next wave | DONE
 
-Lane node lifecycle (short-lived)
-spawn → work → persist return to <slug>-return.md → self-close (pane gone)
+Lane node lifecycle (visible pane, persists for reuse)
+spawn → work live in pane → persist return to <slug>-return.md → pane stays
 
 E — break points (coordinator failures, not worker failures)
 wrong context · missing input (invisible edge) · misinterpretation
 herdr/env/binary/model/agent gap · secrets · no progress
-lane pane closed before return persisted · reviewer fail/timeout ·
+lane dead before return persisted · reviewer fail/timeout ·
 reviewer ↔ lane drift
 
 R — every worker prompt carries
 subgraph (nodes+edges) · WHY · governing docs · acceptance · gate · forbidden
 
-Boundary: prompt = delegated subgraph IN → return = implemented graph OUT (on
-disk: the pane self-closes at DONE). Verify: compare implemented graph vs
-delegated subgraph; extra/missing node = deviation.
+Boundary: prompt = delegated subgraph IN → return = implemented graph OUT
+(on disk: `<slug>-return.md` is the sentinel; the pane persists). Verify:
+compare implemented graph vs delegated subgraph; extra/missing node =
+deviation.
 ```
 
 Nodes are tasks; edges are data dependencies. Independent nodes run
@@ -74,8 +75,10 @@ isolate, gates, review, PR, CI, and merge — it does not produce the diff.
 Delegation by node type (matches the graph):
 - **Mutation nodes → herdr lane(s) only.** Lane roles: `swe`
   (implementation), `designer` (design artifacts). Simple = exactly one
-  lane. Complex = one lane per track (1..N). A lane pane is short-lived:
-  it self-closes at DONE, so its return lands on disk first (§4.2).
+  lane. Complex = one lane per track (1..N). A lane runs foreground in its
+  own herdr pane so progress is visible, and the pane persists after DONE
+  for inspection + reuse (never detached, never background); its return
+  still lands on disk first (§4.2).
 - **Read-only nodes → `subagent` tool.** `architect`/`researcher` = single
   foreground (inline, blocking) call. `reviewer` = one per lane, fanned out
   background/async across the review wave (read-only → collision-free),
@@ -273,8 +276,9 @@ at full height; lanes tile a balanced grid to the right (target tile aspect
 one tab's capacity moves to extra lane-only tabs — never squeezed. One lane,
 one pane, one owner; each pane's cwd is its worktree. The grid holds across
 N=0 (planning: no lane panes, master full width), N=1 (master + one lane),
-and overflow; a finished lane's pane closes and the grid reflows with no
-orphan tiles.
+and overflow; a finished lane's pane persists (scrollback for inspection,
+reusable for a follow-up), so the grid reflows only when you close a pane
+manually — never an orphan tile.
 
 Brief (subgraph IN — every lane, self-contained):
 ```
@@ -307,19 +311,21 @@ commit secrets. Violation kills the lane.
 
 herdr has no opencode2 kind: drive opencode2 with `opencode2 run --auto
 --model ... --agent <role>`; warm a fresh agent with one trivial prompt
-before the brief. A lane pane is short-lived — it self-closes at DONE, so
-its scrollback is gone. Completion is a durable file, not pane output: the
-runner atomically writes the lane report/return to `<slug>-return.md` LAST,
-then closes its own pane. Wait with
+before the brief. The lane runs foreground in its own pane — the user
+watches progress there; it is never detached or backgrounded, and the pane
+persists after DONE so scrollback stays and the pane can be reused for a
+resume/follow-up. Completion is still a durable file, not pane scrollback:
+the runner atomically writes the lane report/return to `<slug>-return.md`
+LAST, then returns the pane to its shell. Wait with
 `bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file> [timeout-ms]`
 (file-sentinel watch + Effect timeout — never fixed `sleep`, never
-`pane wait-output`, which dies with the pane); the runner-file vehicle is
-prescribed in `references/lane-dispatch.md` step 4.
+`pane wait-output`); the runner-file vehicle is prescribed in
+`references/lane-dispatch.md` step 4.
 
 ### 4.3 Return — the reply IS the implemented graph
 
-The lane persists its return to `<slug>-return.md` (the sentinel) before it
-closes its pane; that file — not pane scrollback (gone at DONE) — is the
+The lane persists its return to `<slug>-return.md` (the sentinel) at DONE;
+the pane stays open, but that file — not pane scrollback — is the
 implemented graph. Reply style: caveman-compressed EXCEPT `reviewer`, which
 runs full prose (compression drops review nuance). Every lane return carries:
 ```
@@ -335,12 +341,14 @@ inline subagents while files/scopes don't collide. The orchestrator's
 `subagent` calls are read-only and MUST NOT touch anything already
 delegated; the orchestrator never edits files itself.
 
-Lane lifecycle: the lane pane self-closes at DONE — no live agent or
-scrollback remains, so the persisted `<slug>-return.md` is the record.
-Keep worktree + branch until its PR merges (never delete early; the
-reviewer still reads it); removal needs explicit user approval. Resume a
-lane that died BEFORE done with opencode2 `--session` (state lives in the
-worktree, re-brief from the lane file). Each lane runs `git status` FIRST
+Lane lifecycle: the lane agent exits at DONE and the runner returns its
+pane to the shell — the pane persists (live progress was visible there and
+the scrollback stays for inspection/reuse), so the persisted
+`<slug>-return.md` is still the record. Reuse the pane for a follow-up or
+resume a lane that died BEFORE done with opencode2 `--session` (state lives
+in the worktree, re-brief from the lane file). Keep worktree + branch until
+its PR merges (never delete early; the reviewer still reads it); removal
+needs explicit user approval. Each lane runs `git status` FIRST
 inside its own worktree — clean expected there; dirty from an unknown
 source → WAIT + report, never build on top of it (control-checkout dirt is
 irrelevant — lanes never touch it).
@@ -421,9 +429,10 @@ concerns (if any) — nothing else.
 - **WAIT** (park the lane, continue others, report the blocker): contract
   mismatch; needs out-of-scope files; no fitting agent; clean-check
   failure inside the worktree from an unknown source.
-- **Lane closed before return persisted**: the sentinel fired but
-  `<slug>-return.md` is missing/empty → WAIT + re-dispatch; never read
-  scrollback (the pane is gone at DONE).
+- **Lane dead before return persisted**: `<slug>-return.md` is
+  missing/empty → WAIT + re-dispatch (resume the pane with opencode2
+  `--session` when state remains); the return file — not scrollback — is
+  the record.
 - **Reviewer fan-out**: a reviewer that times out or fails is not green —
   retry it or self-review that lane; the reviewer↔lane map stays stable, a
   review never crosses to a sibling lane.
@@ -450,7 +459,8 @@ concerns (if any) — nothing else.
 - Rebase before PR: main moves under lanes. Rebase each lane on latest
   `main` + re-run its gate before opening the PR. CI red caused by the
   rebase → fix loop (counts toward the loop guard).
-- Files are truth: terminal scrollback is ephemeral. Lane progress lives
+- Files are truth: a pane persists but is not durable (it can be closed,
+  and the orchestrator's own view is compacted). Lane progress lives
   in lane files + `report.md`. After context compaction, re-read
   `plan.md` + lane files AND run `mem_context` before continuing — never
   assume file or memory state. If `mem_context` returns unreadable,

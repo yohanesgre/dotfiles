@@ -4,11 +4,11 @@
  *
  *   bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file> [timeout-ms]
  *
- * A `/goal` lane pane is short-lived: opencode2 runs one-shot and the
- * runner closes the pane at DONE, so its scrollback is gone. Completion is
- * a durable artifact instead: the runner writes the lane report/output to
- * `<return-file>.tmp` and atomically renames it onto `<return-file>` as the
- * LAST step before closing its pane — so the file's appearance can only
+ * A `/goal` lane runs foreground in its own pane (the user watches live
+ * progress there) and the pane persists at DONE. Completion is still a
+ * durable artifact, not scrollback: the runner writes the lane
+ * report/output to `<return-file>.tmp` and atomically renames it onto
+ * `<return-file>` as the LAST step — so the file's appearance can only
  * mean real completion. This script waits for that file (bounded 200ms
  * poll + Effect timeout) and prints its contents on success.
  *
