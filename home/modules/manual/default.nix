@@ -31,7 +31,7 @@
       warn "engram still missing after go install — check https://github.com/Gentleman-Programming/engram"
     fi
 
-    # bun / codegraph / rtk / herdr via upstream installers (home/modules/upstream)
+    # bun / codegraph / rtk / herdr / icm via upstream installers (home/modules/upstream)
     # opencode via bun (home/modules/opencode)
 
     # never block switch

@@ -8,5 +8,6 @@
   # - Fast-moving tools (bun, rtk, codegraph, herdr): upstream
   #   installers — home/modules/upstream/default.nix
   # - engram: go install — home/modules/manual/default.nix
+  # - icm: upstream installer — home/modules/upstream/default.nix
   # - GUI/GPU stays pacman: browsers, nvidia/mesa, DE, steam (nixGL mismatch).
 }

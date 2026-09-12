@@ -30,9 +30,10 @@
     }
   },
   "mcp": {
-    "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": true, "type": "local" },
+    "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": false, "type": "local" },
     "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },
-    "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" }
+    "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" },
+    "icm": { "command": ["icm", "serve"], "enabled": true, "type": "local" }
   },
   "shell": "/usr/bin/zsh"
 }

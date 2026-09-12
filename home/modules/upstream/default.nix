@@ -16,6 +16,8 @@
   #   on every switch.
   # - herdr: nix 0.8.2 == upstream stable today, but `herdr update` self-update
   #   only works on direct installs (Nix installs must update via Nix).
+  # - icm: rtk-ai/icm — official installer bundles the ONNX runtime, so
+  #   semantic search works out of the box (no extra model/runtime setup).
   # Stable CLI (git/curl/jq/rg/fd/fzf/bat/eza/zoxide/nodejs/go/neovim/tmux)
   # comes from pacman/CachyOS since 2026-09-07 — see home/modules/pacman
   # (no nixpkgs packages in the profile).
@@ -85,6 +87,15 @@
       info "installing rtk (rtk-ai)..."
     fi
     curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh 2>&1 || warn "rtk install/update failed (continuing)"
+
+    # icm: rtk-ai/icm — official installer (checksum-verified, -> ~/.local/bin).
+    # Re-running install.sh fetches latest.
+    if is_upstream icm; then
+      info "updating icm..."
+    else
+      info "installing icm (rtk-ai)..."
+    fi
+    curl -fsSL https://raw.githubusercontent.com/rtk-ai/icm/main/install.sh | sh 2>&1 || warn "icm install/update failed (continuing)"
 
     # herdr: herdrdev/herdr — official installer (https://herdr.dev/install.sh).
     if is_upstream herdr; then
