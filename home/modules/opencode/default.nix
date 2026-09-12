@@ -60,6 +60,34 @@
       fi
     fi
 
+    # opencode-go-limit TUI plugin: renders JSX in the TUI, so it needs its
+    # node_modules next to the real files for the same reason as above.
+    SRC="$HOME/projects/dotfiles/config/opencode/plugins/opencode-go-limit"
+    DST="$HOME/.config/opencode/plugins/opencode-go-limit"
+    if [ -d "$SRC" ]; then
+      mkdir -p "$HOME/.config/opencode/plugins"
+      NODE_MODULES_TMP="$HOME/.config/opencode/plugins/.opencode-go-limit-node_modules-tmp"
+      HAD_NODE_MODULES=0
+      if [ -d "$DST/node_modules" ]; then
+        HAD_NODE_MODULES=1
+        rm -rf "$NODE_MODULES_TMP"
+        mv "$DST/node_modules" "$NODE_MODULES_TMP"
+      fi
+      rm -rf "$DST"
+      cp -a "$SRC" "$DST"
+      rm -rf "$DST/node_modules" "$DST/bun.lock"
+      if [ "$HAD_NODE_MODULES" = 1 ]; then
+        mv "$NODE_MODULES_TMP" "$DST/node_modules"
+      fi
+      echo "opencode: synced opencode-go-limit plugin from dotfiles"
+      if [ -f "$DST/package.json" ] && [ ! -d "$DST/node_modules" ]; then
+        echo "opencode: installing opencode-go-limit plugin deps via bun..."
+        (cd "$DST" && "$BUN_BIN" install) \
+          && echo "opencode: opencode-go-limit plugin deps installed" \
+          || echo "opencode: bun install for opencode-go-limit plugin failed (continuing)"
+      fi
+    fi
+
     # rtk auto-rewrite plugin: standalone (zero runtime imports; uses the global
     # `Bun`). Copied as a real file for the same reason as above.
     RTK_SRC="$HOME/projects/dotfiles/config/opencode/plugins/rtk.ts"
