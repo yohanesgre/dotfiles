@@ -1,8 +1,9 @@
-{ config, lib, ... }:
+{ lib, ... }:
 let
-  home = config.home.homeDirectory;
   # committed skills = every directory under config/skills (sources.json is a file)
-  committed = lib.filterAttrs (_: type: type == "directory") (builtins.readDir ../../../config/skills);
+  committed = lib.filterAttrs (_: type: type == "directory") (
+    builtins.readDir ../../../config/skills
+  );
   skillNames = builtins.attrNames committed;
   # shell-quoted list, interpolated into the activation script
   quotedNames = lib.concatMapStringsSep " " (n: "'${n}'") skillNames;

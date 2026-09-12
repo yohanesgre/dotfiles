@@ -7,6 +7,7 @@
   },
   "lsp": true,
   "compaction": { "auto": true, "buffer": 10000 },
+  "experimental": { "subagent_depth": 3 },
   "providers": {
     "opencode-go": {
       "settings": { "baseURL": "http://127.0.0.1:8787/v1" }
