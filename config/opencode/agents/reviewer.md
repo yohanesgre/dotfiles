@@ -34,9 +34,6 @@ permissions:
   - action: execute
     resource: "*"
     effect: allow
-  - action: rtk_*
-    resource: "*"
-    effect: allow
   - action: shell
     resource: "*"
     effect: ask

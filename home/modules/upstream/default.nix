@@ -79,8 +79,6 @@
 
     # rtk: rtk-ai/rtk — official installer (checksum-verified, -> ~/.local/bin).
     # Re-running install.sh fetches latest (pin via RTK_VERSION=vX.Y.Z).
-    # NOTE: rtk-mcp (MCP server, ~/.local/bin/rtk-mcp) is a separate binary,
-    # already manual since 2026-09-06 — left untouched here.
     if is_upstream rtk; then
       info "updating rtk..."
     else

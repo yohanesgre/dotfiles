@@ -15,7 +15,7 @@ Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fall
 Built-in tools: `read`, `glob`, `grep`, `edit`, `write`, `shell`, `webfetch`, `websearch`, `question`, `skill`, `subagent`, `execute`.
 
 - **Subagent delegation uses the `subagent` tool** — `subagent(agent, description, prompt, background?)`. Set `background: true` for async; pass the returned `sessionID` to continue that child. V2 has no `task()` or `delegate()`.
-- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.icm.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools.rtk.<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
+- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.icm.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
 - **Shell runs through the `shell` tool** — set `workdir` instead of `cd`; prefer the `rtk` token-optimized prefix.
 
 ## Caveman Mode — Output Compression
@@ -46,7 +46,7 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 - **AFTER updating local config, compare with `~/projects/dotfiles/`** — sync changes to the dotfiles repo so they don't drift. Key files: `config/opencode/opencode.jsonc`, `config/opencode/agents/`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`.
 
 ## Tool Selection
-- For shell output, prefer token-optimized form: `rtk <cmd>` prefix in the `shell` tool, or `tools.rtk.run_command(...)` via `execute` (allowlisted cmds only). Raw shell only when rtk lacks the command.
+- For shell output, prefer token-optimized form: `rtk <cmd>` prefix in the `shell` tool. The V2 `rtk` plugin auto-rewrites `shell` commands through `rtk rewrite` (no MCP/run_command needed). Raw shell only when rtk lacks the command.
 - **ALWAYS check community support before installing new tools or MCP servers**: minimum 100+ GitHub stars, active maintenance (updated within 3 months), multiple contributors. Skip tools with weak community support unless explicitly requested by user.
 - **Delegation to the `researcher` subagent is mandatory for exploration and research** — primary/build sessions MUST NOT hand-explore multi-file code or run web searches inline; only a single cheap lookup (one read/grep acted on immediately) may stay inline. `researcher` owns the codegraph index, the `explorer`/`call-graph` routing, and `librarian` web research. Delegate anything spanning files, callers, impact, or the web.
 - **Spawn `researcher` subagents with disjoint scopes.** Partition research into non-overlapping workstreams (no shared files/dirs/symbols/questions/sources); overlap wastes work and yields conflicting merges. Multiple parallel `researcher` subagents are correct when their scopes are disjoint — foreground calls issued together, or `background: true` only when the session continues and joins them. A single workstream gets exactly one researcher, and that researcher fans out read-only `explore` children foreground (never background) and merges before reporting (leaf-only; no recursion); split a workstream only when it exceeds one researcher's context/step budget. A single cheap lookup stays inline; strictly dependent lookups stay inside one researcher.

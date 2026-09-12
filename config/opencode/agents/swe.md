@@ -49,9 +49,6 @@ permissions:
   - action: execute
     resource: "*"
     effect: allow
-  - action: rtk_*
-    resource: "*"
-    effect: allow
   - action: question
     resource: "*"
     effect: deny

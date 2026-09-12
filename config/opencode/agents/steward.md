@@ -25,9 +25,6 @@ permissions:
   - action: shell
     resource: "*"
     effect: allow
-  - action: rtk_*
-    resource: "*"
-    effect: allow
   - action: external_directory
     resource: "*"
     effect: allow

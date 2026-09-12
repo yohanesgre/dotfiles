@@ -25,9 +25,6 @@ permissions:
   - action: execute
     resource: "*"
     effect: allow
-  - action: rtk_*
-    resource: "*"
-    effect: allow
   - action: skill
     resource: "*"
     effect: allow
