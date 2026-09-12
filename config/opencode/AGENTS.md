@@ -47,10 +47,11 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 ## Tool Selection
 - For shell output, prefer token-optimized form: `rtk <cmd>` prefix in the `shell` tool, or `tools.rtk.run_command(...)` via `execute` (allowlisted cmds only). Raw shell only when rtk lacks the command.
 - **ALWAYS check community support before installing new tools or MCP servers**: minimum 100+ GitHub stars, active maintenance (updated within 3 months), multiple contributors. Skip tools with weak community support unless explicitly requested by user.
-- **Delegate exploration and research to the `researcher` subagent by default** — primary/build sessions must not hand-explore multi-file code or run web searches inline. `researcher` owns the codebase-memory-mcp graph, the `explorer`/`call-graph` routing, and `librarian` web research. Keep inline only cheap single-file lookups (one read/grep you can act on immediately); delegate anything spanning files, callers, impact, or the web.
+- **Delegation to the `researcher` subagent is mandatory for exploration and research** — primary/build sessions MUST NOT hand-explore multi-file code or run web searches inline; only a single cheap lookup (one read/grep acted on immediately) may stay inline. `researcher` owns the codebase-memory-mcp graph, the `explorer`/`call-graph` routing, and `librarian` web research. Delegate anything spanning files, callers, impact, or the web.
+- **Spawn `researcher` subagents with disjoint scopes.** Partition research into non-overlapping workstreams (no shared files/dirs/symbols/questions/sources); overlap wastes work and yields conflicting merges. Multiple parallel `researcher` subagents are correct when their scopes are disjoint — foreground calls issued together, or `background: true` only when the session continues and joins them. A single workstream gets exactly one researcher, and that researcher fans out read-only `explore`/`codebase-memory-scout` children foreground (never background) and merges before reporting (leaf-only; no recursion); split a workstream only when it exceeds one researcher's context/step budget. A single cheap lookup stays inline; strictly dependent lookups stay inside one researcher.
 - Codebase-exploration prompt: name the project, the exact question, known `qualified_name`s/paths, and the evidence expected (`path:line` + snippet). researcher routes internally: locate → `explorer`, trace → `call-graph`, structure/impact → codebase-memory-mcp.
 - Web-research prompt: state the library + pinned version, the exact question, and the source expectation (versioned official docs first). researcher fetches; never invent APIs.
-- For parallel research, use background `subagent` calls to `researcher` (`background: true`).
+- **Every routine upkeep chore MUST route to `steward` — never `swe`.** Git lifecycle (status/stage/commit/branch/worktree/stash), docs sync (README/CONFIGURATION.md/AGENTS.md drift), repo hygiene (format, .gitignore, temp cleanup), release chores (changelog/version/tag), dependency bumps, and gate runs (lint/test/build) all go to `steward` on the cheap `mimo-v2.5`; only application-behavior changes go to `swe`/`designer`.
 - For planning a feature or refactor before implementation, use `architect` agent.
 - For UI/styling work, delegate to `designer` agent.
 
@@ -106,13 +107,18 @@ Query the indexed code graph instead of re-grepping/re-reading files. Structural
 | Scenario | Agent | Reason |
 |----------|-------|--------|
 | Bounded implementation (feature/bugfix) | `swe` | Bash-first, test-driven minimal fixes |
-| Routine repo upkeep (git/docs/hygiene/release/deps/gates) | `steward` | Cheap `mimo-v2.5`; keeps implementer tokens for `swe` |
+| Git lifecycle (status/stage/commit/branch/worktree/stash) | `steward` | Cheap `mimo-v2.5`; keeps implementer tokens for `swe` |
+| Docs sync (README/CONFIGURATION.md/AGENTS.md drift) | `steward` | Cheap `mimo-v2.5`; non-behavior |
+| Repo hygiene (format, .gitignore, temp cleanup) | `steward` | Cheap `mimo-v2.5`; non-behavior |
+| Release chores (changelog/version/tag) | `steward` | Cheap `mimo-v2.5`; commits only when asked |
+| Dependency bumps | `steward` | Cheap `mimo-v2.5`; non-behavior |
+| Gate runs (lint/test/build) | `steward` | Cheap `mimo-v2.5`; no behavior change |
 | Multi-file bug / complex debugging | `swe` + `architect` | Plan first, then execute |
 | Vague idea / concept | `architect` | Structured exploration before code |
 | Feature planning / refactor >50 lines | `architect` | Phased plans with verify gates |
 | Architecture design / ADR / missing design | `architect` | Wraps system-design + architecture skills; owns design + ADR |
 | API/library research | `researcher` (default — always delegate) | webfetch/websearch; versioned sources; never invent APIs |
-| Codebase exploration (build/primary) | `researcher` (default — always delegate) | Owns codebase-memory graph + `explorer`/`call-graph` routing; primary keeps only cheap single-file lookups inline |
+| Codebase exploration (build/primary) | `researcher` (default — always delegate; parallel only for disjoint scopes) | Owns codebase-memory graph + `explorer`/`call-graph` routing; primary keeps only cheap single-file lookups inline; fans out `explore` children |
 | UI/styling changes | `designer` | Specialized in frontend |
 | Design artifacts | `designer` | Owns the project's declared design artifacts (wireframes, design system); swe implements from them |
 | Code review before merge | `reviewer` | Adversarial, severity-graded findings |

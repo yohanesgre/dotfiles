@@ -1,11 +1,14 @@
-# Lane dispatch (all mutation routes)
+# Lane dispatch (behavior + read-only routes)
 
-Every `/goal` mutation runs through a herdr lane. Simple route = exactly
-one lane in `.worktrees/<plan>`; complex route = one lane per track
-(`.worktrees/<plan>-<lane>`). The `subagent` tool is read-only only
-(research/review) and never mutates: `architect`/`researcher` run as single
-foreground calls; `reviewer` may fan out background/async (one per lane,
-read-only → collision-free).
+Application-behavior mutation runs through a herdr lane: simple route =
+exactly one lane in `.worktrees/<plan>`; complex route = one lane per track
+(`.worktrees/<plan>-<lane>`). Non-behavior upkeep mutation runs as a
+`steward` subagent in the control checkout (serialized, hardened gate —
+`SKILL.md` Phase 5), never a lane. The `subagent` tool also carries the
+read-only agents: `architect` runs as a single foreground call; `researcher`
+runs foreground but MUST fan out background/async for ≥2 independent
+lookups; `reviewer` may fan out background/async (one per lane, read-only →
+collision-free).
 
 Order matters — run top to bottom, one lane at a time (review is the one
 async fan-out). Any FAST EXIT stops that lane only; others continue.
@@ -49,8 +52,8 @@ text — a wasted, nondeterministic step).
 4. Dispatch (deterministic — use the pinned forms in
    `references/cli-reference.md`; NEVER run `--help`, herdr nested help
    prints only the top-level text and adds nondeterministic steps):
-   mutation roles are `swe`/`designer`/`steward`; read-only roles run as `subagent`,
-   not lanes. There is no opencode kind, so do NOT call `herdr agent
+   mutation roles are `swe`/`designer`; `steward` (non-behavior mutation)
+   and read-only roles run as `subagent`, not lanes. There is no opencode kind, so do NOT call `herdr agent
    start/prompt` for a lane. Write the brief to
    `<worktree>/../<slug>-brief.md` and the canonical runner
    (`cli-reference.md` § Canonical lane runner) to

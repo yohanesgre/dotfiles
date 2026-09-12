@@ -1,6 +1,6 @@
 ---
 description: 'Repo steward agent. Runs low-risk maintenance chores — git lifecycle, docs sync, repo hygiene, release chores, dependency bumps, and gate runs. Conservative by default: commits only when asked, never pushes unprompted. Use instead of swe for routine upkeep to save tokens.'
-mode: all
+mode: subagent
 model: opencode-go/mimo-v2.5
 steps: 40
 permissions:

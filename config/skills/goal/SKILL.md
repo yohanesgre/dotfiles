@@ -80,25 +80,34 @@ The orchestrator writes only the tracking plane directly:
 isolate, gates, review, PR, CI, and merge — it does not produce the diff.
 
 Delegation by node type (matches the graph):
-- **Mutation nodes → herdr lane(s) only.** Lane roles: `swe`
-  (implementation), `designer` (design artifacts), `steward` (non-behavior
-  upkeep: deps, docs sync, hygiene, release chores, gate runs — cheap model,
-  never an application-behavior change). Simple = exactly one
-  lane. Complex = one lane per track (1..N). A lane runs foreground in its
-  own herdr pane so progress is visible; the pane persists through the loop
-  for inspection + reuse (never detached, never background) and is closed
-  only when the plan reaches DONE/FAILED (§5 plan close-out); its return
-  still lands on disk first (§4.2).
-- **Read-only nodes → `subagent` tool.** `architect`/`researcher` = single
-  foreground (inline, blocking) call. `reviewer` = one per lane, fanned out
-  background/async across the review wave (read-only → collision-free),
-  each joined to its own lane before that lane closes out. Roles:
-  `architect` (design/plan), `researcher` (codebase/web lookup), `reviewer`
-  (review). They never mutate; their agent md `model:` pin applies to child
-  sessions automatically — no `--model` needed.
+- **Application-behavior mutation nodes → herdr lane(s) only.** Lane roles:
+  `swe` (implementation), `designer` (design artifacts). Simple = exactly
+  one lane. Complex = one lane per track (1..N). A lane runs foreground in
+  its own herdr pane so progress is visible; the pane persists through the
+  loop for inspection + reuse (never detached, never background) and is
+  closed only when the plan reaches DONE/FAILED (§5 plan close-out); its
+  return still lands on disk first (§4.2).
+- **Non-behavior upkeep mutation nodes → `steward` subagent** (steward is
+  subagent-only, so it is never a lane). Runs foreground, ONE at a time
+  (never alongside another mutating subagent), scoped to its node's named
+  files, never commits/pushes/tags. It edits the shared control checkout
+  (no worktree isolation), so the gate is hardened — see "Hardened gate for
+  mutating subagents" in Phase 5. A behavior change discovered mid-node →
+  WAIT + re-dispatch to a `swe`/`designer` lane.
+- **Read-only nodes → `subagent` tool.** `architect` = single foreground
+  (inline, blocking) call. `researcher` = foreground by default, but MUST
+  fan out when a wave needs ≥2 independent lookups (read-only →
+  collision-free; `researcher` may itself fan out leaf
+  `explore`/`codebase-memory-scout` children). `reviewer` = one per lane,
+  fanned out background/async across the review wave, each joined to its
+  own lane before that lane closes out. Roles: `architect` (design/plan),
+  `researcher` (codebase/web lookup), `reviewer` (review). They never
+  mutate; their agent md `model:` pin applies to child sessions
+  automatically — no `--model` needed.
 
 A mutation the orchestrator makes itself is a violation: stop, revert it
-before proceeding, and re-dispatch the work to a lane. Design artifacts
+before proceeding, and re-dispatch the work to the correct plane (behavior
+→ lane; non-behavior upkeep → `steward` subagent). Design artifacts
 that must land as files: the project's design artifacts → `designer` lane;
 decision records / specs → merged into the project's design authority
 docs; implementation-plan content → folded into `status/<plan>/plan.md`,
@@ -355,8 +364,10 @@ Open:        <blockers, if any>
 Lane rules: a lane that hits a contract mismatch or needs out-of-scope
 files flips to WAIT and reports — never guesses. Lanes may run their own
 inline subagents while files/scopes don't collide. The orchestrator's
-`subagent` calls are read-only and MUST NOT touch anything already
-delegated; the orchestrator never edits files itself.
+read-only `subagent` calls (`architect`/`researcher`/`reviewer`) MUST NOT
+touch anything already delegated; the one mutating subagent (`steward`,
+non-behavior upkeep) is serialized and gate-checked ("Hardened gate for
+mutating subagents", Phase 5); the orchestrator never edits files itself.
 
 Lane lifecycle: the lane agent exits at DONE and the runner returns its
 pane to the shell — the pane persists through the loop (live progress was
@@ -383,6 +394,22 @@ project's gate commands as declared in its `AGENTS.md` / package scripts:
 - docs-only: reviewer read (names/numbers match source files verbatim).
 If the project declares no gates, run its closest build/test command and
 declare the gap.
+
+### Hardened gate for mutating subagents
+
+A mutating subagent (`steward`, non-behavior upkeep) edits the shared
+control checkout — no worktree isolation — so the gate compensates:
+1. **Serialize.** One mutating subagent at a time; never in parallel with
+   another mutating subagent or with a lane touching the same files.
+2. **Scope.** The node owns named files. The subagent MUST NOT touch
+   `status/<plan>/**` (orchestrator-only tracking plane), a lane's files,
+   or anything already delegated.
+3. **No commit.** Leave changes uncommitted; no push, tag, or history
+   rewrite; secrets/`.env` refused.
+4. **Verify then accept.** On return the orchestrator runs the frozen gate
+   commands, reads `git diff`, and compares it to the delegated subgraph.
+   Out-of-scope hunk or gate-fail → revert the affected paths, then WAIT +
+   re-dispatch. A bare "done" without gate output is never green.
 
 Compare (the payoff of the subgraph boundary): implemented graph vs
 delegated subgraph for every lane. Extra node = off-script (revert or
@@ -509,10 +536,11 @@ concerns (if any) — nothing else.
 - Main-session guard (`/goal` only): the orchestrator edits ONLY the
   `status/` tracking plane (`status/<plan>/**`, `status/TIMELINE.md`) +
   memory. Implementation code and design docs (whatever the project's
-  `AGENTS.md` declares) are never edited by the main session — mutation
-  goes to a herdr lane (`swe`/`designer`/`steward`), read-only work to a `subagent`
-  (`architect`/`researcher`/`reviewer`). A self-made edit is a violation:
-  revert it + re-dispatch.
+  `AGENTS.md` declares) are never edited by the main session — behavior
+  mutation goes to a herdr lane (`swe`/`designer`), non-behavior upkeep
+  mutation to the `steward` subagent (serialized + hardened gate), read-only
+  work to a `subagent` (`architect`/`researcher`/`reviewer`). A self-made
+  edit is a violation: revert it + re-dispatch.
 - Repo bindings, before touching code: load the project's declared design
   authority in the order its `AGENTS.md` gives (typically schema → layers
   → API → design artifacts → architecture rationale). Names and
