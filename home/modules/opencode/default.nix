@@ -60,8 +60,8 @@
       fi
     fi
 
-    # rtk auto-rewrite plugin: single standalone file (only `import type`, no
-    # runtime imports). Copied as a real file for the same reason as above.
+    # rtk auto-rewrite plugin: standalone (zero runtime imports; uses the global
+    # `Bun`). Copied as a real file for the same reason as above.
     RTK_SRC="$HOME/projects/dotfiles/config/opencode/plugins/rtk.ts"
     if [ -f "$RTK_SRC" ]; then
       mkdir -p "$HOME/.config/opencode/plugins"

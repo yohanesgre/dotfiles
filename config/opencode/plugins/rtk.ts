@@ -1,39 +1,44 @@
-import type { Plugin } from "@opencode-ai/plugin"
-
-// RTK OpenCode plugin — rewrites commands to use rtk for token savings.
+// RTK OpenCode plugin — rewrites shell commands to use rtk for token savings.
 // Requires: rtk >= 0.23.0 in PATH.
 //
-// This is a thin delegating plugin: all rewrite logic lives in `rtk rewrite`,
-// which is the single source of truth (src/discover/registry.rs).
-// To add or change rewrite rules, edit the Rust registry — not this file.
+// OpenCode V2 plugin shape: `export default { id, setup(ctx) }`. The V2
+// `ctx.tool.hook("execute.before", cb)` replaces the V1 `tool.execute.before`
+// hook; `cb` gets `{ tool, sessionID, agent, messageID, id, input }` and may
+// mutate `input.command` before execution.
+//
+// All rewrite logic lives in `rtk rewrite` (single source of truth); this file
+// only shells out to it.
 
-export const RtkOpenCodePlugin: Plugin = async ({ $ }) => {
+const rewrite = (command: string): string => {
   try {
-    await $`which rtk`.quiet()
+    const Bun = (globalThis as any).Bun
+    if (!Bun?.spawnSync) return ""
+    const proc = Bun.spawnSync({
+      cmd: ["rtk", "rewrite", command],
+      stdout: "pipe",
+      stderr: "ignore",
+    })
+    const out = proc?.stdout?.toString?.() ?? ""
+    return out.trim()
   } catch {
-    console.warn("[rtk] rtk binary not found in PATH — plugin disabled")
-    return {}
+    return ""
   }
+}
 
-  return {
-    "tool.execute.before": async (input, output) => {
-      const tool = String(input?.tool ?? "").toLowerCase()
-      if (tool !== "bash" && tool !== "shell") return
-      const args = output?.args
+export default {
+  id: "rtk",
+  async setup(ctx: any) {
+    await ctx.tool.hook("execute.before", (payload: any) => {
+      const tool = String(payload?.tool ?? "").toLowerCase()
+      if (tool !== "shell" && tool !== "bash") return
+
+      const args = payload?.input
       if (!args || typeof args !== "object") return
-
-      const command = (args as Record<string, unknown>).command
+      const command = args.command
       if (typeof command !== "string" || !command) return
 
-      try {
-        const result = await $`rtk rewrite ${command}`.quiet().nothrow()
-        const rewritten = String(result.stdout).trim()
-        if (rewritten && rewritten !== command) {
-          ;(args as Record<string, unknown>).command = rewritten
-        }
-      } catch {
-        // rtk rewrite failed — pass through unchanged
-      }
-    },
-  }
+      const rewritten = rewrite(command)
+      if (rewritten && rewritten !== command) args.command = rewritten
+    })
+  },
 }
