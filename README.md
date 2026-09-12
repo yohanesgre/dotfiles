@@ -51,7 +51,8 @@ home/hosts/{desktop,laptop}.nix   # host overrides (desktop imports hermes)
 home/modules/pacman/        # declarative pacman CLI list, synced every switch
 home/modules/upstream/      # bun / codebase-memory-mcp / rtk / herdr official installers
 home/modules/manual/        # engram (go install)
-home/modules/               # env, shell, terminal, opencode, neovim, engram, hermes, skills
+home/modules/               # env, shell, terminal, opencode, neovim, nix, engram, hermes, skills
+                            # nix/ = weekly auto garbage collection (systemd user timer + sudo)
 config/                     # raw configs symlinked via xdg.configFile
 scripts/                    # bootstrap, install-nix, hm-switch, pacman-sync, install-manual,
                             # validate, validate-skills, check-secrets

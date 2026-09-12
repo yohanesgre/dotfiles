@@ -18,6 +18,7 @@
     ./modules/opencode
     ./modules/engram
     ./modules/neovim
+    ./modules/nix
     ./modules/skills
   ];
 }
