@@ -70,6 +70,18 @@
     fi
   '';
 
+  home.activation.opencodeSyncIcmPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    SRC="$HOME/projects/dotfiles/config/opencode/plugins/icm.ts"
+    DST="$HOME/.config/opencode/plugins/icm.ts"
+    if [ -f "$SRC" ]; then
+      mkdir -p "$HOME/.config/opencode/plugins"
+      if ! cmp -s "$SRC" "$DST"; then
+        cp -f "$SRC" "$DST"
+        echo "opencode: synced icm plugin"
+      fi
+    fi
+  '';
+
   home.activation.opencodeSyncTools = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [ ! -e "$HOME/.config/opencode/tools/image.py" ]; then
       mkdir -p "$HOME/.config/opencode/tools"
