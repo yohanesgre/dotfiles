@@ -3,14 +3,24 @@
   "permission": "allow",
   "default_agent": "build",
   "agents": {
-    "build": { "mode": "all" }
+    "build": { "mode": "all" },
+    "explore": { "model": "opencode-go/mimo-v2.5#none" }
   },
   "lsp": true,
   "compaction": { "auto": true, "buffer": 10000 },
   "experimental": { "subagent_depth": 3 },
   "providers": {
     "opencode-go": {
-      "settings": { "baseURL": "http://127.0.0.1:8787/v1" }
+      "settings": { "baseURL": "http://127.0.0.1:8787/v1" },
+      "models": {
+        "mimo-v2.5": {
+          "variants": [
+            { "id": "none", "settings": { "reasoningEffort": "none" } },
+            { "id": "low", "settings": { "reasoningEffort": "low" } },
+            { "id": "medium", "settings": { "reasoningEffort": "medium" } }
+          ]
+        }
+      }
     },
     "opencode": {
       "settings": { "baseURL": "http://127.0.0.1:8788/v1" }

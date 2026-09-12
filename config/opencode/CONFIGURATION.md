@@ -98,13 +98,25 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
   "permission": "allow",
   "default_agent": "build",
   "agents": {
-    "build": { "mode": "all" }
+    "build": { "mode": "all" },
+    "explore": { "model": "opencode-go/mimo-v2.5#none" }
   },
   "lsp": true,
   "compaction": { "auto": true, "buffer": 10000 },
   "experimental": { "subagent_depth": 3 },
   "providers": {
-    "opencode-go": { "settings": { "baseURL": "http://127.0.0.1:8787/v1" } },
+    "opencode-go": {
+      "settings": { "baseURL": "http://127.0.0.1:8787/v1" },
+      "models": {
+        "mimo-v2.5": {
+          "variants": [
+            { "id": "none", "settings": { "reasoningEffort": "none" } },
+            { "id": "low", "settings": { "reasoningEffort": "low" } },
+            { "id": "medium", "settings": { "reasoningEffort": "medium" } }
+          ]
+        }
+      }
+    },
     "opencode": { "settings": { "baseURL": "http://127.0.0.1:8788/v1" } },
     "openrouter": { "settings": { "baseURL": "http://127.0.0.1:8789/v1" } }
   },
@@ -121,7 +133,7 @@ Key: no `plugin` entries (live-local opencode-subagents, herdr-agent-state — p
 
 ## Agents (`~/projects/dotfiles/config/opencode/agents/*.md`)
 
-All custom; `researcher`/`steward`/`vision` are `mode: subagent` (never primary), the rest `mode: all`. Model pins (quality-first): `architect`/`reviewer` = `opencode-go/deepseek-v4.1-flash#max`; `swe`/`designer` = `opencode-go/deepseek-v4.1-flash#high`; `researcher`/`vision`/`steward` = `opencode-go/mimo-v2.5` (cheapest clean quota: 30.1k req/5h, 0 retention; no variants). An agent's `model` applies to child/subagent sessions only — a primary `opencode run --agent` session has its own model, so lanes pass `--model provider/model#variant` explicitly. Agents are thin skills routers: identity + permission envelope + skill pointer by name, deny-by-default `permissions` ordered rules, `steps` caps. Consolidated 2026-09-11 (explorer+librarian→`researcher`; architect+brainstormer+planner→`architect`; `designer` design-only; `swe` sole implementer). Native V2 frontmatter only (`description`/`mode`/`steps`/`permissions` — legacy top-level `temperature` + V1 `permission` blocks removed 2026-09-06; per V2 docs, request overlays like temperature are not applied by the runner, so effective tuning lives on provider/model/variant). All prompts end with a caveman output mandate: ultra-terse fragments, no filler/narration, substance-only reports; vision keeps transcriptions verbatim; reviewer is exempt (full prose, `caveman` skill denied — compression weakens review findings).
+All custom; `researcher`/`steward`/`vision` are `mode: subagent` (never primary), the rest `mode: all`. Model pins (quality-first): `architect`/`reviewer` = `opencode-go/deepseek-v4.1-flash#max`; `swe`/`designer` = `opencode-go/deepseek-v4.1-flash#high`; `researcher` = `opencode-go/mimo-v2.5#medium`, `steward` = `opencode-go/mimo-v2.5#low`, `vision` = `opencode-go/mimo-v2.5#none`, built-in `explore` = `opencode-go/mimo-v2.5#none` (set via `agents.explore.model`) — cheapest clean quota: 30.1k req/5h, 0 retention. The `none`/`low`/`medium` variants are custom, defined in `opencode.jsonc` under `providers.opencode-go.models.mimo-v2.5.variants` (array form). An agent's `model` applies to child/subagent sessions only — a primary `opencode run --agent` session has its own model, so lanes pass `--model provider/model#variant` explicitly. Agents are thin skills routers: identity + permission envelope + skill pointer by name, deny-by-default `permissions` ordered rules, `steps` caps. Consolidated 2026-09-11 (explorer+librarian→`researcher`; architect+brainstormer+planner→`architect`; `designer` design-only; `swe` sole implementer). Native V2 frontmatter only (`description`/`mode`/`steps`/`permissions` — legacy top-level `temperature` + V1 `permission` blocks removed 2026-09-06; per V2 docs, request overlays like temperature are not applied by the runner, so effective tuning lives on provider/model/variant). All prompts end with a caveman output mandate: ultra-terse fragments, no filler/narration, substance-only reports; vision keeps transcriptions verbatim; reviewer is exempt (full prose, `caveman` skill denied — compression weakens review findings).
 
 | Agent | Steps | Guardrails |
 |-------|-------|------------|
