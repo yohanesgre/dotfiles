@@ -15,7 +15,7 @@ Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fall
 Built-in tools: `read`, `glob`, `grep`, `edit`, `write`, `shell`, `webfetch`, `websearch`, `question`, `skill`, `subagent`, `execute`.
 
 - **Subagent delegation uses the `subagent` tool** — `subagent(agent, description, prompt, background?)`. Set `background: true` for async; pass the returned `sessionID` to continue that child. V2 has no `task()` or `delegate()`.
-- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.engram.<tool>(...)`, `tools["codebase-memory-mcp"].<tool>(...)`, `tools.rtk.<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
+- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.engram.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools.rtk.<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
 - **Shell runs through the `shell` tool** — set `workdir` instead of `cd`; prefer the `rtk` token-optimized prefix.
 
 ## Caveman Mode — Output Compression
@@ -47,37 +47,23 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 ## Tool Selection
 - For shell output, prefer token-optimized form: `rtk <cmd>` prefix in the `shell` tool, or `tools.rtk.run_command(...)` via `execute` (allowlisted cmds only). Raw shell only when rtk lacks the command.
 - **ALWAYS check community support before installing new tools or MCP servers**: minimum 100+ GitHub stars, active maintenance (updated within 3 months), multiple contributors. Skip tools with weak community support unless explicitly requested by user.
-- **Delegation to the `researcher` subagent is mandatory for exploration and research** — primary/build sessions MUST NOT hand-explore multi-file code or run web searches inline; only a single cheap lookup (one read/grep acted on immediately) may stay inline. `researcher` owns the codebase-memory-mcp graph, the `explorer`/`call-graph` routing, and `librarian` web research. Delegate anything spanning files, callers, impact, or the web.
-- **Spawn `researcher` subagents with disjoint scopes.** Partition research into non-overlapping workstreams (no shared files/dirs/symbols/questions/sources); overlap wastes work and yields conflicting merges. Multiple parallel `researcher` subagents are correct when their scopes are disjoint — foreground calls issued together, or `background: true` only when the session continues and joins them. A single workstream gets exactly one researcher, and that researcher fans out read-only `explore`/`codebase-memory-scout` children foreground (never background) and merges before reporting (leaf-only; no recursion); split a workstream only when it exceeds one researcher's context/step budget. A single cheap lookup stays inline; strictly dependent lookups stay inside one researcher.
-- Codebase-exploration prompt: name the project, the exact question, known `qualified_name`s/paths, and the evidence expected (`path:line` + snippet). researcher routes internally: locate → `explorer`, trace → `call-graph`, structure/impact → codebase-memory-mcp.
+- **Delegation to the `researcher` subagent is mandatory for exploration and research** — primary/build sessions MUST NOT hand-explore multi-file code or run web searches inline; only a single cheap lookup (one read/grep acted on immediately) may stay inline. `researcher` owns the codegraph index, the `explorer`/`call-graph` routing, and `librarian` web research. Delegate anything spanning files, callers, impact, or the web.
+- **Spawn `researcher` subagents with disjoint scopes.** Partition research into non-overlapping workstreams (no shared files/dirs/symbols/questions/sources); overlap wastes work and yields conflicting merges. Multiple parallel `researcher` subagents are correct when their scopes are disjoint — foreground calls issued together, or `background: true` only when the session continues and joins them. A single workstream gets exactly one researcher, and that researcher fans out read-only `explore` children foreground (never background) and merges before reporting (leaf-only; no recursion); split a workstream only when it exceeds one researcher's context/step budget. A single cheap lookup stays inline; strictly dependent lookups stay inside one researcher.
+- Codebase-exploration prompt: name the project, the exact question, known `qualified_name`s/paths, and the evidence expected (`path:line` + snippet). researcher routes internally: locate → `explorer`, trace → `call-graph`, structure/impact → codegraph.
 - Web-research prompt: state the library + pinned version, the exact question, and the source expectation (versioned official docs first). researcher fetches; never invent APIs.
 - **Every routine upkeep chore MUST route to `steward` — never `swe`.** Git lifecycle (status/stage/commit/branch/worktree/stash), docs sync (README/CONFIGURATION.md/AGENTS.md drift), repo hygiene (format, .gitignore, temp cleanup), release chores (changelog/version/tag), dependency bumps, and gate runs (lint/test/build) all go to `steward` on the cheap `mimo-v2.5`; only application-behavior changes go to `swe`/`designer`. **This includes read-only and trivial-looking checks**: a bare `git status`, "is the tree clean", "do the checks pass", "any docs drifted" MUST be delegated to `steward` — never run git/validate/docs-scan inline in the primary, even when the answer is one line.
 - For planning a feature or refactor before implementation, use `architect` agent.
 - For UI/styling work, delegate to `designer` agent.
 
-## Codebase Knowledge Graph (codebase-memory-mcp)
+## Codebase Knowledge Graph (codegraph)
 
-Query the indexed code graph instead of re-grepping/re-reading files. Structural questions belong here. These tools are Code Mode — call them via `execute` as `tools["codebase-memory-mcp"].<tool>(...)`.
+Query the codegraph index instead of re-grepping/re-reading files. Structural questions belong here. `codegraph_explore` is Code Mode — call it via `execute` as `tools.codegraph.codegraph_explore(...)`. The default server exposes only this one tool (Read-equivalent): one call returns verbatim source + call paths + blast radius. Extra tools (`node`/`search`/`callers`/`callees`/`impact`/`files`/`status`) stay disabled unless `CODEGRAPH_MCP_TOOLS` allowlists them.
 
-**Session start:** `list_projects` → index current repo if missing; `index_repository(repo_path, mode="full")` refreshes stale graphs. Check `index_status` when unsure.
+**Index:** every project needs its own index — no `.codegraph/` directory means the server is inactive. Build/refresh with `codegraph init` in the project root. If the index is missing, fall back to grep/glob and say so.
 
-**Tool routing:**
+**Grep still wins:** string literals, error messages, config values, non-code files, raw-content regex, or when codegraph returns nothing.
 
-| Question | Tool |
-|----------|------|
-| Find definition / natural-language search ("update settings") | `search_graph` (`query=` BM25, `name_pattern=` regex, `semantic_query=` keyword array) |
-| Read source of located function/class | `get_code_snippet` (pass exact `qualified_name`) |
-| Who calls this / blast radius | `trace_path(direction="inbound", risk_labels=true)` |
-| Callees / value propagation with args | `trace_path(mode="data_flow")` |
-| Frontend fetch → API route flows | `trace_path(mode="cross_service")` |
-| Multi-hop patterns, aggregations | `query_graph` (Cypher) |
-| Text search ranked by graph importance | `search_code` (grep + dedup into functions) |
-| Impact since a ref/date | `detect_changes(since=...)` |
-| Architecture overview / schema | `get_architecture`, `get_graph_schema` |
-
-**Grep still wins:** string literals, error messages, config values, non-code files, raw-content regex, or when MCP returns nothing.
-
-**Delegation:** include the project name and known `qualified_name`s in subagent prompts so they skip re-discovery.
+**Delegation:** subagents don't see MCP initialize guidance — tell them to call `codegraph_explore` (or the `codegraph explore` CLI). Include the project name and known `file:line`/symbols so they skip re-discovery.
 
 ## Code Style
 - Follow existing conventions in the codebase. Do not reformat or restyle unrelated code.
@@ -92,7 +78,7 @@ Query the indexed code graph instead of re-grepping/re-reading files. Structural
 - Never assume file state after compaction — re-read affected files before continuing
 
 ### Tool Failures
-- If MCP tool fails, try fallback (e.g., `grep` if `codebase-memory-mcp` returns nothing)
+- If MCP tool fails, try fallback (e.g., `grep` if codegraph returns nothing)
 - If `subagent` fails, retry once with a more detailed prompt before escalating
 - If a subagent was killed by usage limits, suggest a cheaper model to the user (agents can't switch their own model)
 
@@ -119,7 +105,7 @@ Query the indexed code graph instead of re-grepping/re-reading files. Structural
 | Feature planning / refactor >50 lines | `architect` | Phased plans with verify gates |
 | Architecture design / ADR / missing design | `architect` | Wraps system-design + architecture skills; owns design + ADR |
 | API/library research | `researcher` (default — always delegate) | webfetch/websearch; versioned sources; never invent APIs |
-| Codebase exploration (build/primary) | `researcher` (default — always delegate; parallel only for disjoint scopes) | Owns codebase-memory graph + `explorer`/`call-graph` routing; primary keeps only cheap single-file lookups inline; fans out `explore` children |
+| Codebase exploration (build/primary) | `researcher` (default — always delegate; parallel only for disjoint scopes) | Owns codegraph index + `explorer`/`call-graph` routing; primary keeps only cheap single-file lookups inline; fans out `explore` children |
 | UI/styling changes | `designer` | Specialized in frontend |
 | Design artifacts | `designer` | Owns the project's declared design artifacts (wireframes, design system); swe implements from them |
 | Code review before merge | `reviewer` | Adversarial, severity-graded findings |
@@ -166,9 +152,3 @@ Use the `agent-browser` skill for browser automation (load it before browser wor
 ### Vision Delegation (Text-Only Models)
 
 When an image MUST be read (screenshot, diagram, chart, mockup) and the active model has no vision: delegate to the `vision` agent (native omni-modal, model-agnostic — inherits the session model). Pass the image path in the prompt; consume the text description it returns. Never send images directly to a text-only model.
-
-<!-- codebase-memory-mcp:start -->
-# Codebase Knowledge Graph (codebase-memory-mcp)
-
-Prefer its tools over grep for code discovery. Fall back to grep/glob for: string literals, error messages, config values, non-code files, or when MCP returns nothing.
-<!-- codebase-memory-mcp:end -->

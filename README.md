@@ -49,7 +49,7 @@ flake.nix                   # nixpkgs-unstable + home-manager; mkHome (4 homeCon
 home/common.nix             # shared config + imports
 home/hosts/{desktop,laptop}.nix   # host overrides (desktop imports hermes)
 home/modules/pacman/        # declarative pacman CLI list, synced every switch
-home/modules/upstream/      # bun / codebase-memory-mcp / rtk / herdr official installers
+home/modules/upstream/      # bun / codegraph / rtk / herdr official installers
 home/modules/manual/        # engram (go install)
 home/modules/               # env, shell, terminal, opencode, neovim, nix, engram, hermes, skills
                             # nix/ = weekly auto garbage collection (systemd user timer + sudo)

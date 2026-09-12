@@ -12,8 +12,8 @@
   # - bun: nix 1.3.13 vs upstream 1.4.2 (2026-09-05) — full minor behind.
   #   Live ~/.bun/bin/bun already 1.4.2 via `bun upgrade` (clobbered nix shim).
   # - rtk: nix 0.45.0 vs upstream v0.48.0 (2026-09-04) — 3 releases behind.
-  # - codebase-memory-mcp: nix 0.10.8 == upstream v0.10.8 today, but 458 commits
-  #   since release + upstream has `codebase-memory-mcp update` self-update.
+  # - codegraph: colbymchenry/codegraph — bun global install (OpenCode MCP); reinstalled
+  #   on every switch.
   # - herdr: nix 0.8.2 == upstream stable today, but `herdr update` self-update
   #   only works on direct installs (Nix installs must update via Nix).
   # Stable CLI (git/curl/jq/rg/fd/fzf/bat/eza/zoxide/nodejs/go/neovim/tmux)
@@ -63,13 +63,16 @@
       curl -fsSL https://bun.sh/install | bash 2>&1 || warn "bun install failed (continuing)"
     fi
 
-    # codebase-memory-mcp: DeusData/codebase-memory-mcp — official installer.
-    if is_upstream codebase-memory-mcp; then
-      info "updating codebase-memory-mcp..."
-      codebase-memory-mcp update 2>&1 || warn "codebase-memory-mcp update failed (continuing)"
+    # codegraph: colbymchenry/codegraph — bun global install (OpenCode MCP).
+    if [ -x "$HOME/.bun/bin/bun" ]; then
+      if is_upstream codegraph; then
+        info "updating codegraph..."
+      else
+        info "installing codegraph (colbymchenry)..."
+      fi
+      "$HOME/.bun/bin/bun" install -g --trust @colbymchenry/codegraph 2>&1 || warn "codegraph install/update failed (continuing)"
     else
-      info "installing codebase-memory-mcp (DeusData)..."
-      curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash 2>&1 || warn "codebase-memory-mcp install failed (continuing)"
+      warn "bun missing — skipping codegraph"
     fi
 
     # rtk: rtk-ai/rtk — official installer (checksum-verified, -> ~/.local/bin).

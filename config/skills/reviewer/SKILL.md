@@ -15,7 +15,7 @@ A project may ship its own review rules — a review/QA skill under `.agents/ski
 3. **Read it in full.** Read the whole changed files, not just the hunks — a hunk can look correct while the function is broken. Trace data flow: where inputs come from, where outputs go, what can be null, fail, or race.
 4. **Hunt, don't validate.** Try to break it. Accept scoping hints ("focus on security") and prioritize them, but keep seeing the rest.
 
-When codebase-memory-mcp is available, use it for structure the diff alone can't show: `trace_path` (inbound) for callers and blast radius of a changed function, `get_code_snippet` for exact source. Graph answers beat guessing.
+When codegraph is available (a `.codegraph/` index exists), use `codegraph_explore` for structure the diff alone can't show: call paths and blast radius of a changed function, verbatim source in one call. Graph answers beat guessing.
 
 ## What to check
 

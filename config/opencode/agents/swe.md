@@ -43,37 +43,10 @@ permissions:
   - action: engram_mem_save
     resource: "*"
     effect: allow
-  - action: codebase_memory_mcp_search_graph
+  - action: codegraph_*
     resource: "*"
     effect: allow
-  - action: codebase_memory_mcp_trace_path
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_get_code_snippet
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_query_graph
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_get_architecture
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_search_code
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_get_graph_schema
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_list_projects
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_index_status
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_detect_changes
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_check_index_coverage
+  - action: execute
     resource: "*"
     effect: allow
   - action: question

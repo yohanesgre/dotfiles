@@ -40,13 +40,16 @@ else
   curl -fsSL https://bun.sh/install | bash 2>&1 || warn "bun install failed"
 fi
 
-# codebase-memory-mcp: DeusData — official installer
-if is_upstream codebase-memory-mcp; then
-  info "updating codebase-memory-mcp..."
-  codebase-memory-mcp update 2>&1 || warn "codebase-memory-mcp update failed"
+# codegraph: colbymchenry/codegraph — bun global install (OpenCode MCP)
+if [ -x "$HOME/.bun/bin/bun" ]; then
+  if is_upstream codegraph; then
+    info "updating codegraph..."
+  else
+    info "installing codegraph (colbymchenry)..."
+  fi
+  "$HOME/.bun/bin/bun" install -g --trust @colbymchenry/codegraph 2>&1 || warn "codegraph install/update failed"
 else
-  info "installing codebase-memory-mcp (DeusData)..."
-  curl -fsSL https://raw.githubusercontent.com/DeusData/codebase-memory-mcp/main/install.sh | bash 2>&1 || warn "codebase-memory-mcp install failed"
+  warn "bun missing — skipping codegraph"
 fi
 
 # rtk: rtk-ai/rtk — official installer, re-run = update (pin via RTK_VERSION=vX.Y.Z)

@@ -98,7 +98,7 @@ Delegation by node type (matches the graph):
   (inline, blocking) call. `researcher` = foreground by default, but MUST
   fan out when a wave needs ≥2 independent lookups (read-only →
   collision-free; `researcher` may itself fan out leaf
-  `explore`/`codebase-memory-scout` children). `reviewer` = one per lane,
+  `explore` children). `reviewer` = one per lane,
   fanned out background/async across the review wave, each joined to its
   own lane before that lane closes out. Roles: `architect` (design/plan),
   `researcher` (codebase/web lookup), `reviewer` (review). They never
