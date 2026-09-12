@@ -35,9 +35,16 @@ config/nvim/lazyvim.json
 # swe per-project memory (local, never commit)
 .agents/memory/
 
+# externalized skills installed per project (upstream-managed, never commit)
+.agents/skills/
+skills-lock.json
+
 # local-only skill artifacts: design specs + work-plan tracking (never commit)
 .agents/brainstorm-studio/
 status/
+
+# reviewer HTML reports (local artifacts, never commit)
+.reviews/
 
 # browser automation state (playwright MCP, kept out if it returns)
 .playwright-mcp/

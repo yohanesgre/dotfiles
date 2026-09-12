@@ -12,6 +12,7 @@
 #   bash scripts/validate-skills.sh --dir DIR  # scan another skills root
 #   bash scripts/validate-skills.sh --strict   # warnings fail the run
 #   bash scripts/validate-skills.sh --verbose  # list every warning
+#   bash scripts/validate-skills.sh --manifest FILE  # assert committed keep/wired skills exist
 #
 # Exit 0 if no errors (and no warnings under --strict), 1 otherwise.
 set -euo pipefail
@@ -22,13 +23,15 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SKILLS_DIR="$REPO_ROOT/config/skills"
 STRICT=false
 VERBOSE=false
+MANIFEST=""
 
 while [ $# -gt 0 ]; do
     case "$1" in
         --dir) SKILLS_DIR="$2"; shift 2 ;;
         --strict) STRICT=true; shift ;;
         --verbose) VERBOSE=true; shift ;;
-        -h|--help) sed -n '2,12p' "$0"; exit 0 ;;
+        --manifest) MANIFEST="$2"; shift 2 ;;
+        -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
         *) echo "validate-skills: unknown arg '$1'" >&2; exit 2 ;;
     esac
 done
@@ -44,6 +47,7 @@ if [ "$STRICT" = true ] || [ "$VERBOSE" = true ]; then
 else
     export VS_VERBOSE=0
 fi
+export VS_MANIFEST="$MANIFEST"
 
 echo "Agent Skills validation — $SKILLS_DIR"
 
@@ -125,6 +129,30 @@ for path in files:
     body_lines = len(text.splitlines())
     if body_lines > 500:
         warnings.append((rel, f"body is {body_lines} lines (spec recommends <=500; move detail to references/)"))
+
+manifest_path = os.environ.get("VS_MANIFEST", "")
+if manifest_path:
+    import json as _json
+    try:
+        man = _json.load(open(manifest_path, encoding="utf-8"))
+    except Exception as e:
+        errors.append((os.path.relpath(manifest_path, root), f"invalid manifest JSON: {e}"))
+        man = None
+    if man:
+        for name in man.get("keep", []):
+            if name not in known_dirs:
+                errors.append((f"manifest keep '{name}'", "committed skill missing under root"))
+        for path in man.get("keepNested", []):
+            if not os.path.isdir(os.path.join(root, path)):
+                errors.append((f"manifest keepNested '{path}'", "path does not exist"))
+        for src in man.get("sources", []):
+            scope = src.get("scope")
+            if scope not in ("wired", "project", "local", "dropped"):
+                errors.append((f"manifest source '{src.get('id')}'", f"invalid scope {scope!r}"))
+            if scope in ("wired", "local"):
+                for name in src.get("skills", []):
+                    if name not in known_dirs:
+                        errors.append((f"manifest {scope} '{name}'", "committed skill missing under root"))
 
 print(f"scanned {len(files)} skills\n")
 

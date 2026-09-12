@@ -1,0 +1,372 @@
+{
+  "version": 1,
+  "updated": "2026-09-12",
+  "policy": "Commit only local-authored and wired skills. Externalized skills install globally on every hm-switch via scripts/skills-sync.sh --global (npx skills -a universal from $HOME -> ~/.agents/skills), or per project on demand; upstream owns their content.",
+  "keep": [
+    "agent-browser",
+    "architect",
+    "architecture",
+    "brainstorm-studio",
+    "brainstorming",
+    "call-graph",
+    "cavecrew",
+    "caveman",
+    "caveman-commit",
+    "caveman-compress",
+    "caveman-help",
+    "caveman-review",
+    "caveman-stats",
+    "design-graph",
+    "design-system-patterns",
+    "design-thinking",
+    "designer",
+    "dispatching-parallel-agents",
+    "docs-hub",
+    "executing-plans",
+    "explorer",
+    "extract-design-system",
+    "finishing-a-development-branch",
+    "frontend-design",
+    "git-workflow",
+    "goal",
+    "herdr",
+    "lexa-cli",
+    "librarian",
+    "nix",
+    "receiving-code-review",
+    "requesting-code-review",
+    "reviewer",
+    "steward",
+    "subagent-driven-development",
+    "swe",
+    "system-design",
+    "systematic-debugging",
+    "test-driven-development",
+    "transcribe",
+    "using-git-worktrees",
+    "using-superpowers",
+    "verification-before-completion",
+    "work-plans",
+    "writing-plans",
+    "writing-skills"
+  ],
+  "keepNested": [
+    "nix/debug",
+    "nix/flake",
+    "nix/module",
+    "nix/service"
+  ],
+  "sources": [
+    {
+      "id": "obra-superpowers-wired",
+      "repo": "obra/superpowers",
+      "scope": "wired",
+      "skills": [
+        "brainstorming",
+        "dispatching-parallel-agents",
+        "executing-plans",
+        "finishing-a-development-branch",
+        "receiving-code-review",
+        "requesting-code-review",
+        "subagent-driven-development",
+        "systematic-debugging",
+        "test-driven-development",
+        "using-git-worktrees",
+        "using-superpowers",
+        "verification-before-completion",
+        "writing-plans",
+        "writing-skills"
+      ],
+      "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
+    },
+    {
+      "id": "anthropics-skills-wired",
+      "repo": "anthropics/skills",
+      "scope": "wired",
+      "skills": [
+        "frontend-design"
+      ],
+      "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
+    },
+    {
+      "id": "wshobson-agents-wired",
+      "repo": "wshobson/agents",
+      "scope": "wired",
+      "skills": [
+        "design-system-patterns"
+      ],
+      "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
+    },
+    {
+      "id": "arvindrk-extract-design-system-wired",
+      "repo": "arvindrk/extract-design-system",
+      "scope": "wired",
+      "skills": [
+        "extract-design-system"
+      ],
+      "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
+    },
+    {
+      "id": "anthropics-knowledge-work-plugins-wired",
+      "repo": "anthropics/knowledge-work-plugins",
+      "scope": "wired",
+      "skills": [
+        "architecture",
+        "system-design"
+      ],
+      "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
+    },
+    {
+      "id": "vercel-labs-agent-browser-wired",
+      "repo": "vercel-labs/agent-browser",
+      "scope": "wired",
+      "skills": [
+        "agent-browser"
+      ],
+      "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
+    },
+    {
+      "id": "Unity-Technologies-skills",
+      "repo": "Unity-Technologies/skills",
+      "scope": "project",
+      "skills": [
+        "build-live-game",
+        "implement-in-app-purchases",
+        "initialize-ai-navigation",
+        "levelplay-unity-integration",
+        "localization",
+        "new-unity-project",
+        "optimize-audio",
+        "optimize-text-mesh-pro",
+        "optimize-web",
+        "physics-3d-collision",
+        "setup-multiplayer-services",
+        "setup-vivox-voice-chat",
+        "shader-graph-create-custom-node",
+        "sprite-editor",
+        "ui",
+        "ui-imgui",
+        "ui-ugui",
+        "ui-uitk",
+        "unity-cli",
+        "unity-package-management",
+        "urp-postprocessing",
+        "validate-urp-render-graph-renderer-feature"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "anthropics-knowledge-work-plugins",
+      "repo": "anthropics/knowledge-work-plugins",
+      "scope": "project",
+      "skills": [
+        "analyze",
+        "build-dashboard",
+        "canva-creator",
+        "code-review",
+        "competitive-brief",
+        "contact-research",
+        "create-viz",
+        "data-context-extractor",
+        "data-visualization",
+        "debug",
+        "deploy-checklist",
+        "design-mcp-workflow",
+        "digest",
+        "documentation",
+        "draft-offer",
+        "explore-data",
+        "incident-response",
+        "knowledge-synthesis",
+        "memory-management",
+        "metrics-review",
+        "product-brainstorming",
+        "risk-assessment",
+        "roadmap-update",
+        "search",
+        "search-strategy",
+        "slack-messaging",
+        "slack-search",
+        "source-management",
+        "sprint-planning",
+        "sql-queries",
+        "stakeholder-update",
+        "standup",
+        "start",
+        "statistical-analysis",
+        "synthesize-research",
+        "task-management",
+        "tech-debt",
+        "testing-strategy",
+        "update",
+        "validate-data",
+        "write-query",
+        "write-spec"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "anthropics-skills",
+      "repo": "anthropics/skills",
+      "scope": "project",
+      "skills": [
+        "algorithmic-art",
+        "brand-guidelines",
+        "canvas-design",
+        "claude-api",
+        "doc-coauthoring",
+        "docx",
+        "internal-comms",
+        "mcp-builder",
+        "pdf",
+        "pptx",
+        "skill-creator",
+        "slack-gif-creator",
+        "theme-factory",
+        "web-artifacts-builder",
+        "webapp-testing",
+        "xlsx"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "cloudflare-skills",
+      "repo": "cloudflare/skills",
+      "scope": "project",
+      "skills": [
+        "agents-sdk",
+        "cloudflare",
+        "cloudflare-email-service",
+        "cloudflare-one",
+        "cloudflare-one-migrations",
+        "durable-objects",
+        "sandbox-sdk",
+        "turnstile-spin",
+        "web-perf",
+        "workers-best-practices",
+        "wrangler"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "davila7-claude-code-templates",
+      "repo": "davila7/claude-code-templates",
+      "scope": "project",
+      "skills": [
+        "game-development"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "nextlevelbuilder-ui-ux-pro-max-skill",
+      "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
+      "scope": "project",
+      "skills": [
+        "banner-design",
+        "brand",
+        "design",
+        "design-system",
+        "slides",
+        "ui-styling",
+        "ui-ux-pro-max"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "openai-skills",
+      "repo": "openai/skills",
+      "scope": "project",
+      "skills": [
+        "cli-creator",
+        "gh-fix-ci",
+        "jupyter-notebook",
+        "security-best-practices"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "paramchoudhary-resumeskills",
+      "repo": "paramchoudhary/resumeskills",
+      "scope": "project",
+      "skills": [
+        "cover-letter-generator",
+        "interview-prep-generator",
+        "job-description-analyzer",
+        "linkedin-profile-optimizer",
+        "resume-ats-optimizer",
+        "resume-bullet-writer",
+        "resume-quantifier",
+        "tech-resume-optimizer"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "vasilyu1983-ai-agents-public",
+      "repo": "vasilyu1983/ai-agents-public",
+      "scope": "project",
+      "skills": [
+        "software-ui-ux-design"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "vercel-labs-agent-skills",
+      "repo": "vercel-labs/agent-skills",
+      "scope": "project",
+      "skills": [
+        "vercel-composition-patterns",
+        "vercel-react-best-practices",
+        "web-design-guidelines"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "vercel-labs-skills",
+      "repo": "vercel-labs/skills",
+      "scope": "project",
+      "skills": [
+        "find-skills"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "wexxwuther-job-hunter",
+      "repo": "wexxwuther/job-hunter",
+      "scope": "project",
+      "skills": [
+        "application-tracker",
+        "career-profile",
+        "cover-letter",
+        "job-hunter",
+        "job-search",
+        "outcome-learning",
+        "resume-tailor"
+      ],
+      "notes": "per-project install via scripts/skills-sync.sh"
+    },
+    {
+      "id": "local-penpot",
+      "repo": null,
+      "scope": "dropped",
+      "skills": [
+        "penpot"
+      ],
+      "notes": "no recorded upstream; removed from git, recoverable from backup branch"
+    },
+    {
+      "id": "JuliusBrussee-caveman-wired",
+      "repo": "JuliusBrussee/caveman",
+      "scope": "wired",
+      "skills": [
+        "cavecrew",
+        "caveman",
+        "caveman-commit",
+        "caveman-compress",
+        "caveman-help",
+        "caveman-review",
+        "caveman-stats"
+      ],
+      "notes": "committed exception; customized caveman system. --wired refresh overwrites \u2014 diff local customizations before copying."
+    }
+  ]
+}

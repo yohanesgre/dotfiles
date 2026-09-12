@@ -141,7 +141,7 @@ if [ "$CI_MODE" = true ]; then
     skip "CI mode — skipping local skill directory checks"
 elif [ ! -f "$HOME_AGENTS" ]; then
     skip "~/AGENTS.md not found"
-    _suggest "run: npx openskills sync -y  (after installing skills)"
+    _suggest "skills auto-discover from ~/.agents/skills/; externalized skills install per project via scripts/skills-sync.sh"
 else
     SKILL_NAMES=$(python3 -c "
 import re
@@ -217,7 +217,7 @@ for agents_file in "$OC_DIR/AGENTS.md" "$HOME_AGENTS"; do
     if [ ! -f "$agents_file" ]; then
         skip "$fname$dir_label not found"
         if [ "$agents_file" = "$HOME_AGENTS" ]; then
-            _suggest "run: npx openskills sync -y"
+            _suggest "skills auto-discover from ~/.agents/skills/; externalized skills install per project via scripts/skills-sync.sh"
         else
             _suggest "run: bash scripts/hm-switch.sh (redeploys config-level AGENTS.md)"
         fi
@@ -251,8 +251,13 @@ echo -e "${BOLD}Check 7: Agent Skills Format${NC}"
 if [ ! -f "$SCRIPT_DIR/validate-skills.sh" ]; then
     skip "scripts/validate-skills.sh not found"
 else
-    check "config/skills conform to Agent Skills spec" \
-        bash "$SCRIPT_DIR/validate-skills.sh" --dir "$REPO_ROOT/config/skills"
+    if [ -f "$REPO_ROOT/config/skills/sources.json" ]; then
+        check "config/skills conform to Agent Skills spec + sources manifest" \
+            bash "$SCRIPT_DIR/validate-skills.sh" --dir "$REPO_ROOT/config/skills" --manifest "$REPO_ROOT/config/skills/sources.json"
+    else
+        check "config/skills conform to Agent Skills spec" \
+            bash "$SCRIPT_DIR/validate-skills.sh" --dir "$REPO_ROOT/config/skills"
+    fi
 fi
 echo ""
 

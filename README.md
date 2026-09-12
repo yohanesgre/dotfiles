@@ -54,8 +54,10 @@ home/modules/manual/        # engram (go install)
 home/modules/               # env, shell, terminal, opencode, neovim, nix, engram, hermes, skills
                             # nix/ = weekly auto garbage collection (systemd user timer + sudo)
 config/                     # raw configs symlinked via xdg.configFile
+config/skills/              # committed skills only: local-authored + wired upstream exceptions
+config/skills/sources.json  # externalized skill sources (per-project install manifest)
 scripts/                    # bootstrap, install-nix, hm-switch, pacman-sync, install-manual,
-                            # validate, validate-skills, check-secrets
+                            # validate, validate-skills, check-secrets, skills-sync
 ```
 
 ## Package boundary

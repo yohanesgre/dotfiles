@@ -62,9 +62,8 @@ else
         FAILED=1
       done
     done
-  done <<< "$(git ls-files | grep -v -E '^config/skills/(claude-api|cloudflare|canvas-design|ui-styling)/' || true)"
-  # skills vendor docs carry doc placeholders (ghp_your_, xoxp-...) — covered by
-  # placeholder filter, but excluded here to keep signal clean; spot-check them:
+  done <<< "$(git ls-files || true)"
+  # committed skills (local + wired) are spot-checked for real-looking secrets:
   SKILL_HITS=$(git grep -n -E 'sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{20,}|MT[A-Za-z0-9_.-]{10,}\.[A-Za-z0-9_.-]{5,}' -- config/skills/ 2>/dev/null | grep -v -E "$PLACEHOLDER_RE" || true)
   if [ -n "$SKILL_HITS" ]; then
     echo "$SKILL_HITS" | cut -d: -f1,2 | while IFS= read -r loc; do echo "SECRET pattern in tracked $loc"; done

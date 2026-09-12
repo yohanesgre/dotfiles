@@ -6,7 +6,7 @@
 
 Skills are auto-discovered by the harness from `~/.agents/skills/`, `~/.config/opencode/skills/`, and project `.agents/skills/` (SKILL.md format). Only use skills listed in the skill tool's `<available_skills>`.
 
-Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fallback: `npx openskills read <skill-name>` (or `skill-one,skill-two`). Base directory provided in output resolves bundled resources (references/, scripts/, assets/). Do not invoke a skill already loaded in context.
+Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fallback: read `~/.agents/skills/<name>/SKILL.md` directly; for an externalized skill not installed in the project, `npx skills use <owner/repo>@<skill>`. Base directory provided in output resolves bundled resources (references/, scripts/, assets/). Do not invoke a skill already loaded in context.
 
 </skills_system>
 
