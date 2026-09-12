@@ -115,21 +115,20 @@ if ! command -v nix >/dev/null 2>&1; then
     skip "nix not in PATH"
 else
     check "nix flake check --no-build" nix flake check --no-build
-    if nix fmt -- --check flake.nix home/ >/dev/null 2>&1; then
+    if nix fmt -- --check flake.nix home/ </dev/null >/dev/null 2>&1; then
         check "nix fmt --check clean" true
     else
-        # fallback: nixpkgs-fmt direct (older nix without `nix fmt --check`)
-        if nix run nixpkgs#nixpkgs-fmt -- --check flake.nix home/ >/dev/null 2>&1; then
-            check "nixpkgs-fmt --check clean" true
-        else
-            check "nix fmt clean (run: nix fmt)" false
-        fi
+        check "nix fmt clean (run: nix fmt)" false
     fi
-    # deadnix lint, non-blocking warn first run (harden later)
-    if nix run nixpkgs#deadnix -- -L --fail flake.nix home/ >/dev/null 2>&1; then
-        check "deadnix clean" true
+    # deadnix lint — skip when nix can't provide the tool
+    if nix run nixpkgs#deadnix -- --version >/dev/null 2>&1; then
+        if nix run nixpkgs#deadnix -- -L --fail flake.nix home/ >/dev/null 2>&1; then
+            check "deadnix clean" true
+        else
+            check "deadnix clean" false
+        fi
     else
-        check "deadnix clean" false
+        skip "deadnix not available via nix run"
     fi
 fi
 echo ""
