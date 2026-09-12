@@ -42,6 +42,8 @@ Review the change. Pre-existing problems outside the diff belong in a short **Pr
 
 Severity: **SEV** (must fix) / **MED** (should fix) / **NIT** (optional). Calibrate by impact, not category: SEV = exploitable, corrupts data, breaks the build or a documented contract; MED = a real cost or a bug likely to bite; NIT = optional, style, or harmless given current callers. Order issues by severity, SEV first. Keep a clean review genuinely short.
 
+Write for a busy human in both formats: verdict first, one idea per sentence, paragraphs ≤ 3 lines, fixes verb-first, bullets over prose. For the HTML report read `references/human-friendly-reports.md` first — it owns the page structure, card anatomy, and the writing rules. Rewrite findings into Problem → Fix → Why; never paste audit prose into a card.
+
 ```
 ## Verdict
 APPROVE / APPROVE WITH NITS / REQUEST CHANGES — one line, plus why.
@@ -62,9 +64,9 @@ What was done well (brief).
 
 ## Human-friendly HTML report (on request only)
 
-Text is the default. Produce HTML **only when the user asks** for a human-friendly / visual / HTML review — never proactively. Then:
+Text is the default and is what automation uses (goal lanes, subagent reviews). Produce HTML **only when the user explicitly asks** for a human-friendly / visual / HTML review — never proactively, and never from an automated pipeline. When asked, load `references/human-friendly-reports.md` first, then:
 
-- Read the bundled template at `assets/review-report.html` (resolve against this skill's base directory) and fill it. Keep it one self-contained file: inline CSS, no external scripts, fonts, or CDN links; escape code as HTML entities.
+- Read `references/human-friendly-reports.md` first — page structure, card anatomy, diagram rules, and the writing rules (Problem → Fix → Why, verb-first fixes, no pasted audit prose). Then read the bundled template at `assets/review-report.html` (resolve against this skill's base directory) and fill it. Keep it one self-contained file: inline CSS, no external scripts, fonts, or CDN links; escape code as HTML entities.
 - Content: colored verdict banner (green APPROVE / amber NITS / red REQUEST CHANGES), severity counts, one card per issue (badge, `file:line`, problem, fix, optional snippet, CONFIRMED/SUSPECTED chip), strengths, summary, metadata (repo, range, date).
 - Location: inside a git repo → `<repo-root>/.reviews/review-<repo>-<YYYYMMDD-HHMM>.html` (find the root with `git rev-parse --show-toplevel`); outside any repo → `~/.local/share/opencode/reviews/review-<repo>-<YYYYMMDD-HHMM>.html`. Create the directory first if missing: `mkdir -p .reviews` (after `cd` to the repo root) or `mkdir -p ~/.local/share/opencode/reviews` — the only non-git commands on the reviewer allowlist. `.reviews/` is an artifact dir: if the repo doesn't already ignore it, say so in the report rather than editing `.gitignore`. If the write is not permitted or fails, embed the complete HTML in the report so the parent can persist it.
 

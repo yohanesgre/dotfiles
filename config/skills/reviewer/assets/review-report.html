@@ -56,6 +56,13 @@
   .fix strong { color: var(--fg); }
   pre.snippet { margin: 10px 0 0; padding: 10px 12px; overflow: auto; border-radius: 8px; background: color-mix(in srgb, var(--fg) 7%, transparent); font-size: 13px; }
   ul { padding-left: 20px; }
+  .lede { font-size: 16px; margin: 14px 0 0; }
+  .lede strong { font-size: 17px; }
+  .fix ul { margin: 6px 0 0; color: var(--muted); }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; font-size: 14px; }
+  th { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+  tr:nth-child(even) td { background: color-mix(in srgb, var(--fg) 3%, transparent); }
   footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 </style>
 </head>
@@ -77,6 +84,12 @@
     <span class="pill nit">{{N_NIT}} NIT</span>
   </section>
 
+  <p class="lede"><strong>{{OPENING — e.g. No blockers.}}</strong> {{ONE SENTENCE OF WHY}}</p>
+
+  <!-- OPTIONAL: Top 3 fixes (reuse ISSUE CARD), then a diagram, then ALL FINDINGS
+       table. See references/human-friendly-reports.md for the page recipe and the
+       writing rules (Problem -> Fix -> Why; verb-first fixes; no pasted audit prose). -->
+
   <section>
     <h2>Issues</h2>
 
@@ -87,13 +100,31 @@
         <code class="loc">file:line</code>
         <span class="chip">CONFIRMED</span>
       </header>
-      <p class="problem">{{PROBLEM}}</p>
-      <p class="fix"><strong>Fix:</strong> {{FIX}}</p>
-      <pre class="snippet"><code>{{OPTIONAL SNIPPET}}</code></pre>
+      <p class="problem">{{PROBLEM — one sentence}}</p>
+      <div class="fix"><strong>Fix:</strong>
+        <ul>
+          <li>{{VERB-FIRST ACTION}}</li>
+          <li>{{VERB-FIRST ACTION}}</li>
+        </ul>
+      </div>
+      <p class="fix"><strong>Why:</strong> {{1-2 SENTENCES OF IMPACT}}</p>
+      <pre class="snippet"><code>{{OPTIONAL SNIPPET — <=10 LINES}}</code></pre>
     </article>
     <!-- /ISSUE CARD -->
 
   </section>
+
+  <!-- OPTIONAL: ALL FINDINGS table for the tail of a long review.
+  <section>
+    <h2>All findings</h2>
+    <table>
+      <thead><tr><th>Level</th><th>Finding</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr><td>MED</td><td>{{SHORT PROBLEM}}</td><td>{{VERB-FIRST FIX}}</td></tr>
+      </tbody>
+    </table>
+  </section>
+  -->
 
   <section>
     <h2>Strengths</h2>
