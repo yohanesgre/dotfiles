@@ -15,7 +15,7 @@ Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fall
 Built-in tools: `read`, `glob`, `grep`, `edit`, `write`, `shell`, `webfetch`, `websearch`, `question`, `skill`, `subagent`, `execute`.
 
 - **Subagent delegation uses the `subagent` tool** — `subagent(agent, description, prompt, background?)`. Set `background: true` for async; pass the returned `sessionID` to continue that child. V2 has no `task()` or `delegate()`.
-- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.engram.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools.rtk.<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
+- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.icm.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools.rtk.<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
 - **Shell runs through the `shell` tool** — set `workdir` instead of `cd`; prefer the `rtk` token-optimized prefix.
 
 ## Caveman Mode — Output Compression
@@ -37,10 +37,11 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 **Subagents inherit this mandate.** Most custom agents (`~/.config/opencode/agents/*.md`) carry caveman output rules in their prompts — exception: `reviewer`, which runs full prose because compression drops the nuance findings need (`caveman` skill denied on that agent). When delegating via `subagent`, include in the prompt: "Reply caveman-compressed: findings only, no filler, no process narration" — except when delegating to `reviewer`. Subagent reports enter main context — a yappy subagent costs twice (its output + your reading of it); reviewer is the deliberate exception.
 
 ## Memory
-- At session start: `mem_current_project` to detect the project, then `mem_context` for recent session history. Use `mem_search` for topic lookups across sessions.
-- Use `mem_save` after completing bug fixes, making architecture decisions, or discovering non-obvious codebase patterns.
-- After `mem_save`, check the response for `judgment_required` conflict candidates — resolve them via `mem_judge` (ask the user when confidence is low or the relation is supersedes/conflicts_with).
-- Use `mem_session_start` / `mem_session_end` to register session lifecycle; `mem_session_summary` before session end to preserve state for the next session.
+- At session start: `icm_wake_up` to load recent session history and project context. Use `icm_memory_recall` for topic lookups across sessions.
+- Use `icm_memory_store` after completing bug fixes, making architecture decisions, or discovering non-obvious codebase patterns.
+- After `icm_memory_store`, check the response for conflict candidates — resolve them via `icm_feedback_record` (record the correction with subject/type/reasoning/evidence).
+- Use `icm_transcript_start_session` / `icm_memory_store` to register session lifecycle; `icm_wake_up` before session end to preserve state for the next session.
+- Topic convention: `{kind}-{project}` (e.g. `decision-dotfiles`, `pattern-lexa`). Memos (`icm_memoir_*`) for structured knowledge with references.
 - **ALWAYS update `~/.config/opencode/CONFIGURATION.md` after any configuration change** (opencode.json, slim agents, MCP servers, plugins, AGENTS.md, etc.). Keep it in sync with the current state. Verify changed configs parse (JSON/YAML validation).
 - **AFTER updating local config, compare with `~/projects/dotfiles/`** — sync changes to the dotfiles repo so they don't drift. Key files: `config/opencode/opencode.jsonc`, `config/opencode/agents/`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`.
 
@@ -73,8 +74,8 @@ Query the codegraph index instead of re-grepping/re-reading files. Structural qu
 ## Error Recovery
 
 ### Compaction Survival
-- After context compaction, always call `mem_context` to recover session state
-- If you lose track of what you were doing, check `mem_timeline` for recent actions
+- After context compaction, always call `icm_wake_up` to recover session state
+- If you lose track of what you were doing, check `icm_transcript_search` for recent actions
 - Never assume file state after compaction — re-read affected files before continuing
 
 ### Tool Failures
@@ -84,7 +85,7 @@ Query the codegraph index instead of re-grepping/re-reading files. Structural qu
 
 ### Dead-End Recovery
 - If an approach fails twice, stop and try a different strategy
-- Call `mem_search` to check if this problem was solved before; use `mem_get_observation` for full content of truncated hits
+- Call `icm_memory_recall` to check if this problem was solved before; use `icm_memory_recall` with specific topics for full content of truncated hits
 - If stuck, escalate to `reviewer` for a fresh look or `architect` for approach alternatives
 
 ## Quality Gates
@@ -118,8 +119,8 @@ Before using `subagent` (background) for parallel subagents, verify:
 
 ## Prompt Templates
 
-- **Bug fix**: reproduce → `mem_search` similar → root cause → minimal fix → regression test → `mem_save`(bugfix)
-- **Feature**: clarify → check patterns → design (`architect` for brainstorm/design/ADR/plan; `designer` first if the project declares design artifacts) → `swe` → `reviewer` → verify → `mem_save`(decision)
+- **Bug fix**: reproduce → `icm_memory_recall` similar → root cause → minimal fix → regression test → `icm_memory_store`(bugfix)
+- **Feature**: clarify → check patterns → design (`architect` for brainstorm/design/ADR/plan; `designer` first if the project declares design artifacts) → `swe` → `reviewer` → verify → `icm_memory_store`(decision)
 - **Refactor**: read tests first → small verifiable changes → test after each → behavior unchanged
 
 ## Commit Rules

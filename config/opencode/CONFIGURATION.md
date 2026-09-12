@@ -85,7 +85,7 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
 │   ├── tools/                   → image.py only (manual, unmanaged; image.ts archived)
 │   ├── plugins/                 → opencode-subagents (managed) + herdr-agent-state (live, unmanaged)
 │   └── (no skills/ dir — single root `~/.agents/skills/`, restored 2026-09-06)
-│   └── MCP (3)                  → engram, codegraph, rtk
+│   └── MCP (4)                  → icm (active), engram (disabled), codegraph, rtk
 ├── ~/.agents/skills/            → cross-harness skills (canonical)
 └── ~/.config/opencode-archive-v1-20260906/ → v1 archive (see below)
 ```
@@ -121,15 +121,16 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
     "openrouter": { "settings": { "baseURL": "http://127.0.0.1:8789/v1" } }
   },
   "mcp": {
-    "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": true, "type": "local" },
+    "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": false, "type": "local" },
     "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0" } },
-    "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" }
+    "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" },
+    "icm": { "command": ["icm", "serve"], "enabled": true, "type": "local" }
   },
   "shell": "/usr/bin/zsh"
 }
 ```
 
-Key: no `plugin` entries (live-local opencode-subagents, herdr-agent-state — plugin dirs not in config); provider baseURLs point at the local proxy ports (787/788/789); three MCPs only (engram, codegraph, rtk) — browser automation is agent-browser CLI (skill `agent-browser`; preferred per AGENTS.md), not an MCP; built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
+Key: no `plugin` entries (live-local opencode-subagents, herdr-agent-state — plugin dirs not in config); provider baseURLs point at the local proxy ports (787/788/789); four MCPs (icm active, engram disabled for rollback, codegraph, rtk) — browser automation is agent-browser CLI (skill `agent-browser`; preferred per AGENTS.md), not an MCP; built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
 
 ## Agents (`~/projects/dotfiles/config/opencode/agents/*.md`)
 
@@ -137,8 +138,8 @@ All custom; `researcher`/`steward`/`vision` are `mode: subagent` (never primary)
 
 | Agent | Steps | Guardrails |
 |-------|-------|------------|
-| swe | 60 | read/glob/grep/list/edit/shell/skill allow; web+question+subagent deny; external_directory `*` allow (all dirs); MCP allows: engram `mem_*` (4) + codegraph `codegraph_*` — used only when the index exists. General SWE, sole implementer; module layout detected from repo, design authority from project config; two-tier memory: `<repo>/.agents/memory/swe.md` (project, gitignored) + `~/.agents/memory/swe.md` (skill-owned) + optional engram/codegraph. Skill: `swe` (routing hub) |
-| steward | 40 | `mode: subagent` (never primary); read/glob/grep/list/edit/shell/external_directory `*`/skill allow; webfetch/websearch/question/subagent deny; MCP allows: engram `mem_*` (4) — codegraph omitted (not needed, saves tokens); model `opencode-go/mimo-v2.5#low`. Conservative repo upkeep — git lifecycle/docs sync/hygiene/release/deps/gates; commits only when explicitly asked, never pushes/tags/rewrites unprompted, `.env`/secrets refused, behavior changes hand to `swe`. Routing (2026-09-12): explicit one-row-per-chore-class in `AGENTS.md` + Tool-Selection mandate — every routine upkeep chore routes here, not `swe`. Skill: `steward` |
+| swe | 60 | read/glob/grep/list/edit/shell/skill allow; web+question+subagent deny; external_directory `*` allow (all dirs); MCP allows: icm `icm_memory_*`/`icm_wake_up`/`icm_feedback_*` + codegraph `codegraph_*` — used only when the index exists. General SWE, sole implementer; module layout detected from repo, design authority from project config; two-tier memory: `<repo>/.agents/memory/swe.md` (project, gitignored) + `~/.agents/memory/swe.md` (skill-owned) + optional icm/codegraph. Skill: `swe` (routing hub) |
+| steward | 40 | `mode: subagent` (never primary); read/glob/grep/list/edit/shell/external_directory `*`/skill allow; webfetch/websearch/question/subagent deny; MCP allows: icm `icm_memory_*`/`icm_wake_up`/`icm_feedback_*` — codegraph omitted (not needed, saves tokens); model `opencode-go/mimo-v2.5#low`. Conservative repo upkeep — git lifecycle/docs sync/hygiene/release/deps/gates; commits only when explicitly asked, never pushes/tags/rewrites unprompted, `.env`/secrets refused, behavior changes hand to `swe`. Routing (2026-09-12): explicit one-row-per-chore-class in `AGENTS.md` + Tool-Selection mandate — every routine upkeep chore routes here, not `swe`. Skill: `steward` |
 | researcher | 40 | `mode: subagent` (never primary); read/glob/grep/list/skill + webfetch/websearch allow; MCP allows: codegraph `codegraph_*` — optional, grep fallback when absent/unindexed; subagent `deny *` + `allow explore` (leaf fan-out, no recursion); model `opencode-go/mimo-v2.5#medium`. Routes: `explorer` (locate) / `call-graph` (trace) / `librarian` (external); locate+external → codebase first. Fan-out (prompt-mandated): ≥2 independent lookups → parallel `explore` children, one per question, cap = question count |
 | architect | 50 | read-only; skill `*` allow; codegraph `codegraph_*` allow — optional, used only when the `.codegraph/` index exists, never blocking; web ask; question allow; subagent deny. Thin envelope: loads the repo-authored, harness-agnostic `architect` skill (stage router + ADR status-graph lifecycle); the skill owns the process, the agent supplies identity/permissions/model |
 | designer | 50 | read + edit + skill allow; shell ask; web ask; question allow; subagent deny. Design only — no implementation source; design-artifact paths + build gate come from the project's `AGENTS.md`/`.opencode`. Thin envelope: the `designer` skill owns produce/review workflows, artifact anatomy, session authority, and the handoff contract; agent loads it, routes to specialist skills, never implements |
@@ -162,17 +163,18 @@ All custom; `researcher`/`steward`/`vision` are `mode: subagent` (never primary)
 
 ## AGENTS.md Sections
 
-Tool Calling V2 (built-in tool list; delegation via `subagent`; MCP/browser as Code Mode namespaces via `execute`; shell via `shell` + rtk prefix), Memory (engram: session start → mem_current_project + mem_context; conflicts via mem_judge), Caveman Mode (incl. subagent inheritance: delegation prompts must carry "reply caveman-compressed" line; custom agent prompts embed the mandate; reviewer exempt), Tool Selection (incl. rtk preference; researcher-first delegation — build/primary delegates multi-file exploration and all web research to `researcher` by default, cheap single-file lookups inline only), Codebase Knowledge Graph (codegraph: one-tool `codegraph_explore`, per-project `codegraph init` + `.codegraph/` index check, Code Mode `tools.codegraph.*`, grep fallback rules, delegation), Agent-Browser, Code Style, Quality, Error Recovery, Quality Gates (agent selection table incl. researcher as default for API/library + codebase exploration, design-artifacts→designer, design/ADR→architect), Prompt Templates, Commit Rules, Safety, Tool Installation Automation.
+Tool Calling V2 (built-in tool list; delegation via `subagent`; MCP/browser as Code Mode namespaces via `execute`; shell via `shell` + rtk prefix), Memory (ICM: session start → `icm_wake_up`; store via `icm_memory_store`; conflicts via `icm_feedback_record`), Caveman Mode (incl. subagent inheritance: delegation prompts must carry "reply caveman-compressed" line; custom agent prompts embed the mandate; reviewer exempt), Tool Selection (incl. rtk preference; researcher-first delegation — build/primary delegates multi-file exploration and all web research to `researcher` by default, cheap single-file lookups inline only), Codebase Knowledge Graph (codegraph: one-tool `codegraph_explore`, per-project `codegraph init` + `.codegraph/` index check, Code Mode `tools.codegraph.*`, grep fallback rules, delegation), Agent-Browser, Code Style, Quality, Error Recovery, Quality Gates (agent selection table incl. researcher as default for API/library + codebase exploration, design-artifacts→designer, design/ADR→architect), Prompt Templates, Commit Rules, Safety, Tool Installation Automation.
 
 ## DCP (`dcp.jsonc` — archived 2026-09-06)
 
 Removed with the plugin purge. Upstream DCP slowed (focus moved to Sleev), V1-only (V2 breaks all V1 plugins), and our copy referenced stale V1 tool names. V2 native compaction (`buffer: 10000` in opencode.jsonc) covers the basics. File archived at `~/.config/opencode-archive-v1-20260906/dcp.jsonc`; mapping dropped from default.nix. Revisit if a V2-compatible DCP/Sleev integration appears.
 
-## MCP Servers (3)
+## MCP Servers (4)
 
 | Server | Type | Purpose |
 |--------|------|---------|
-| engram | Go binary `~/go/bin/engram` | Memory: SQLite+FTS5 `~/.engram/engram.db`, agent-only tools. `~/.engram/config.json` pins project_name=`opencode-dotfiles` for home-cwd writes (fixes ambiguous_project from lexa-* worktrees in $HOME; HOME config doesn't leak into repos) |
+| icm | Rust binary `~/.local/bin/icm` (rtk-ai/icm, upstream installer) | Memory: SQLite+FTS5+sqlite-vec, hybrid semantic+keyword search. `icm serve` exposes OpenCode-native tools: `icm_memory_*` (store/recall/update/forget/consolidate/extract_patterns/list_topics/stats/health/embed_all), `icm_wake_up`/`icm_learn` (session), `icm_memoir_*` (knowledge graph), `icm_feedback_*` (corrections), `icm_transcript_*` (transcripts). Topic convention: `{kind}-{project}` |
+| engram | Go binary `~/go/bin/engram` | **Installed but disabled** (`mcp.engram.enabled: false`). Kept for rollback. Was: Memory SQLite+FTS5 `~/.engram/engram.db`, agent-only tools |
 | codegraph | bun global `~/.bun/bin/codegraph` (v1.6.0) | Code graph: default exposes one tool, `codegraph_explore` (verbatim source + call paths + blast radius). Per-project index via `codegraph init` (`.codegraph/`); no index = inactive. Other tools via `CODEGRAPH_MCP_TOOLS` |
 | rtk | `~/.local/bin/rtk-mcp` (added 2026-09-06) | Token-optimized shell via `run_command` (allowlisted cmds, 60-90% savings). AGENTS.md Tool Selection: prefer `rtk` prefix / `run_command`, raw shell only when rtk lacks the command. Auto-rewrite plugin **installed 2026-09-13** (V2 `tool.execute.before` hook) — see Plugins |
 
