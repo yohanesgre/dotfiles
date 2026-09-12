@@ -1,14 +1,18 @@
 // Shared contract for the subagents sidebar plugin.
 // Shapes mirror @opencode-ai/client generated SessionInfo types.
 
-export type SubagentStatus = "running" | "idle" | "done" | "error";
+export type SubagentStatus = "running" | "idle" | "done" | "error" | "interrupted";
 
 export interface SubagentSummary {
   sessionID: string;
+  depth: number;
   agent: string;
   title: string;
   model: string;
   status: SubagentStatus;
+  // One activity token shown in place of the state label while running
+  // (Phase A renders the status label; the field is wired for Phase 3).
+  activity?: string;
   outcome?: "succeeded" | "failed" | "interrupted";
   tokens: {
     input: number;
@@ -24,8 +28,12 @@ export interface SubagentSummary {
 
 export interface SubagentsState {
   children: SubagentSummary[];
-  loading: boolean;
-  syncing: boolean;
+  // True once a descendant fetch has succeeded at least once. Distinguishes
+  // the loading void state from a genuinely empty descendant set.
+  hydrated: boolean;
+  // Children whose per-id sync/get threw during the last refresh; when > 0 and
+  // rows exist the section renders the partial footer instead of a bare list.
+  failedCount: number;
   error: string | undefined;
   lastUpdated: number;
 }
@@ -39,6 +47,7 @@ export function subagentStatus(info: {
   status: "idle" | "running";
 }): SubagentStatus {
   if (info.outcome === "failed") return "error";
+  if (info.outcome === "interrupted") return "interrupted";
   if (info.outcome) return "done";
   return info.status === "running" ? "running" : "idle";
 }
@@ -60,10 +69,12 @@ export function summarizeSession(
     time: { created: number; updated: number };
   },
   status: "idle" | "running",
+  depth: number,
 ): SubagentSummary {
   const t = info.tokens;
   return {
     sessionID: info.id,
+    depth,
     agent: info.agent ?? "agent",
     title: info.title ?? info.id,
     model: modelLabel(info.model),
