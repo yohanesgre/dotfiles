@@ -22,16 +22,10 @@ permissions:
   - action: skill
     resource: "*"
     effect: allow
-  - action: codebase_memory_mcp_search_graph
+  - action: codegraph_*
     resource: "*"
     effect: allow
-  - action: codebase_memory_mcp_detect_changes
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_get_code_snippet
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_check_index_coverage
+  - action: execute
     resource: "*"
     effect: allow
   - action: webfetch

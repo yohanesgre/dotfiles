@@ -95,3 +95,39 @@ export HERMES_HOME="$HOME/apps/hermes"
 
 # zoxide init — smart cd (`z <keyword>`); noop until zoxide is installed
 command -v zoxide >/dev/null 2>&1 && eval "$(zoxide init zsh)"
+
+# codegraph helpers — per-project index, no account-wide store: each repo needs
+# its own `.codegraph/` (`codegraph init`; `codegraph sync` re-syncs; `codegraph
+# status` inspects). Both take an optional path (default $PWD).
+# NEVER index $HOME or / — refused explicitly here (codegraph init also refuses
+# home/root without --force).
+export CODEGRAPH_TELEMETRY=0
+_codegraph_safe_target() {
+  local t="${1:A}"
+  if [[ "$t" == "${HOME:A}" || "$t" == "/" ]]; then
+    print -u2 "codegraph: refusing '$t' — home/root is never a codegraph project"
+    return 1
+  fi
+  print -r -- "$t"
+}
+cgi() {
+  local target
+  target="$(_codegraph_safe_target "${1:-$PWD}")" || return 1
+  local probe="$target" indexed=
+  while [[ -n "$probe" && "$probe" != / ]]; do
+    [[ -d "$probe/.codegraph" ]] && { indexed=1; break; }
+    probe="${probe:h}"
+  done
+  if [[ -n "$indexed" ]]; then
+    codegraph sync "$target"
+  else
+    codegraph init "$target"
+  fi
+  codegraph status "$target"
+}
+
+cgs() {
+  local target
+  target="$(_codegraph_safe_target "${1:-$PWD}")" || return 1
+  codegraph status "$target"
+}

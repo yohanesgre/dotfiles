@@ -47,7 +47,7 @@ Transition edges need evidence + user approval. Trigger checks at scan time (eve
 - links/versions drifted only → editorial refresh, status unchanged
 - conflicting accepted ADRs → surface the conflict; never silently pick one
 
-Draft with `system-design` (options, trade-offs) + `architecture` (status, deciders, context, options, trade-off analysis, consequences, action items); start `proposed`. Decide with the user; record status and deciders. Persist: the host writes `NNNN-slug.md`, commits, and registers it via an ADR registry (e.g. codebase-memory `manage_adr`) when available. Consume: cite ADR numbers; planners and implementers read them before touching affected areas and flag a mismatch instead of silently following it. Audit ("audit ADRs"): walk every record through the checks above and return the status changes. Anti-rot: every ADR carries `last-reviewed: YYYY-MM-DD`; flag records whose governed paths changed since then.
+Draft with `system-design` (options, trade-offs) + `architecture` (status, deciders, context, options, trade-off analysis, consequences, action items); start `proposed`. Decide with the user; record status and deciders. Persist: the host writes `NNNN-slug.md`, commits, and — only if the host provides an ADR registry — registers it there (none by default: plain files under the project's ADR dir are the record). Consume: cite ADR numbers; planners and implementers read them before touching affected areas and flag a mismatch instead of silently following it. Audit ("audit ADRs"): walk every record through the checks above and return the status changes. Anti-rot: every ADR carries `last-reviewed: YYYY-MM-DD`; flag records whose governed paths changed since then.
 
 ## Wrap-up format
 

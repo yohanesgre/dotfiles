@@ -49,5 +49,11 @@ status/
 # browser automation state (playwright MCP, kept out if it returns)
 .playwright-mcp/
 
+# codegraph index (per-project, rebuilt via `codegraph init`)
+.codegraph/
+
 # config-level agent rules: track this one AGENTS.md despite the global ~/.gitignore
 !config/opencode/AGENTS.md
+
+# local worktrees (feature branches)
+.worktrees/

@@ -28,16 +28,10 @@ permissions:
   - action: skill
     resource: "caveman"
     effect: deny
-  - action: codebase_memory_mcp_search_graph
+  - action: codegraph_*
     resource: "*"
     effect: allow
-  - action: codebase_memory_mcp_trace_path
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_get_code_snippet
-    resource: "*"
-    effect: allow
-  - action: codebase_memory_mcp_check_index_coverage
+  - action: execute
     resource: "*"
     effect: allow
   - action: shell

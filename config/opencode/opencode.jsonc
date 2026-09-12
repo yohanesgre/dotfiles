@@ -21,7 +21,7 @@
   },
   "mcp": {
     "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": true, "type": "local" },
-    "codebase-memory-mcp": { "enabled": true, "type": "local", "command": ["codebase-memory-mcp"] },
+    "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },
     "rtk": { "command": ["rtk-mcp"], "enabled": true, "type": "local" }
   },
   "shell": "/usr/bin/zsh"
