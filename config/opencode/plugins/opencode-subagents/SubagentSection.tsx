@@ -1,74 +1,98 @@
 /** @jsxImportSource @opentui/solid */
-import { createSignal, For, onCleanup, Show } from "solid-js";
+import { createMemo, createSignal, Index, onCleanup } from "solid-js";
 import { useSubagents } from "./useSubagents";
 import * as v from "./variants";
-import type { SubagentSummary } from "./types";
 
 // Visual language copied from the host sidebar sections (MCP/LSP):
-// "▾ LABEL" bold text.default at pane inset 2, "• name" rows with muted
-// right-aligned meta, blank line between sections, "•" bullets.
-// Constraint: box border/title inside a TUI slot freezes the renderer, and
-// flex spacers collapse in slot content — lines are single padded strings.
-// Data + theme arrive via props from tui.tsx setup(context) closure — never
-// usePlugin(): the bundled @opencode-ai/plugin copy (beta-19271) ships its
-// own solid context while the host (beta-19289+) provides
-// @opencode/plugin/tui, so host-provided context reads as missing.
-export function SubagentSection(props: { sessionID: string; data: any; theme: unknown }) {
+// "▼ LABEL" bold text.default at pane inset 2, "• name" rows, blank line
+// between sections. Constraint: box border/title inside a TUI slot freezes the
+// renderer, and flex spacers collapse in slot content — lines are single
+// padded strings. Data/client/theme arrive via props from the tui.tsx
+// setup(context) closure — never usePlugin(): the bundled @opencode-ai/plugin
+// copy ships its own solid context while the host provides @opencode/plugin/tui.
+//
+// Fixed frame: the host renderer does not add or move nodes after mount, so
+// every possible node exists on frame one and later refreshes only rewrite
+// text. MAX_UNITS row blocks are always rendered, even when empty.
+//
+// Colors: the host `<text>` takes `fg` as a plain option. Passing a function
+// (`fg={() => X}`) hands the renderer a function object it cannot parse, so it
+// falls back to white; pass the evaluated value and let the Solid compiler wrap
+// `fg={X}` reactively.
+export function SubagentSection(props: {
+  sessionID: string;
+  data: any;
+  client?: any;
+  theme: unknown;
+}) {
   const p = () => v.palette(props.theme);
-  const sub = useSubagents(props.sessionID, { data: props.data });
+  const sub = useSubagents(props.sessionID, { data: props.data, client: props.client });
   const [now, setNow] = createSignal(Date.now());
   const [collapsed, setCollapsed] = createSignal(false);
   const tick = setInterval(() => setNow(Date.now()), 1000);
   onCleanup(() => clearInterval(tick));
 
+  const kind = () => v.voidKind(sub.state);
+  const frame = createMemo(() =>
+    v.frameSlots(
+      sub.state,
+      now(),
+      p(),
+      v.windowChildren(sub.state.children),
+      collapsed(),
+    ),
+  );
+
+  const rightFg = () => (kind() === "error" ? p().error : p().textMuted);
+  const moreFg = () => (kind() === "partial" ? p().warning : p().textMuted);
+
   return (
-    <Show
-      when={v.voidKind(sub.state) === "rows"}
-      fallback={
-        <Show when={v.voidKind(sub.state) === "error"}>
-          <box flexDirection="row">
-            <text fg={() => p().textDefault} attributes={v.BOLD}>
-              {v.pad("▾ SUBAGENTS", v.HEADER_W)}
-            </text>
-            <text fg={() => p().error}>{v.errorLine(sub.state.error ?? "")}</text>
-          </box>
-        </Show>
-      }
-    >
-      <box flexDirection="column">
-        <box flexDirection="row" onMouseDown={() => setCollapsed((c) => !c)}>
-          <text fg={() => p().textDefault} attributes={v.BOLD}>
-            {v.headerLabel(sub.state.children.length, collapsed())}
-          </text>
-          <text fg={() => p().textMuted}>{v.padLeft(v.summaryLine(sub.state), v.AGG_W)}</text>
-        </box>
-        <Show when={!collapsed()}>
-          <For each={v.sortChildren(sub.state.children)}>
-            {(child) => <SubagentRow child={child} now={now()} p={p()} />}
-          </For>
-        </Show>
+    <box flexDirection="column">
+      {/* The whole header line is the collapse target, not just the glyph. */}
+      <box flexDirection="row" onMouseDown={() => setCollapsed((c) => !c)}>
+        <text fg={p().textDefault} attributes={v.BOLD}>
+          {frame().label}
+        </text>
+        <text fg={rightFg()}>{frame().headerRight}</text>
       </box>
-    </Show>
+      <Index each={frame().slots}>
+        {(slot) => <SubagentBlock slot={slot} p={p} />}
+      </Index>
+      <text fg={moreFg()}>{frame().moreText}</text>
+    </box>
   );
 }
 
-function SubagentRow(props: { child: SubagentSummary; now: number; p: v.Palette }) {
-  const child = props.child;
-  const seg = () => v.row1(child, props.now, props.p);
-  const stFg = () => v.statusStyle(child.status, props.p).fg;
+// Fixed 3-line block: L1 identity (3 text nodes: accent glyph + agent +
+// right-aligned status), then two 2-column grid lines (2 nodes each). Grid
+// col A carries the indent (elapsed is L2 col B); the trailing cell is
+// truncated only.
+function SubagentBlock(props: {
+  slot: () => v.FrameSlot | undefined;
+  p: () => v.Palette;
+}) {
+  const s = () => props.slot();
   return (
     <>
       <box flexDirection="row">
-        <text fg={stFg} attributes={v.BOLD}>
-          {seg().bold.slice(0, 2)}
+        <text fg={s()?.glyphFg ?? props.p().textMuted} attributes={v.BOLD}>
+          {s()?.glyph ?? ""}
         </text>
-        <text fg={() => props.p.textDefault} attributes={v.BOLD}>
-          {seg().bold.slice(2)}
+        <text fg={props.p().textDefault} attributes={v.BOLD}>
+          {s()?.agent ?? ""}
         </text>
-        <text fg={stFg}>{seg().status}</text>
-        <text fg={() => props.p.textMuted}>{seg().meta}</text>
+        <text fg={s()?.statusFg ?? props.p().textMuted} attributes={v.BOLD}>
+          {s()?.status ?? ""}
+        </text>
       </box>
-      <text fg={() => props.p.textMuted}>{v.row2(child)}</text>
+      <box flexDirection="row">
+        <text fg={props.p().textMuted}>{s()?.model ?? ""}</text>
+        <text fg={props.p().textMuted}>{s()?.elapsed ?? ""}</text>
+      </box>
+      <box flexDirection="row">
+        <text fg={props.p().textMuted}>{s()?.tokens ?? ""}</text>
+        <text fg={props.p().textMuted}>{s()?.cost ?? ""}</text>
+      </box>
     </>
   );
 }
