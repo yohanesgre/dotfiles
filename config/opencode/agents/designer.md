@@ -28,6 +28,9 @@ permissions:
   - action: shell
     resource: "*"
     effect: ask
+  - action: rtk_*
+    resource: "*"
+    effect: allow
   - action: webfetch
     resource: "*"
     effect: ask
