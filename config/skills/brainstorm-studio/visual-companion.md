@@ -108,7 +108,7 @@ scripts/start-server.sh --project-dir /path/to/project --open --foreground
 
 **Copilot CLI** — `--foreground` and start the shell call async; keep the returned shellId for `read_bash` / `stop_bash`.
 
-**opencode2** — launch it with the shell tool in background mode (`background: true`) so the process survives across turns; the script also self-backgrounds, so the call returns immediately either way:
+**opencode** — launch it with the shell tool in background mode (`background: true`) so the process survives across turns; the script also self-backgrounds, so the call returns immediately either way:
 ```bash
 scripts/start-server.sh --project-dir /path/to/project --open
 ```

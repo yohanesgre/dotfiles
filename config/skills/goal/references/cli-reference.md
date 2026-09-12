@@ -8,13 +8,13 @@ running `--help` to discover syntax is wasted work and adds nondeterministic
 steps. Trust this file; if a signature errors, FAST EXIT naming it — never
 fall back to interactive discovery.
 
-Pinned: `herdr 0.9.0`, `opencode2 v0.0.0-beta-19425`, `bun`.
+Pinned: `herdr 0.9.0`, `opencode 2.0.1`, `bun`.
 
 ## Environment guard
 
 ```bash
 test "${HERDR_ENV:-}" = 1          # else FAST EXIT: not a herdr session
-command -v herdr opencode2 bun      # else FAST EXIT naming the missing binary
+command -v herdr opencode bun      # else FAST EXIT naming the missing binary
 ```
 
 ## herdr — exact signatures used by /goal
@@ -45,7 +45,7 @@ herdr pane close <pane-id>                                   # only panes YOU cr
 `sleep`/`pane wait-output` are NOT the lane-completion signal — wait on the
 return file with `lane-wait.ts` (below).
 
-Native agent kinds (only if the user explicitly asks for a non-opencode2
+Native agent kinds (only if the user explicitly asks for a non-opencode
 agent; `/goal` lanes use `pane run`, never these):
 
 ```bash
@@ -58,22 +58,22 @@ herdr agent send-keys <name> esc|ctrl+c
 herdr agent list
 ```
 
-## opencode2 — the only invocation /goal uses
+## opencode — the only invocation /goal uses
 
 ```bash
-opencode2 run --auto --model <provider/model#variant> --agent <role> "<prompt>"
+opencode run --auto --model <provider/model#variant> --agent <role> "<prompt>"
 ```
 
 - The prompt is a POSITIONAL argument. There is NO `--prompt` flag.
 - `--auto` auto-approves permissions that are not explicitly denied.
 - `--model provider/model#variant` and `--agent <role>` are required and
   passed explicitly: the agent md `model:` pin does NOT auto-apply to a
-  primary `opencode2 run --agent` session (child/subagent sessions only).
+  primary `opencode run --agent` session (child/subagent sessions only).
 - Resume a lane that died before DONE (state lives in the worktree):
-  `opencode2 run --auto --model <...> --agent <role> --session <session-id> "<prompt>"`.
+  `opencode run --auto --model <...> --agent <role> --session <session-id> "<prompt>"`.
 - Other valid flags: `--continue/-c`, `--fork`, `--file/-f`, `--title`,
   `--thinking`, `--format default|json`, `--standalone`, `--server`.
-- Preflight auth once: `opencode2 auth list`. Default model error
+- Preflight auth once: `opencode auth list`. Default model error
   (`No cookie auth cred`) or a bad approved model → FAST EXIT naming it,
   never substitute.
 
@@ -98,7 +98,7 @@ TMP="$RETURN.tmp"
 cd "$WORKTREE" || { echo "FAST EXIT: no worktree $WORKTREE"; exit 1; }
 
 # foreground, live output visible in the pane AND captured for the record
-opencode2 run --auto --model "$MODEL" --agent "$ROLE" "$(cat "$BRIEF")" 2>&1 | tee "$TMP"
+opencode run --auto --model "$MODEL" --agent "$ROLE" "$(cat "$BRIEF")" 2>&1 | tee "$TMP"
 rc=${PIPESTATUS[0]}
 
 # atomic: the file's appearance can only mean real completion. LAST step.

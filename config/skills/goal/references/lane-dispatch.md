@@ -17,7 +17,7 @@ text — a wasted, nondeterministic step).
 1. Guards (control checkout, before worktree creation):
    ```bash
    test "${HERDR_ENV:-}" = 1          # else FAST EXIT, required: herdr session
-   command -v herdr && command -v opencode2   # else FAST EXIT naming binary
+   command -v herdr && command -v opencode   # else FAST EXIT naming binary
    git fetch origin main
    git worktree list                  # no path collision
    git branch -a | grep <branch>      # no branch collision
@@ -50,7 +50,7 @@ text — a wasted, nondeterministic step).
    `references/cli-reference.md`; NEVER run `--help`, herdr nested help
    prints only the top-level text and adds nondeterministic steps):
    mutation roles are `swe`/`designer`/`steward`; read-only roles run as `subagent`,
-   not lanes. There is no opencode2 kind, so do NOT call `herdr agent
+   not lanes. There is no opencode kind, so do NOT call `herdr agent
    start/prompt` for a lane. Write the brief to
    `<worktree>/../<slug>-brief.md` and the canonical runner
    (`cli-reference.md` § Canonical lane runner) to
@@ -69,20 +69,20 @@ text — a wasted, nondeterministic step).
    [timeout-ms]` (file-sentinel watch + Effect timeout — never fixed
    `sleep`, never `pane wait-output`).
    Dispatch invokes exactly
-   `opencode2 run --auto --model <provider/model#variant> --agent <role>
+   `opencode run --auto --model <provider/model#variant> --agent <role>
    "<brief>"` (message is positional; there is no `--prompt`). Read
    `--model` verbatim from the role agent's md `model:` field
    (`~/.config/opencode/agents/<role>.md`) and pass it explicitly. The
    default model needs cookie auth (`No cookie auth cred`), and an agent's
-   md `model:` pin does NOT auto-apply to a primary `opencode2 run --agent`
-   session (child/subagent sessions only). Check `opencode2 auth list`
+   md `model:` pin does NOT auto-apply to a primary `opencode run --agent`
+   session (child/subagent sessions only). Check `opencode auth list`
    once up front; a fresh `opencode` boot can fail with a postinstall
    error — record it and switch paths instead of retrying blindly.
    Approved model errors here → FAST EXIT naming the model, never substitute.
 5. The lane exits at DONE, the runner persists the return and `exec`s the
    shell; the pane stays open through the loop — no live agent afterward,
    but the scrollback and the pane itself persist for inspection/reuse. A
-   lane that dies BEFORE done resumes with opencode2 `--session` in the
+   lane that dies BEFORE done resumes with opencode `--session` in the
    same pane (state lives in the worktree).
 6. Brief = the delegated subgraph (`goal/SKILL.md` §4.2): WHY, Nodes (files
    + lines, one owner), Edges (inputs consumed / outputs produced),

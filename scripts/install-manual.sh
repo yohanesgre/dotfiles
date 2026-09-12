@@ -63,12 +63,13 @@ else
 fi
 
 # opencode via bun (see home/modules/opencode): always install -g --trust = install or update.
-# NOTE: live `opencode2` bin comes from the SCOPED @opencode/cli@beta package (NOT the
-# deprecated unscoped @opencode-ai/cli@beta, which lags/stales). Keep target in sync.
+# NOTE: v2 ships on the SCOPED @opencode/cli `latest` tag (2.0.x). The `beta` tag still points at
+# the old v1 prerelease line (0.0.0-beta-N), so pin `@latest`. `opencode` is the canonical bin
+# (`opencode2` is a redundant alias). Keep target in sync with home/modules/opencode/default.nix.
 BUN_BIN="$HOME/.bun/bin/bun"
 if [ -x "$BUN_BIN" ]; then
-  info "installing/updating @opencode/cli@beta via bun..."
-  "$BUN_BIN" install -g --trust @opencode/cli@beta 2>&1 || warn "opencode install/update failed"
+  info "installing/updating @opencode/cli@latest via bun..."
+  "$BUN_BIN" install -g --trust @opencode/cli@latest 2>&1 || warn "opencode install/update failed"
 else
   warn "bun missing — skipping opencode"
 fi

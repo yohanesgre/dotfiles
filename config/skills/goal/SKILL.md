@@ -22,17 +22,17 @@ the execution gate pre-authorizes exactly the lifecycle it enumerates
 (branch → commit → push → PR → auto-merge on green CI) for exactly the
 named lanes/branches. The gate approves scope and waves.
 
-Runtime: opencode2 (v2) only. Assumed surfaces: herdr CLI and opencode2
+Runtime: opencode (v2) only. Assumed surfaces: herdr CLI and opencode
 flags — exact pinned signatures live in `references/cli-reference.md` and
 are the ONLY forms to use. Never probe `--help` for syntax (herdr nested
 help prints only top-level text; it is a wasted, nondeterministic step).
 Surfaces: herdr `pane split/run/read/close/layout`, `tab create`,
 `agent start/prompt/wait/read` (native kinds only — /goal lanes use
-`pane run`); opencode2 `run --auto --model --agent [--session]` (prompt is
+`pane run`); opencode `run --auto --model --agent [--session]` (prompt is
 positional, no `--prompt`), plus V2 command frontmatter
 (`description/agent/model/subagent`), project skill dir `.agents/skills/`,
 project commands dir `.opencode/commands/`. If this session is not
-opencode2, STOP and flag before doing anything.
+opencode, STOP and flag before doing anything.
 
 ## The graph (this skill IS the pipeline for it)
 
@@ -313,19 +313,19 @@ base+variant. Never hardcode, guess, or invent one. If the role agent md
 has no `model:`, use the gate-approved ref in `plan.md` (R); if neither
 exists → FAST EXIT naming the gap. The default model errors (auth), and
 an agent's `model:` field does NOT auto-apply to a primary
-`opencode2 run --agent` session (child/subagent sessions only) — which is
+`opencode run --agent` session (child/subagent sessions only) — which is
 why it must be read and passed explicitly.
 
-Forbidden in every lane brief (opencode2 `--auto` approves what is not
+Forbidden in every lane brief (opencode `--auto` approves what is not
 denied): act outside the assigned worktree, exfiltrate data beyond
 declared fetches, `--force` or history rewrites on shared branches,
 commit secrets. Violation kills the lane.
 
 Dispatch is deterministic (pinned forms in `references/cli-reference.md`
 and `references/lane-dispatch.md`; never probe `--help`). herdr has no
-opencode2 kind, so lanes are driven with the canonical runner via
+opencode kind, so lanes are driven with the canonical runner via
 `herdr pane run <pane> "bash <runner>"`, which in turn calls
-`opencode2 run --auto --model <...> --agent <role> "<brief>"` (message
+`opencode run --auto --model <...> --agent <role> "<brief>"` (message
 positional, no `--prompt`). The lane runs foreground in its own pane — the
 user watches progress there; it is never detached or backgrounded, and the
 pane persists through the loop so scrollback stays and the pane can be
@@ -362,7 +362,7 @@ Lane lifecycle: the lane agent exits at DONE and the runner returns its
 pane to the shell — the pane persists through the loop (live progress was
 visible there and the scrollback stays for inspection/reuse), so the
 persisted `<slug>-return.md` is still the record. Reuse the pane for a
-follow-up or resume a lane that died BEFORE done with opencode2 `--session`
+follow-up or resume a lane that died BEFORE done with opencode `--session`
 (state lives in the worktree, re-brief from the lane file). Keep worktree +
 branch until its PR merges (never delete early; the reviewer still reads
 it); removal needs explicit user approval. The pane is closed only at plan
@@ -451,7 +451,7 @@ concerns (if any) — nothing else.
 ## Break points (E — coordinator failures, handled outside the happy path)
 
 - **FAST EXIT** (that lane only; name the cause, never fall back
-  silently): `HERDR_ENV` ≠ `1`; `herdr` or `opencode2` missing in the
+  silently): `HERDR_ENV` ≠ `1`; `herdr` or `opencode` missing in the
   pane; `git worktree add` branch/path collision; approved model erroring
   at dispatch (never substitute another model — cost/behavior was
   approved as-is); no `--model` resolvable for a lane.
@@ -463,7 +463,7 @@ concerns (if any) — nothing else.
   `swe`/`designer` lane; steward never absorbs behavior changes (its remit
   is non-behavior upkeep only).
 - **Lane dead before return persisted**: `<slug>-return.md` is
-  missing/empty → WAIT + re-dispatch (resume the pane with opencode2
+  missing/empty → WAIT + re-dispatch (resume the pane with opencode
   `--session` when state remains); the return file — not scrollback — is
   the record.
 - **Reviewer fan-out**: a reviewer that times out or fails is not green —
