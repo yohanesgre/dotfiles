@@ -89,13 +89,17 @@
     curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh 2>&1 || warn "rtk install/update failed (continuing)"
 
     # icm: rtk-ai/icm — official installer (checksum-verified, -> ~/.local/bin).
-    # Re-running install.sh fetches latest.
+    # Pinned to v0.10.63: v0.10.64 and v0.10.65 are partial releases — the
+    # x86_64-unknown-linux-gnu artifact (embeddings build) is unpublished
+    # (broken upstream onnxruntime CDN); only musl (keyword-only, no
+    # embeddings) and .rpm shipped. On glibc the installer selects gnu -> 404.
+    # Unpin once upstream restores gnu/embeddings builds.
     if is_upstream icm; then
       info "updating icm..."
     else
       info "installing icm (rtk-ai)..."
     fi
-    curl -fsSL https://raw.githubusercontent.com/rtk-ai/icm/main/install.sh | sh 2>&1 || warn "icm install/update failed (continuing)"
+    curl -fsSL https://raw.githubusercontent.com/rtk-ai/icm/main/install.sh | sh -s -- --version icm-v0.10.63 2>&1 || warn "icm install/update failed (continuing)"
 
     # herdr: herdrdev/herdr — official installer (https://herdr.dev/install.sh).
     if is_upstream herdr; then
