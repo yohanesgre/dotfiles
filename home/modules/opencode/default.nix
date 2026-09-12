@@ -59,6 +59,15 @@
           || echo "opencode: bun install for plugin failed (continuing)"
       fi
     fi
+
+    # rtk auto-rewrite plugin: single standalone file (only `import type`, no
+    # runtime imports). Copied as a real file for the same reason as above.
+    RTK_SRC="$HOME/projects/dotfiles/config/opencode/plugins/rtk.ts"
+    if [ -f "$RTK_SRC" ]; then
+      mkdir -p "$HOME/.config/opencode/plugins"
+      cp -a "$RTK_SRC" "$HOME/.config/opencode/plugins/rtk.ts"
+      echo "opencode: synced rtk rewrite plugin from dotfiles"
+    fi
   '';
 
   home.activation.opencodeSyncTools = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
