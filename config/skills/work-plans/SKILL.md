@@ -1,6 +1,8 @@
 ---
 name: work-plans
 description: Per-plan work tracking in status/ folders — open, update, and close work plans with lane heartbeats, chronological TIMELINE, and memory links. Use whenever the user mentions work plans, status plans, opening or closing a plan, plan stubs, lanes inside a plan, plan templates, TIMELINE.md, or organizing status/ artifacts per plan instead of flat files — even if they don't say "work-plans".
+metadata:
+  requires: []
 ---
 
 # Work Plans
@@ -8,6 +10,12 @@ description: Per-plan work tracking in status/ folders — open, update, and clo
 One folder per plan under `status/`. A plan is a unit of work (a feature, a fix batch,
 a grind). Lanes live inside the plan only when parallel tracks need separate heartbeats.
 Single-track plans skip `lanes/` entirely — never invent a lane to fill the shape.
+
+## Standalone
+
+`work-plans` is a leaf: it requires no other skill and never depends on
+its callers (`goal`, `orchestration`, or any other flow). It owns the
+artifact rules only — callers load it, it never loads them.
 
 ## Layout
 
@@ -35,7 +43,7 @@ States: `PLAN | WAIT | WORKING | DONE | FAILED` (mirror of AGENTS.md).
 scope within budget; `report.md` is still required.
 
 Header fields: `gate:` = execution-gate ack (`<ISO8601> <who> <branch>`)
-when a gated flow (e.g. `/goal`) drives the plan; `iter:` = current
+when a gated flow drives the plan; `iter:` = current
 `W<n>i<m>` loop position. Omit when unused.
 
 `plan.md` is the plan of record for the flow that opened it. Design/plan
@@ -95,7 +103,7 @@ deviations: <contract breaks, or "none">
 
 2. Flip `status.md` to `state: DONE` with fresh `ts`.
 3. Append TIMELINE line with `DONE` and the report path.
-4. Save to memory (engram `mem_save`): 3–5 point summary + artifact paths
+4. Save to memory (`icm_memory_store`): 3–5 point summary + artifact paths
    (`plan.md`, `report.md`). Never duplicate full report content into memory —
    memory is the index, the files are the source.
 
@@ -124,15 +132,39 @@ just backfill it when noticed.
 | FAILED | no `report.md` | write `report.md`, then flip FAILED |
 | state | undefined value (e.g. `PARTIAL`) | use the AGENTS.md enum; FAILED + blockers |
 | reopen | act on a DONE plan without flipping status | flip to WORKING first + TIMELINE line |
-| memory | `mem_save` without artifact path | amend with path — a pointerless summary is lost |
+| memory | `icm_memory_store` without artifact path | amend with path — a pointerless summary is lost |
 | root | loose file in `status/` | move into a plan folder or archive |
 
 ## Validate
 
 Run `bash ~/.agents/skills/work-plans/scripts/plan-check.sh <plan>` at
 open and before flipping DONE/FAILED. It checks scope Out, 3-line
-heartbeats, TIMELINE entry, no loose files, and DONE-has-report.
+heartbeats, TIMELINE entry, no loose files, the state enum
+(`PLAN|WAIT|WORKING|DONE|FAILED`), and DONE/FAILED-has-report.
 Red → fix the artifact, then re-run.
+
+## Jev judgment (advisory — when `jev-mcp` is reachable)
+
+When `jev-mcp` is reachable (`tools["jev-mcp"].*` via `execute`), jev can
+judge the tracking artifacts at both ends of a plan. Advisory only:
+`plan-check.sh` and the artifact rules above stay authoritative, and a jev
+verdict never opens, blocks, or closes a plan.
+
+- **Open (before work starts).** `jev_triage` on `plan.md` (pass it as a
+  `path` item — read server-side, never into context) with checks:
+  `scope_bounded` (In and Out both concrete), `acceptance_verifiable`
+  (every criterion names a runnable verify command), `graph_valid` (waves
+  ordered by dependency; one owner per node; no shared-file collision),
+  `no_placeholders` (no TBD/TODO/empty sections). A `no` is fixed before the
+  execution gate — never executed past.
+- **Close (before flipping DONE/FAILED).** `jev_check` on a small assembled
+  state — the frozen acceptance list from `plan.md` plus `report.md` and
+  `status.md`: "does every frozen criterion have matching evidence in the
+  report, and do the artifacts agree?" `no`/`uncertain` → fix the artifact
+  before the flip.
+
+Failure mode: jev unreachable, errors, or `abstain` → skip; fall back to
+`plan-check.sh` + the rules above. Never a gate.
 
 ## Non-scope
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-12",
+  "updated": "2026-09-23",
   "policy": "Commit only local-authored and wired skills. Externalized skills install globally on every hm-switch via scripts/skills-sync.sh --global (npx skills -a universal from $HOME -> ~/.agents/skills), or per project on demand; upstream owns their content.",
   "keep": [
     "agent-browser",
@@ -29,10 +29,10 @@
     "frontend-design",
     "git-workflow",
     "goal",
-    "herdr",
     "lexa-cli",
     "librarian",
     "nix",
+    "orchestration",
     "receiving-code-review",
     "requesting-code-review",
     "reviewer",
