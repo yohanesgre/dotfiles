@@ -24,6 +24,9 @@ export interface SubagentSummary {
   cost: number;
   created: number;
   updated: number;
+  // Completion time (session record's `time.idle`). Updated on every idle, so a
+  // resumed running session may carry a stale value — the status check wins.
+  idle?: number;
 }
 
 export interface SubagentsState {
@@ -67,7 +70,7 @@ export function summarizeSession(
     cost: number;
     outcome?: "succeeded" | "failed" | "interrupted";
     tokens?: { input: number; output: number; reasoning: number; cache: { read: number; write: number } };
-    time: { created: number; updated: number };
+    time: { created: number; updated: number; idle?: number };
   },
   status: "idle" | "running",
   depth: number,
@@ -91,5 +94,6 @@ export function summarizeSession(
     cost: info.cost ?? 0,
     created: info.time.created,
     updated: info.time.updated,
+    idle: info.time.idle,
   };
 }

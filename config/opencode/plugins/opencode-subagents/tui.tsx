@@ -13,6 +13,7 @@ export default Plugin.define({
           data={context.data}
           client={context.client}
           theme={context.theme}
+          dialog={context.ui.dialog}
         />
       ),
     });

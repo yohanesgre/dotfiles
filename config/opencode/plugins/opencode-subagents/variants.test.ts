@@ -7,19 +7,30 @@ import {
   AGG_W,
   cellWidth,
   CONTENT_W,
+  DIALOG_AGENT_LEAD,
+  DIALOG_GLYPH_W,
+  DIALOG_LEADER,
+  dialogAggregate,
+  dialogGrid,
+  dialogHeaderCells,
+  dialogRowLines,
   displayWidth,
   fmtCost,
   fmtElapsed,
+  fmtTokens,
   frameSlots,
   indentFor,
   MAX_RIGHT_W,
   MAX_UNITS,
   padLeft,
   palette,
+  sessionDuration,
   STATUS_W,
   statusGlyph,
+  statusLabel,
   statusStyle,
   summaryLine,
+  totalTokens,
   voidKind,
   windowChildren,
 } from "./variants";
@@ -194,6 +205,44 @@ describe("statusGlyph", () => {
   });
 });
 
+describe("sessionDuration", () => {
+  test("running ticks with now", () => {
+    const child = makeSummary({ status: "running", created: 1000, updated: 1000 });
+    expect(sessionDuration(child, 5000)).toBe(4000);
+  });
+
+  test("done freezes at idle - created", () => {
+    const child = makeSummary({ status: "done", created: 1000, idle: 3000, updated: 3000 });
+    // now keeps moving, but the finished row must not.
+    expect(sessionDuration(child, 9999)).toBe(2000);
+    expect(sessionDuration(child, 50_000)).toBe(2000);
+  });
+
+  test("missing idle falls back to updated", () => {
+    const child = makeSummary({ status: "done", created: 1000, updated: 2500 });
+    expect(sessionDuration(child, 9999)).toBe(1500);
+  });
+
+  test("running with a stale idle still uses now", () => {
+    // A resumed session carries the old completion time in `idle`; status wins.
+    const child = makeSummary({ status: "running", created: 1000, idle: 100, updated: 100 });
+    expect(sessionDuration(child, 5000)).toBe(4000);
+  });
+
+  test("falls back to created (duration 0) when neither idle nor updated is set", () => {
+    const child = makeSummary({ status: "done", created: 5000 });
+    child.updated = undefined as unknown as number;
+    expect(sessionDuration(child, 9999)).toBe(0);
+  });
+
+  test("never negative", () => {
+    const done = makeSummary({ status: "done", created: 5000, idle: 0 });
+    expect(sessionDuration(done, 9999)).toBe(0);
+    const running = makeSummary({ status: "running", created: 5000, updated: 5000 });
+    expect(sessionDuration(running, 1000)).toBe(0);
+  });
+});
+
 describe("frameSlots", () => {
   const p = palette(undefined);
   const worst = (depth: number): SubagentSummary =>
@@ -203,6 +252,7 @@ describe("frameSlots", () => {
       agent: "a".repeat(200),
       model: "provider/model-with-a-very-long-variant-name".repeat(3),
       title: "t".repeat(200),
+      status: "running",
       tokens: {
         input: 9_999_999,
         output: 9_999_999,
@@ -234,7 +284,7 @@ describe("frameSlots", () => {
       ).toBe(CONTENT_W);
       // L2/L3: col B is right-sized to its content (clamped to MAX_RIGHT_W),
       // col A grows to the remainder minus the one-space gap.
-      const elapsedW = Math.min(displayWidth(fmtElapsed(now - child.created)), MAX_RIGHT_W);
+      const elapsedW = Math.min(displayWidth(fmtElapsed(sessionDuration(child, now))), MAX_RIGHT_W);
       const costW = Math.min(displayWidth(fmtCost(child.cost)), MAX_RIGHT_W);
       const modelLeftW = CONTENT_W - indentW - elapsedW - 1;
       const tokensLeftW = CONTENT_W - indentW - costW - 1;
@@ -300,7 +350,7 @@ describe("frameSlots", () => {
   test("a short right value widens the left cell; col B stays at the edge", () => {
     for (let depth = 0; depth <= 4; depth++) {
       const indentW = displayWidth(indentFor(depth));
-      const child = makeSummary({ sessionID: `r${depth}`, depth, status: "done", cost: 0.5 });
+      const child = makeSummary({ sessionID: `r${depth}`, depth, status: "done", cost: 0.5, idle: 60_000 });
       const frame = frameSlots(
         { ...baseState, children: [child] },
         60_000,
@@ -351,7 +401,7 @@ describe("frameSlots", () => {
   });
 
   test("L2 leads with model then elapsed; L3 is tokens then cost", () => {
-    const child = makeSummary({ depth: 0, model: "anthropic/claude-sonnet-4", created: 0 });
+    const child = makeSummary({ depth: 0, model: "anthropic/claude-sonnet-4", created: 0, idle: 60_000 });
     const frame = frameSlots(
       { ...baseState, children: [child] },
       60_000,
@@ -616,6 +666,67 @@ describe("windowChildren", () => {
     expect(res.hiddenRunning).toBe(1);
     expect(res.hidden).toBe(3);
   });
+
+  test("overflow lists running units past the cap in weight-then-recency order", () => {
+    const children = [
+      makeSummary({ sessionID: "rev", agent: "reviewer", status: "running", created: 1, updated: 1 }),
+      makeSummary({ sessionID: "st0", agent: "steward", status: "running", created: 2, updated: 100 }),
+      makeSummary({ sessionID: "st1", agent: "steward", status: "running", created: 3, updated: 101 }),
+      makeSummary({ sessionID: "st2", agent: "steward", status: "running", created: 4, updated: 102 }),
+      makeSummary({ sessionID: "st3", agent: "steward", status: "running", created: 5, updated: 103 }),
+    ];
+    const res = windowChildren(children);
+    expect(res.visible.map((c) => c.sessionID)).toEqual(["rev", "st3", "st2", "st1"]);
+    expect(res.overflow.map((c) => c.sessionID)).toEqual(["st0"]);
+    expect(res.overflow.every((c) => c.status === "running")).toBe(true);
+    expect(res.hidden).toBe(1);
+    expect(res.hiddenRunning).toBe(1);
+  });
+
+  test("overflow lists rest units past the cap in recency order", () => {
+    const children = Array.from({ length: MAX_UNITS + 2 }, (_, i) =>
+      makeSummary({ sessionID: `s${i}`, status: "idle", created: i, updated: i }),
+    );
+    const res = windowChildren(children);
+    expect(res.visible.map((c) => c.sessionID)).toEqual(["s5", "s4", "s3", "s2"]);
+    expect(res.overflow.map((c) => c.sessionID)).toEqual(["s1", "s0"]);
+    expect(res.hidden).toBe(2);
+    expect(res.hiddenRunning).toBe(0);
+  });
+
+  test("running overflow precedes rest overflow", () => {
+    const children = [
+      makeSummary({ sessionID: "run0", agent: "steward", status: "running", created: 1, updated: 10 }),
+      makeSummary({ sessionID: "run1", agent: "steward", status: "running", created: 2, updated: 9 }),
+      makeSummary({ sessionID: "run2", agent: "steward", status: "running", created: 3, updated: 8 }),
+      makeSummary({ sessionID: "run3", agent: "steward", status: "running", created: 4, updated: 7 }),
+      makeSummary({ sessionID: "run4", agent: "steward", status: "running", created: 5, updated: 6 }),
+      makeSummary({ sessionID: "done-new", status: "done", created: 6, updated: 100 }),
+      makeSummary({ sessionID: "done-old", status: "done", created: 7, updated: 1 }),
+    ];
+    const res = windowChildren(children);
+    expect(res.visible.map((c) => c.sessionID)).toEqual(["run0", "run1", "run2", "run3"]);
+    expect(res.overflow.map((c) => c.sessionID)).toEqual(["run4", "done-new", "done-old"]);
+    // visible + overflow partition every unit in ordered order: none dropped, none duplicated.
+    expect([...res.visible, ...res.overflow].map((c) => c.sessionID)).toEqual([
+      "run0",
+      "run1",
+      "run2",
+      "run3",
+      "run4",
+      "done-new",
+      "done-old",
+    ]);
+    expect(res.hidden).toBe(3);
+    expect(res.hiddenRunning).toBe(1);
+  });
+
+  test("overflow is empty when every unit fits", () => {
+    const res = windowChildren(group(["idle", "running"]));
+    expect(res.overflow).toEqual([]);
+    expect(res.hidden).toBe(0);
+    expect(res.hiddenRunning).toBe(0);
+  });
 });
 
 describe("voidKind precedence", () => {
@@ -668,6 +779,206 @@ describe("summaryLine", () => {
     const line = summaryLine({ ...baseState, children });
     expect(line).toContain("3 run");
     expect(line.length).toBeLessThanOrEqual(15);
+  });
+});
+
+describe("dialog rows and header", () => {
+  const p = palette(undefined);
+  const now = 1_000_000_000;
+  const child = makeSummary({
+    sessionID: "r",
+    agent: "reviewer",
+    title: "review auth middleware diff",
+    status: "running",
+    cost: 1.23,
+    tokens: { input: 40_000, output: 8_200, reasoning: 0, cacheRead: 0, cacheWrite: 0 },
+    created: now - 12 * 60_000,
+  });
+
+  test("line 1 is the full row: glyph/agent/title/status/time/tokens/cost, no blanks", () => {
+    const r = dialogRowLines(child, now, p);
+    expect(r.line1.glyph).toBe("●");
+    expect(r.line1.agent).toBe(`${DIALOG_AGENT_LEAD}reviewer`);
+    expect(r.line1.flex).toBe(`${DIALOG_LEADER}review auth middleware diff`);
+    expect(r.line1.status).toBe(`${DIALOG_LEADER}running`);
+    // The metrics now live on L1.
+    expect(r.line1.time).toBe(`${DIALOG_LEADER}12m`);
+    expect(r.line1.tokens).toBe(`${DIALOG_LEADER}48.2k`);
+    expect(r.line1.cost).toBe(`${DIALOG_LEADER}$1.23`);
+    // No L1 cell is blank.
+    for (const value of Object.values(r.line1)) expect(value).not.toBe("");
+  });
+
+  test("line 2 collapses to the model only (blank lead cells are renderer literals)", () => {
+    const r = dialogRowLines(child, now, p);
+    expect(r.model).toBe(`${DIALOG_LEADER}${child.model}`);
+    expect(Object.keys(r).sort()).toEqual(["glyphFg", "line1", "model", "statusFg"]);
+    expect((r as Record<string, unknown>).line2).toBeUndefined();
+    // Values stay raw: no padding to a computed container width.
+    expect(r.line1.status).toBe("  running");
+  });
+
+  test("line 1 defines exactly the seven grid cells", () => {
+    const r = dialogRowLines(child, now, p);
+    const keys = ["glyph", "agent", "flex", "status", "time", "tokens", "cost"];
+    expect(Object.keys(r.line1).sort()).toEqual([...keys].sort());
+  });
+
+  test("the glyph stays 1; each fixed cell is the grid node width", () => {
+    expect(DIALOG_GLYPH_W).toBe(1);
+    const g = dialogGrid([child], now);
+    // Column = max(value, header label) + separator, so the cell contains its value.
+    expect(g.agent).toBe(
+      Math.max(displayWidth(child.agent), displayWidth("AGENT")) + DIALOG_AGENT_LEAD.length,
+    );
+    expect(g.status).toBe(
+      Math.max(displayWidth(statusLabel(child.status)), displayWidth("STATUS")) +
+        DIALOG_LEADER.length,
+    );
+    expect(g.time).toBe(
+      Math.max(displayWidth(fmtElapsed(sessionDuration(child, now))), displayWidth("TIME")) +
+        DIALOG_LEADER.length,
+    );
+    expect(g.tokens).toBe(
+      Math.max(displayWidth(fmtTokens(totalTokens(child.tokens))), displayWidth("TOKENS")) +
+        DIALOG_LEADER.length,
+    );
+    expect(g.cost).toBe(
+      Math.max(displayWidth(fmtCost(child.cost)), displayWidth("COST")) + DIALOG_LEADER.length,
+    );
+  });
+
+  test("the glyph and status word share the status colour", () => {
+    const theme = palette(mockTheme);
+    const running = dialogRowLines(child, now, theme);
+    expect(running.statusFg).toBe(theme.primary);
+    expect(running.glyphFg).toBe(theme.primary);
+    const interrupted = dialogRowLines(makeSummary({ status: "interrupted" }), now, theme);
+    expect(interrupted.line1.status).toBe(`${DIALOG_LEADER}interrupted`);
+    expect(interrupted.statusFg).toBe(theme.warning);
+  });
+
+  test("header labels mirror the data columns", () => {
+    const h = dialogHeaderCells();
+    expect(h.glyph).toBe(" ");
+    expect(h.agent).toBe(`${DIALOG_AGENT_LEAD}AGENT`);
+    expect(h.title).toBe(`${DIALOG_LEADER}TITLE`);
+    expect(h.status).toBe(`${DIALOG_LEADER}STATUS`);
+    expect(h.time).toBe(`${DIALOG_LEADER}TIME`);
+    expect(h.tokens).toBe(`${DIALOG_LEADER}TOKENS`);
+    expect(h.cost).toBe(`${DIALOG_LEADER}COST`);
+  });
+});
+
+describe("dialogGrid", () => {
+  const now = 1_000_000_000;
+  const longRow = makeSummary({
+    sessionID: "long",
+    agent: "researcher",
+    status: "interrupted",
+    created: now - 5 * 60_000,
+    idle: now,
+    tokens: { input: 1_234_567_890, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0 },
+    cost: 123.45,
+  });
+  const shortRow = makeSummary({
+    sessionID: "short",
+    agent: "swe",
+    status: "done",
+    created: now - 3_600_000,
+    idle: now,
+    tokens: { input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0 },
+    cost: 0.5,
+  });
+
+  test("contains the longest value per column", () => {
+    const g = dialogGrid([longRow, shortRow], now);
+    // agent: "researcher" (10) beats "swe" (3) and the "AGENT" floor (5).
+    expect(g.agent).toBe(displayWidth("researcher") + DIALOG_AGENT_LEAD.length);
+    expect(g.agent).toBe(11);
+    // status: "interrupted" (11) widens the column to 11 + 2.
+    expect(g.status).toBe(displayWidth("interrupted") + DIALOG_LEADER.length);
+    expect(g.status).toBe(13);
+    // time: "1h00m" (5) beats "5m" (2) and the "TIME" floor (4).
+    expect(g.time).toBe(displayWidth("1h00m") + DIALOG_LEADER.length);
+    expect(g.time).toBe(7);
+    // tokens: "1234.6m" (7) beats "0" (1) and the "TOKENS" floor (6).
+    expect(g.tokens).toBe(displayWidth(fmtTokens(totalTokens(longRow.tokens))) + DIALOG_LEADER.length);
+    expect(g.tokens).toBe(9);
+    // cost: "$123.45" (7) beats "$0.50" (5) and the "COST" floor (4).
+    expect(g.cost).toBe(displayWidth("$123.45") + DIALOG_LEADER.length);
+    expect(g.cost).toBe(9);
+  });
+
+  test("short values fall back to the header-label floors", () => {
+    const short = makeSummary({
+      sessionID: "tiny",
+      agent: "a",
+      status: "done",
+      created: now - 1000,
+      tokens: { input: 0, output: 0, reasoning: 0, cacheRead: 0, cacheWrite: 0 },
+      cost: 0,
+    });
+    expect(dialogGrid([short], now)).toEqual({
+      agent: displayWidth("AGENT") + DIALOG_AGENT_LEAD.length,
+      status: displayWidth("STATUS") + DIALOG_LEADER.length,
+      time: displayWidth("TIME") + DIALOG_LEADER.length,
+      tokens: displayWidth("TOKENS") + DIALOG_LEADER.length,
+      // "$0.00" (5) already exceeds the "COST" floor (4), so the value wins.
+      cost: displayWidth(fmtCost(0)) + DIALOG_LEADER.length,
+    });
+  });
+
+  test("empty rows yield the header-label floors only", () => {
+    expect(dialogGrid([], now)).toEqual({
+      agent: displayWidth("AGENT") + DIALOG_AGENT_LEAD.length,
+      status: displayWidth("STATUS") + DIALOG_LEADER.length,
+      time: displayWidth("TIME") + DIALOG_LEADER.length,
+      tokens: displayWidth("TOKENS") + DIALOG_LEADER.length,
+      cost: displayWidth("COST") + DIALOG_LEADER.length,
+    });
+    // Floors: AGENT 6, STATUS 8, TIME 6, TOKENS 8, COST 6.
+    expect(dialogGrid([], now)).toEqual({ agent: 6, status: 8, time: 6, tokens: 8, cost: 6 });
+  });
+
+  test("is deterministic: same rows produce the same grid", () => {
+    const rows = [longRow, shortRow];
+    expect(dialogGrid(rows, now)).toEqual(dialogGrid(rows, now));
+    // Independent of array identity / object identity.
+    const copy = rows.map((r) => ({ ...r }));
+    expect(dialogGrid(copy, now)).toEqual(dialogGrid(rows, now));
+    // Row order does not change the grid (it is a per-column max).
+    expect(dialogGrid([shortRow, longRow], now)).toEqual(dialogGrid(rows, now));
+  });
+
+  test("the agent column contains the widest agent name", () => {
+    const g = dialogGrid([makeSummary({ agent: "researcher" })], now);
+    expect(g.agent).toBeGreaterThanOrEqual(displayWidth("researcher"));
+    // Node width = value width + the one-space lead separator.
+    expect(g.agent).toBe(displayWidth("researcher") + DIALOG_AGENT_LEAD.length);
+  });
+});
+
+describe("dialogAggregate", () => {
+  const many = (n: number, running: number, cost: number): SubagentSummary[] =>
+    Array.from({ length: n }, (_, i) =>
+      makeSummary({
+        sessionID: `s${i}`,
+        status: i < running ? "running" : "done",
+        cost: cost / n,
+      }),
+    );
+
+  test("counts hidden, running and cost", () => {
+    expect(dialogAggregate(many(6, 2, 9.32))).toBe("6 more · 2 running · $9.32");
+  });
+
+  test("drops the running clause at zero", () => {
+    expect(dialogAggregate(many(6, 0, 9.32))).toBe("6 more · $9.32");
+  });
+
+  test("shows 0 hidden for the empty set", () => {
+    expect(dialogAggregate([])).toBe("0 hidden");
   });
 });
 

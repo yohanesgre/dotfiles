@@ -4,6 +4,12 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — opencode-subagents overflow popup table
+
+- Added a host dialog for hidden subagents with a deterministic two-line table: agent, title, status, elapsed time, tokens, and cost on line one; model on line two.
+- Session time now uses each session's own duration, with running work taking precedence over stale resume idle data.
+- Added scrollbar-reservation alignment handling, a render-based alignment guard, and stable running-before-done/error ordering.
+
 ## 2026-09-24 — icm extraction cadence tuned
 
 - `EXTRACT_EVERY` 3 → 6: raw tool output is enqueued every 6th call; `DRAIN_EVERY` stays 10, so detached `icm extract-pending` runs about every 60 tool calls.

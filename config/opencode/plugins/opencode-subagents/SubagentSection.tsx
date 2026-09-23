@@ -1,5 +1,7 @@
 /** @jsxImportSource @opentui/solid */
 import { createMemo, createSignal, Index, onCleanup } from "solid-js";
+import { MoreDialog } from "./MoreDialog";
+import { SubagentRow } from "./SubagentRow";
 import { useSubagents } from "./useSubagents";
 import * as v from "./variants";
 
@@ -24,13 +26,32 @@ export function SubagentSection(props: {
   data: any;
   client?: any;
   theme: unknown;
+  dialog?: any;
 }) {
   const p = () => v.palette(props.theme);
   const sub = useSubagents(props.sessionID, { data: props.data, client: props.client });
   const [now, setNow] = createSignal(Date.now());
   const [collapsed, setCollapsed] = createSignal(false);
   const tick = setInterval(() => setNow(Date.now()), 1000);
-  onCleanup(() => clearInterval(tick));
+
+  // Dialog lifecycle state lives at component scope so a sidebar unmount while
+  // the popup is open cannot leak the interval or stick the flag. Idempotent:
+  // used as the host onClose callback and again from onCleanup. Never call
+  // dialog.clear() here — that clears the whole host dialog stack.
+  const [dialogNow, setDialogNow] = createSignal(Date.now());
+  let dialogTick: ReturnType<typeof setInterval> | undefined;
+  let dialogOpen = false;
+  const closeDialogState = () => {
+    dialogOpen = false;
+    if (dialogTick !== undefined) {
+      clearInterval(dialogTick);
+      dialogTick = undefined;
+    }
+  };
+  onCleanup(() => {
+    clearInterval(tick);
+    closeDialogState();
+  });
 
   const kind = () => v.voidKind(sub.state);
   const frame = createMemo(() =>
@@ -46,6 +67,38 @@ export function SubagentSection(props: {
   const rightFg = () => (kind() === "error" ? p().error : p().textMuted);
   const moreFg = () => (kind() === "partial" ? p().warning : p().textMuted);
 
+  // S2: clicking the "+N more" line opens a popup with the hidden rows. The
+  // dialog is created fresh per open (dynamic rows are allowed on that mount
+  // path) and closed on ESC/backdrop via the host onClose callback.
+  const openMore = () => {
+    if (dialogOpen) return;
+    if (collapsed()) return;
+    if (frame().moreText === "") return;
+    if (typeof props.dialog?.show !== "function") return;
+    const overflow = v.windowChildren(sub.state.children).overflow;
+    if (overflow.length === 0) return;
+    dialogOpen = true;
+    setDialogNow(Date.now());
+    dialogTick = setInterval(() => setDialogNow(Date.now()), 1000);
+    try {
+      props.dialog.show(
+        () => (
+          <MoreDialog
+            theme={props.theme}
+            now={dialogNow}
+            children={() => v.windowChildren(sub.state.children).overflow}
+          />
+        ),
+        closeDialogState,
+      );
+      if (typeof props.dialog.set === "function") {
+        props.dialog.set({ size: "large", centered: true });
+      }
+    } catch {
+      closeDialogState();
+    }
+  };
+
   return (
     <box flexDirection="column">
       {/* The whole header line is the collapse target, not just the glyph. */}
@@ -56,43 +109,15 @@ export function SubagentSection(props: {
         <text fg={rightFg()}>{frame().headerRight}</text>
       </box>
       <Index each={frame().slots}>
-        {(slot) => <SubagentBlock slot={slot} p={p} />}
+        {(slot) => <SubagentRow slot={slot} p={p} />}
       </Index>
-      <text fg={moreFg()}>{frame().moreText}</text>
+      {/* Open on mouseUp, not mouseDown: on a normal click the same click's
+          mouseUp would otherwise land on the freshly-shown dialog backdrop,
+          which the host dismisses on mouseUp (open+instant close). The host's
+          own sidebar MCP section opens its dialog on onMouseUp for this reason. */}
+      <box flexDirection="row" onMouseUp={openMore}>
+        <text fg={moreFg()}>{frame().moreText}</text>
+      </box>
     </box>
-  );
-}
-
-// Fixed 3-line block: L1 identity (3 text nodes: accent glyph + agent +
-// right-aligned status), then two 2-column grid lines (2 nodes each). Grid
-// col A carries the indent (elapsed is L2 col B); the trailing cell is
-// truncated only.
-function SubagentBlock(props: {
-  slot: () => v.FrameSlot | undefined;
-  p: () => v.Palette;
-}) {
-  const s = () => props.slot();
-  return (
-    <>
-      <box flexDirection="row">
-        <text fg={s()?.glyphFg ?? props.p().textMuted} attributes={v.BOLD}>
-          {s()?.glyph ?? ""}
-        </text>
-        <text fg={props.p().textDefault} attributes={v.BOLD}>
-          {s()?.agent ?? ""}
-        </text>
-        <text fg={s()?.statusFg ?? props.p().textMuted} attributes={v.BOLD}>
-          {s()?.status ?? ""}
-        </text>
-      </box>
-      <box flexDirection="row">
-        <text fg={props.p().textMuted}>{s()?.model ?? ""}</text>
-        <text fg={props.p().textMuted}>{s()?.elapsed ?? ""}</text>
-      </box>
-      <box flexDirection="row">
-        <text fg={props.p().textMuted}>{s()?.tokens ?? ""}</text>
-        <text fg={props.p().textMuted}>{s()?.cost ?? ""}</text>
-      </box>
-    </>
   );
 }

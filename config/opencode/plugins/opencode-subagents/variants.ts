@@ -97,18 +97,39 @@ export interface StatusStyle {
   label: string;
 }
 
-export function statusStyle(status: SubagentStatus, p: Palette): StatusStyle {
+// Label-only path: the status word is a fixed string, so callers that need the
+// width (dialogGrid) never need a palette.
+export function statusLabel(status: SubagentStatus): string {
   switch (status) {
     case "running":
-      return { fg: p.primary, label: "running" };
+      return "running";
     case "error":
-      return { fg: p.error, label: "error" };
+      return "error";
     case "interrupted":
-      return { fg: p.warning, label: "interrupted" };
+      return "interrupted";
     case "done":
-      return { fg: p.success, label: "done" };
+      return "done";
     default:
-      return { fg: p.textMuted, label: "idle" };
+      return "idle";
+  }
+}
+
+export function statusStyle(status: SubagentStatus, p: Palette): StatusStyle {
+  return { fg: statusColor(status, p), label: statusLabel(status) };
+}
+
+function statusColor(status: SubagentStatus, p: Palette): ThemeColor {
+  switch (status) {
+    case "running":
+      return p.primary;
+    case "error":
+      return p.error;
+    case "interrupted":
+      return p.warning;
+    case "done":
+      return p.success;
+    default:
+      return p.textMuted;
   }
 }
 
@@ -215,6 +236,18 @@ export function fmtElapsed(ms: number): string {
   return `${h}h${String(m % 60).padStart(2, "0")}m`;
 }
 
+// TIME/elapsed is the session's own duration, not the wall clock since it
+// started: a running session ticks (`now`), a finished one is frozen at its
+// completion time. `idle` is the session record's `time.idle`; it updates on
+// every idle, so a RESUMED running session can carry a stale idle — the status
+// check wins. Fallback when not running: idle → updated → created (duration 0).
+// Never negative (clock skew or a resumed session).
+export function sessionDuration(child: SubagentSummary, now: number): number {
+  if (child.status === "running") return Math.max(0, now - child.created);
+  const end = child.idle ?? child.updated ?? child.created;
+  return Math.max(0, end - child.created);
+}
+
 export const HEADER_W = 22;
 export const AGG_W = 15;
 // Ceiling for the right-sized L1 status cell: fits running/done/error/idle and
@@ -286,6 +319,8 @@ export function cellWidth(depth: number): number {
 
 export interface WindowResult {
   visible: SubagentSummary[];
+  // Units past the MAX_UNITS cap, in display order (running overflow first).
+  overflow: SubagentSummary[];
   hidden: number;
   hiddenRunning: number;
 }
@@ -309,6 +344,8 @@ export function agentWeight(agent: string): number {
 // A resumed `done` -> `running` session is both running and freshly updated, so
 // it leads; once it finishes it stays near the top until something else runs or
 // updates, instead of dropping back to its original DFS position.
+// `visible` is the first MAX_UNITS of that order; `overflow` is the remainder,
+// in the same order (running overflow before rest overflow).
 export function windowChildren(children: SubagentSummary[]): WindowResult {
   const running: SubagentSummary[] = [];
   const rest: SubagentSummary[] = [];
@@ -324,17 +361,16 @@ export function windowChildren(children: SubagentSummary[]): WindowResult {
       b.created - a.created,
   );
   rest.sort(byRecency);
-  const visible = running.slice(0, MAX_UNITS);
-  for (const child of rest) {
-    if (visible.length >= MAX_UNITS) break;
-    visible.push(child);
-  }
+  const ordered = [...running, ...rest];
+  const visible = ordered.slice(0, MAX_UNITS);
+  const overflow = ordered.slice(MAX_UNITS);
   let visibleRunning = 0;
   for (const child of visible) {
     if (child.status === "running") visibleRunning++;
   }
   return {
     visible,
+    overflow,
     hidden: children.length - visible.length,
     hiddenRunning: running.length - visibleRunning,
   };
@@ -367,7 +403,7 @@ export interface Frame {
   label: string;
 }
 
-function slotFor(child: SubagentSummary, now: number, p: Palette): FrameSlot {
+export function slotFor(child: SubagentSummary, now: number, p: Palette): FrameSlot {
   const indent = indentFor(child.depth);
   const indentW = displayWidth(indent);
   const st = stateLabel(child, p);
@@ -396,7 +432,7 @@ function slotFor(child: SubagentSummary, now: number, p: Palette): FrameSlot {
       padLeft(truncate(right, rightW), rightW),
     ];
   };
-  const [model, elapsed] = twoCol(child.model, fmtElapsed(now - child.created));
+  const [model, elapsed] = twoCol(child.model, fmtElapsed(sessionDuration(child, now)));
   const [tokens, cost] = twoCol(`${fmtTokens(totalTokens(child.tokens))} tok`, fmtCost(child.cost));
   return {
     glyph: statusGlyph(child.status),
@@ -474,4 +510,154 @@ export function errorLine(error: string): string {
 
 export function partialLine(count: number): string {
   return `! ${count} sync failed`;
+}
+
+// S2 overflow table — option A′ (REDESIGN §1b, revision 7). Flexbox table:
+// every row is a column box of two `<box flexDirection="row">` lines whose
+// cells are text nodes sized/aligned by native layout (`width`, `flexGrow`,
+// `textAlign`, `truncate`, `wrapMode="none"`). L1 is the full row:
+// glyph/agent/title/status/time/tokens/cost. L2 carries the model only, behind
+// a blank glyph cell and a blank agent cell, so its left edge stays aligned
+// with the title column and it spans the remaining width. There is no
+// container-width math — the renderer clamps the flexible TITLE/MODEL cell to
+// the real dialog content width, so a row can never overflow it. Every fixed
+// column's node width is data-driven: `dialogGrid` sizes it to the widest value
+// in the hidden set (display-width aware) with the header label as the floor,
+// plus the leading separator (`" "` / `"  "`), so identical rows always yield
+// the same grid.
+export const DIALOG_GLYPH_W = 1;
+export const DIALOG_AGENT_LEAD = " ";
+export const DIALOG_LEADER = "  ";
+export const DIALOG_LABEL_AGENT = "AGENT";
+export const DIALOG_LABEL_TITLE = "TITLE";
+export const DIALOG_LABEL_STATUS = "STATUS";
+export const DIALOG_LABEL_TIME = "TIME";
+export const DIALOG_LABEL_TOKENS = "TOKENS";
+export const DIALOG_LABEL_COST = "COST";
+export const DIALOG_MAX_ROWS_H = 17;
+
+export interface DialogGrid {
+  agent: number;
+  status: number;
+  time: number;
+  tokens: number;
+  cost: number;
+}
+
+// Node widths for the fixed columns, computed once for the whole hidden set.
+// Each column contains every value in the set (display-width aware) and never
+// drops below its header label, then adds its separator length (agent +1, the
+// rest +2). Pure and deterministic: same rows + same `now` => same grid, with
+// no dependence on the dialog's real content width.
+export function dialogGrid(rows: SubagentSummary[], now: number): DialogGrid {
+  const widest = (get: (child: SubagentSummary) => string): number => {
+    let w = 0;
+    for (const child of rows) {
+      const cw = displayWidth(get(child));
+      if (cw > w) w = cw;
+    }
+    return w;
+  };
+  const agent = Math.max(widest((c) => c.agent), displayWidth(DIALOG_LABEL_AGENT));
+  const status = Math.max(widest((c) => statusLabel(c.status)), displayWidth(DIALOG_LABEL_STATUS));
+  const time = Math.max(
+    widest((c) => fmtElapsed(sessionDuration(c, now))),
+    displayWidth(DIALOG_LABEL_TIME),
+  );
+  const tokens = Math.max(
+    widest((c) => fmtTokens(totalTokens(c.tokens))),
+    displayWidth(DIALOG_LABEL_TOKENS),
+  );
+  const cost = Math.max(widest((c) => fmtCost(c.cost)), displayWidth(DIALOG_LABEL_COST));
+  return {
+    agent: agent + DIALOG_AGENT_LEAD.length,
+    status: status + DIALOG_LEADER.length,
+    time: time + DIALOG_LEADER.length,
+    tokens: tokens + DIALOG_LEADER.length,
+    cost: cost + DIALOG_LEADER.length,
+  };
+}
+
+// Title-row aggregate over the hidden set: "N more · R running · $cost",
+// dropping the running clause at R = 0. The title row is a space-between flex
+// row, so no width math is needed; the text node truncates if the dialog is
+// narrower than the aggregate.
+export function dialogAggregate(children: SubagentSummary[]): string {
+  if (children.length === 0) return "0 hidden";
+  let running = 0;
+  let cost = 0;
+  for (const c of children) {
+    if (c.status === "running") running++;
+    cost += c.cost;
+  }
+  const keep = running > 0 ? `${children.length} more · ${running} running` : `${children.length} more`;
+  return `${keep} · ${fmtCost(cost)}`;
+}
+
+export interface DialogLine {
+  glyph: string;
+  agent: string;
+  // Flexible middle cell: the title on L1.
+  flex: string;
+  status: string;
+  time: string;
+  tokens: string;
+  cost: string;
+}
+
+export interface DialogRowLines {
+  // L1: the full table row (all seven cells carry their value).
+  line1: DialogLine;
+  // L2: the model only, prefixed with the leader separator; the blank glyph and
+  // agent cells live in the renderer so the model's left edge aligns with TITLE.
+  model: string;
+  glyphFg: ThemeColor;
+  statusFg: ThemeColor;
+}
+
+// One wide row as two stacked lines. L1 is the complete seven-column row — no
+// blank cells — so the metrics share the top line with glyph/agent/title/status.
+// L2 is the model alone, full-width from the title column. Non-blank cells are
+// their raw value prefixed with the constant separator; the renderer truncates
+// and right-aligns per the text node's layout props, so no cell is pre-padded
+// and no container width is read.
+export function dialogRowLines(child: SubagentSummary, now: number, p: Palette): DialogRowLines {
+  const st = statusStyle(child.status, p);
+  return {
+    line1: {
+      glyph: statusGlyph(child.status),
+      agent: `${DIALOG_AGENT_LEAD}${child.agent}`,
+      flex: `${DIALOG_LEADER}${child.title}`,
+      status: `${DIALOG_LEADER}${st.label}`,
+      time: `${DIALOG_LEADER}${fmtElapsed(sessionDuration(child, now))}`,
+      tokens: `${DIALOG_LEADER}${fmtTokens(totalTokens(child.tokens))}`,
+      cost: `${DIALOG_LEADER}${fmtCost(child.cost)}`,
+    },
+    model: `${DIALOG_LEADER}${child.model}`,
+    glyphFg: st.fg,
+    statusFg: st.fg,
+  };
+}
+
+// Header row mirrors the data columns exactly, substituting labels; all muted.
+export interface DialogHeaderCells {
+  glyph: string;
+  agent: string;
+  title: string;
+  status: string;
+  time: string;
+  tokens: string;
+  cost: string;
+}
+
+export function dialogHeaderCells(): DialogHeaderCells {
+  return {
+    glyph: " ",
+    agent: `${DIALOG_AGENT_LEAD}${DIALOG_LABEL_AGENT}`,
+    title: `${DIALOG_LEADER}${DIALOG_LABEL_TITLE}`,
+    status: `${DIALOG_LEADER}${DIALOG_LABEL_STATUS}`,
+    time: `${DIALOG_LEADER}${DIALOG_LABEL_TIME}`,
+    tokens: `${DIALOG_LEADER}${DIALOG_LABEL_TOKENS}`,
+    cost: `${DIALOG_LEADER}${DIALOG_LABEL_COST}`,
+  };
 }

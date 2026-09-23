@@ -4,7 +4,8 @@ Method: `design-graph` (r17x). The artifact is an interface: surfaces, units,
 states, moves. Shared rule: any state the surface can render must be named here;
 any surface reachable without its need met is a design hole.
 
-Scope: **S1 only** — a sidebar monitor. There is no detail panel.
+Scope: **S1 + S2** — a sidebar monitor (S1) with an overflow popup (S2). There
+is no per-subagent detail panel.
 
 ## Job
 
@@ -20,10 +21,11 @@ can resume a completed subagent session, so a row's state can return to
 | Id | Surface | Host slot | Cardinality |
 |----|---------|-----------|-------------|
 | S1 | Subagents list | `sidebar.content` | **live list** (many, changing while read) |
+| S2 | Overflow popup | host `ui.dialog` | live list of the hidden units |
 | S3 | Header aggregate | inside S1 | live scalar |
 
 ### Units
-- `Row` — one subagent as a **3-line block**:
+- `Row` (S1) — one subagent as a **3-line block**:
   - L1 name/kind row: `statusGlyph + " " + agent` on the left, **`status`
     right-aligned to the content edge** (glyph colored by state: `●` running,
     `✓` done, `✕` error, `◐` interrupted, `○` idle; agent bold `text.default`).
@@ -36,7 +38,7 @@ can resume a completed subagent session, so a row's state can return to
   col A is left-aligned. Each cell truncates to its own width; an absent field
   leaves its cell blank — never stretch the other cell into a jammed line.
 - `VoidLine` — one designed single-fact line per absent state.
-- `MoreLine` — overflow marker.
+- `MoreLine` — overflow marker; the whole line is the S2 open target.
 - `Header` — collapse toggle: **`▼ SUBAGENTS`** expanded / **`▶ SUBAGENTS (N)`**
   collapsed, large chevron matching the host's `▼ MCP`. The whole header line is
   the toggle hit target. Its right side carries the aggregate over the **full**
@@ -50,7 +52,147 @@ can resume a completed subagent session, so a row's state can return to
 again. No terminal latch.
 
 ### Moves
-`collapse/expand` only. Rows are read-only.
+`collapse/expand` on S1; `open/close` S2. Rows are read-only.
+
+## 1b. S2 layout — overflow table (revision 7)
+
+**User-approved A′ look, rebuilt as a flexbox table.** Supersedes revision 4's
+split (metrics on L2): the **full row — including TIME/TOKENS/COST — sits on L1**,
+vertically aligned with agent/title/status, and **L2 carries the model alone**.
+Each hidden subagent is a **two-line column block**; there is **no
+container-width math anywhere**: the renderer's flexbox clamps the flexible
+`TITLE`/`MODEL` cell to the real dialog content width, so a row can never
+overflow it. Revision 6 makes every fixed column **data-driven and
+deterministic** (see the column model): its width is computed once for the whole
+hidden set from the actual cell strings, so identical rows always produce an
+identical grid. `SubagentRow`/`Row` stays S1's narrow 38-col geometry; the dialog
+renders its own `DialogRow`.
+
+### Column model
+
+Each row is one `<box flexDirection="column">` holding two
+`<box flexDirection="row" width="100%">` lines; each column is a text node whose
+size and alignment come from native layout props. **L1 carries all seven cells
+with their values** — glyph, agent, title, status, time, tokens, cost. **L2 has
+exactly three nodes**: a blank glyph cell (1), a blank agent cell (`grid.agent`),
+then the model with `flexGrow 1`, so the model's left edge stays aligned with the
+title column and it spans the whole remaining width.
+
+The fixed columns are **data-driven and deterministic**.
+`variants.dialogGrid(rows, now)` computes each column's node width **once for the
+whole hidden set**:
+
+```
+node width = max(display-width of every row's value, display-width of the header label) + separator length
+```
+
+with `separator length` 1 for the agent (`" "`) and 2 for the rest (`"  "`). The
+header label is the **floor** (a short set still shows the full label), the value
+is **display-width aware** (a wide agent/status/metric is never truncated), and
+an empty set yields the header floors alone. The result is passed to the header
+and every row, so all rows and the header align on the same columns; identical
+rows always yield an identical grid. There is no `T` computation and no
+optional-column dropping — the flexible middle absorbs whatever the dialog width
+allows.
+
+```
+glyph(1) | agent(grid.agent) | flex(title/model) | status(grid.status, right) | time(grid.time, right) | tokens(grid.tokens, right) | cost(grid.cost, right)
+```
+
+At 80 columns the flexible middle cell gets the remainder.
+
+```
+  SUBAGENTS                                         6 more · 2 running · $9.32
+  AGENT       TITLE                     STATUS    TIME   TOKENS     COST
+  ● reviewer    review …middleware …    running     12m    48.2k    $1.23
+                anthropic/claude-…
+  ✓ researcher  codegraph index for …   done        26m     210k    $4.87
+                openai/gpt-5
+```
+
+L1 is the complete table row; L2 is the model only, starting at the title
+column. Rows stay tight — L1 then L2, no blank line between blocks.
+
+### Text-node props
+
+| cell | line | width | align | truncate | wrapMode | fg / attributes |
+|------|------|-------|-------|----------|----------|-----------------|
+| glyph | L1 | 1 | left | — | none | `statusStyle().fg`, BOLD |
+| agent | L1 | `grid.agent` | left | yes | none | `textDefault`, BOLD |
+| title | L1 | `flexGrow 1`, `minWidth 0` | left | yes | none | `textDefault` |
+| status | L1 | `grid.status` | right | — | none | `statusStyle().fg`, BOLD |
+| time | L1 | `grid.time` | right | — | none | `textMuted` |
+| tokens | L1 | `grid.tokens` | right | — | none | `textMuted` |
+| cost | L1 | `grid.cost` | right | — | none | `textMuted` |
+| glyph | L2 | 1 | left | — | none | `textMuted` (blank) |
+| agent | L2 | `grid.agent` | left | yes | none | `textMuted` (blank) |
+| model | L2 | `flexGrow 1`, `minWidth 0` | left | yes | none | `textMuted` |
+
+The glyph and the status word share `statusStyle().fg`; the status word is
+`BOLD` like the sidebar label. The agent name is bold `textDefault`; the title is
+`textDefault`; the model and the right-aligned metrics are `textMuted`; the
+header labels are `textMuted`. The blank L2 lead cells keep their node widths so
+the model stays aligned with the title column. No row tinting.
+
+### Title row
+
+`<box flexDirection="row" justifyContent="space-between">`: left `SUBAGENTS`
+(`textDefault`, `BOLD`), right the aggregate over the hidden set (`textMuted`),
+`` `${n} more · ${r} running · ${fmtCost(total)}` `` with the `· ${r} running`
+clause dropped at `r = 0` (`variants.dialogAggregate`). The space-between row
+right-aligns the aggregate to the inset without width math; the aggregate text
+truncates if the dialog is narrower than it. The empty state's right side is
+`0 hidden`.
+
+### Header row
+
+Shares the same `grid` (and therefore the same cell widths/alignments) as the
+data rows, with muted labels `AGENT / TITLE / STATUS / TIME / TOKENS / COST`
+(blank glyph cell, title label `flexGrow 1`), rendered once above the scrollbox,
+outside it, so it does not scroll away.
+
+### Empty
+
+The title row shows `0 hidden`; the body shows a padded muted
+`no hidden subagents` line; no header row.
+
+### Padding
+
+The title row, header row and scrollbox are wrapped in a single
+`<box paddingLeft={2} paddingRight={2} flexDirection="column">`, so every line
+gets the same symmetric 2-col inset from box padding rather than from per-cell
+string prefixes.
+
+### Scroll behaviour
+
+`<scrollbox maxHeight={17}>` around the data rows; the title and header rows stay
+above it. Rows keep the existing overflow order (`windowChildren().overflow`:
+running first, agent weight then recency). There is no `+K more` line inside S2 —
+the dialog *is* the "more".
+
+**Revision 7:** the scrollbox renders with `scrollbarOptions={{ visible: false }}`
+so it reserves no scrollbar column; otherwise its children (the rows) are one
+column narrower than the header row above it and every right-anchored column
+shifts one cell left. This keeps header and rows aligned whether or not the list
+scrolls (host `dialog-select.tsx` uses the same option).
+
+**Revision 8:** `TIME` (S2) and `elapsed` (S1 L2) are the **session's own
+duration**, not wall-clock since `created`. While `running` they tick with `now`;
+once finished they **freeze at completion** — `time.idle`, falling back to
+`time.updated`, floored at 0 — so a finished row stops growing. A resumed
+`running` session can carry a stale `idle`, so the status check wins.
+`sessionDuration(child, now)` is the single source for both surfaces, and
+`dialogGrid` sizes the `TIME` column from it, so the frozen value keeps its
+column width.
+
+### Truncation
+
+Native `truncate` (verified on `@opentui/core` 0.5.12) ellipsizes overflow with
+`...`; without it, `wrapMode="none"` clips at the cell width. `truncate` is set on
+the agent, title and model cells (the variable-width ones); the fixed
+right-aligned cells are sized by `dialogGrid` to contain their widest value, so
+the status column floors at the `STATUS` label and widens to `interrupted` (11)
+when present — no fixed cell ever truncates its value.
 
 ## 2. C — happy path flow graph
 
@@ -59,11 +201,15 @@ Host session view
    │  (slot mounted for the viewed session)
    ▼
 S1 SubagentsList ──collapse/expand──► S1 (same surface, no body)
+   │  click "+N more"
+   ▼
+S2 Overflow popup ──ESC/backdrop──► closed
    ▲
    └── live refresh keeps row state current (running ⇄ done ⇄ running)
 ```
 
-One surface. The only move reshapes its own body, not the graph.
+Two surfaces: S1 reshapes its own body on collapse; S2 is a transient overlay
+opened only while S1 has hidden units.
 
 ## 3. Cardinality
 
@@ -84,6 +230,10 @@ One surface. The only move reshapes its own body, not the graph.
 
 Empty and Loading must remain visually distinct.
 
+S2 has one defensive void: opened with zero hidden units it renders a muted
+`no hidden subagents` line instead of an empty list. In practice the trigger
+refuses to open when the overflow is empty, so the line is a safety net.
+
 ## 5. N — needs on the edges
 
 - S1 needs: the viewed `sessionID`; the **descendant set**; theme.
@@ -97,6 +247,11 @@ Empty and Loading must remain visually distinct.
   the async refresh then updates values in place. Async must never be
   responsible for introducing structure.
 - Viewport: ~37-col sidebar. Window to a line budget (4 units) with `+K more`.
+- S2 needs: the hidden units (the window's overflow slice), theme, the host
+  `ui.dialog.show` capability, and the **content width** (`§1b Width source`).
+  It renders the `DialogRow` wide table (`§1b`), not the S1 3-line block, and
+  shares the same 1s tick, so it is live; its mount path permits dynamic rows
+  (unlike S1).
 
 ## 6. Boundary
 
@@ -111,7 +266,8 @@ must not remove content.
 
 ## 8. Scope attention
 
-No overlays. Collapse state is the only persistent UI state; no focus is
+S2 is a transient overlay opened from S1 and dismissed by ESC/backdrop; it holds
+no persistent state. Collapse state is the only persistent UI state; no focus is
 acquired, so nothing must be released.
 
 ## 9. Swap N — re-walk four times
@@ -125,9 +281,10 @@ acquired, so nothing must be released.
 
 ## 10. Tree = C, variants = V
 
-- Component tree renders the happy path only (header + rows).
+- Component tree renders the happy path only (header + rows). `SubagentRow` is
+  S1's frame; S2's popup renders `DialogRow` (`§1b`).
 - `variants.ts` enumerates every V state and Row state. No state branching in
-  the tree beyond the `<Switch>` over `voidKind`.
+  the tree beyond the `<Switch>` over `voidKind` and S2's zero-hidden fallback.
 
 ## Frame discipline (host constraint)
 
@@ -193,6 +350,6 @@ are function children so they repaint with the frame.
 
 ## Next step
 
-S1 is implemented. Remaining polish: exact window height vs the real sidebar row
-budget (never measured), unicode-width truncation, and confirming the collapse
-round-trip live. No detail panel.
+S1 and S2 are implemented. Remaining polish: exact window height vs the real
+sidebar row budget (never measured), unicode-width truncation, and confirming
+the collapse round-trip and the S2 open/close live. No per-subagent detail panel.
