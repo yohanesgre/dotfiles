@@ -545,6 +545,49 @@ describe("windowChildren", () => {
     const res = windowChildren(children);
     expect(res.visible.map((c) => c.sessionID)).toEqual(["newer", "older"]);
   });
+
+  test("weight outranks recency inside the running group", () => {
+    const children = [
+      makeSummary({ sessionID: "rev", agent: "reviewer", status: "running", created: 1, updated: 1 }),
+      makeSummary({ sessionID: "st0", agent: "steward", status: "running", created: 2, updated: 100 }),
+      makeSummary({ sessionID: "st1", agent: "steward", status: "running", created: 3, updated: 101 }),
+      makeSummary({ sessionID: "st2", agent: "steward", status: "running", created: 4, updated: 102 }),
+      makeSummary({ sessionID: "st3", agent: "steward", status: "running", created: 5, updated: 103 }),
+    ];
+    const res = windowChildren(children);
+    expect(res.visible.map((c) => c.sessionID)).toEqual(["rev", "st3", "st2", "st1"]);
+    expect(res.visible[0].sessionID).toBe("rev");
+    expect(res.hiddenRunning).toBe(1);
+  });
+
+  test("recency tie-breaks running units of equal weight", () => {
+    const children = [
+      makeSummary({ sessionID: "old", agent: "steward", status: "running", created: 1, updated: 5 }),
+      makeSummary({ sessionID: "new", agent: "steward", status: "running", created: 2, updated: 10 }),
+    ];
+    const res = windowChildren(children);
+    expect(res.visible.map((c) => c.sessionID)).toEqual(["new", "old"]);
+  });
+
+  test("unknown running kind ranks after a known kind but stays visible", () => {
+    const children = [
+      makeSummary({ sessionID: "gen", agent: "general", status: "running", created: 1, updated: 100 }),
+      makeSummary({ sessionID: "stew", agent: "steward", status: "running", created: 2, updated: 5 }),
+    ];
+    const res = windowChildren(children);
+    expect(res.visible.map((c) => c.sessionID)).toEqual(["stew", "gen"]);
+    expect(res.visible.length).toBe(2);
+  });
+
+  test("with no running units the rest group keeps recency order", () => {
+    const children = [
+      makeSummary({ sessionID: "idle", status: "idle", created: 1, updated: 5 }),
+      makeSummary({ sessionID: "done", status: "done", created: 2, updated: 20 }),
+    ];
+    const res = windowChildren(children);
+    expect(res.visible.map((c) => c.sessionID)).toEqual(["done", "idle"]);
+    expect(res.hiddenRunning).toBe(0);
+  });
 });
 
 describe("voidKind precedence", () => {

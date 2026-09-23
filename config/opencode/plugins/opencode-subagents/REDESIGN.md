@@ -138,9 +138,23 @@ and a more line. All later changes are text rewrites.
 
 Consequence for ordering: the window orders **running units first** (globally),
 so a resumed `done → running` subagent is written into the top slot on the next
-refresh — a text swap, never a node move. The header aggregate reflects the full
-descendant set (`N run · $total`); the header nodes are function children so
-they repaint with the frame.
+refresh — a text swap, never a node move. Inside the running group the order is
+**agent weight first, then recency** (most recently updated, tie-broken by most
+recently created); the rest (done/idle) group keeps plain recency. Weight is
+lower-is-more-important and unknown kinds rank last:
+
+| Agent | Weight |
+| --- | --- |
+| `reviewer` | 0 |
+| `swe` | 1 |
+| `researcher` | 2 |
+| `steward` | 3 |
+| unknown | 100 |
+
+This keeps important agents visible within the `MAX_UNITS` (4) sidebar window
+even when a resumed unit would otherwise sort ahead of them. The header
+aggregate reflects the full descendant set (`N run · $total`); the header nodes
+are function children so they repaint with the frame.
 
 ## Craft — no padding, one accent per row
 

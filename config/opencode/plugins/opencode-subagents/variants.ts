@@ -290,12 +290,25 @@ export interface WindowResult {
   hiddenRunning: number;
 }
 
+// Agent-kind importance inside the running group. Lower = more important;
+// unknown kinds rank last. Edit this map to change the order.
+export const AGENT_WEIGHT: Record<string, number> = {
+  reviewer: 0,
+  swe: 1,
+  researcher: 2,
+  steward: 3,
+};
+export function agentWeight(agent: string): number {
+  return AGENT_WEIGHT[agent] ?? 100;
+}
+
 // Running units occupy the earliest slots and are never dropped while a slot
-// is free. Within each group the ordering is recency: most recently updated
-// first, tie-broken by most recently created. A resumed `done` -> `running`
-// session is both running and freshly updated, so it leads; once it finishes it
-// stays near the top until something else runs or updates, instead of dropping
-// back to its original DFS position.
+// is free. Within the running group the ordering is agent weight first (see
+// AGENT_WEIGHT), then recency: most recently updated first, tie-broken by most
+// recently created. The rest (done/idle) group keeps plain recency ordering.
+// A resumed `done` -> `running` session is both running and freshly updated, so
+// it leads; once it finishes it stays near the top until something else runs or
+// updates, instead of dropping back to its original DFS position.
 export function windowChildren(children: SubagentSummary[]): WindowResult {
   const running: SubagentSummary[] = [];
   const rest: SubagentSummary[] = [];
@@ -304,7 +317,12 @@ export function windowChildren(children: SubagentSummary[]): WindowResult {
   }
   const byRecency = (a: SubagentSummary, b: SubagentSummary): number =>
     b.updated - a.updated || b.created - a.created;
-  running.sort(byRecency);
+  running.sort(
+    (a, b) =>
+      agentWeight(a.agent) - agentWeight(b.agent) ||
+      b.updated - a.updated ||
+      b.created - a.created,
+  );
   rest.sort(byRecency);
   const visible = running.slice(0, MAX_UNITS);
   for (const child of rest) {
