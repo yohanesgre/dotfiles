@@ -1,5 +1,7 @@
 # OpenCode Configuration
 
+> 2026-09-23 — **Headroom proxy removed; `opencode-go` "Invalid API key" root-caused to a bad auth *account*, not the proxy; MCPs + plugin/tool sync disabled; CLI reinstalled clean.** Root cause chain: `opencode auth login opencode` (the **"OpenCode Console account" device-OAuth** method) stores an OAuth credential on integration `opencode` that (a) outranks the OpenCode Go API-key account for `opencode-go/*` calls and (b) is **rejected by zen/go**. Verified upstream: `st_…` OAuth → `/zen/v1/models` **200** but `/zen/go/v1/usage` **401 `Unauthorized`**; `sk-…` API key → 200 on both. No OAuth token works for Go (4 tested, incl. the 2026-09-05 "Personal" one); the Console OAuth path is a trap. Controlled repro, single variable: OAuth account present → `Failed to drain Session: AI.Error: Invalid API key` (10:04:03/25/48, right after the 10:03:41 login); account deleted → 3 clean `opencode run` passes (`mimo-v2.5`, `deepseek-v4.1-flash#max`, `mimo-v2.6-flash-free`). Correct connect path: `opencode auth login opencode-go --method key` (or `/connect` → OpenCode Go → API key) — **never** the Console account. Headroom was exonerated, then removed anyway per request: a bogus bearer returns the upstream's **byte-identical** `401 AuthError: Invalid API key.` direct *and* through :8787 (both `/v1/chat/completions` and `/v1/responses`); no header → upstream `Missing API key.`; a valid key → **200 through the proxy**. Headroom holds no key of its own (`~/.headroom/` had only beacon locks + `ccr_store.db`), and `headroom/providers/opencode/runtime.py` states it "reuses the user's own API keys (env / `opencode auth`)"; its only credential feature is `headroom copilot-auth` (GitHub Copilot device flow, `wrap opencode --copilot-subscription`) — **no OpenCode Console/zen auth support exists in 0.37/0.38**. Removed: 3 systemd user units (`headroom-opencode-go`/`-opencode`/`-openrouter`) stopped+disabled+deleted, `uv tool uninstall headroom-ai` (drops `headroom`, `headroom-cache-ttl`), `~/.headroom` (38 MB); plus dead CLI baggage — 242 MB stale `~/.opencode/bin/opencode2`, `~/.opencode` (57 MB), ~1.5 GB bun cache, beta profile ×4, 6.5 GB old session DB, `~/.cache/yay/opencode-bin` (disk 50 → 71 GB free). Resulting config: `opencode.jsonc` drops all three `providers.*.settings.baseURL` overrides (catalog endpoints used directly — only the `mimo-v2.5` variants block remains) and all 3 MCPs are `enabled: false`; `home/modules/opencode/default.nix` has `opencodeSyncPlugins`/`opencodeSyncIcmPlugin`/`opencodeSyncTools` inside a `/* DISABLED … */` block so `~/.config/opencode/{plugins,tools}` stay absent. Re-enable MCPs/plugins by restoring `enabled: true` and deleting those comment markers. **Same day (resolved):** once the user connected their own console API key and `opencode run --model opencode-go/deepseek-v4.1-flash#max "say OK"` returned `OK`, the diagnostic was lifted — MCPs `codegraph` + `icm` back to `enabled: true` (engram stays `false`, as before) and the three plugin/tool sync activations un-commented, then `hm switch` re-copied `~/.config/opencode/{plugins,tools}`. Files: `config/opencode/opencode.jsonc`, `home/modules/opencode/default.nix`, this file.
+
 > 2026-09-13 — **rtk MCP removed (third-party, redundant)**. The `rtk-mcp` MCP server (`ousamabenyounes/rtk-mcp` v0.1.0) had a hardcoded command allowlist (no `opencode`, pipes, redirects), no shell semantics, and was unmaintained. The V2 `rtk` plugin (`config/opencode/plugins/rtk.ts`) now auto-rewrites every `shell` command through `rtk rewrite` — no allowlist needed, handles `&&`/`;`/`|`. The MCP was strictly redundant. Reverted the `rtk_*` agent permission rules (commit d0560e4) from all 6 agents. Removed binary `~/.local/bin/rtk-mcp`. Kept the plugin; kept `icm`, `engram`, `codegraph` MCPs. Files: `config/opencode/opencode.jsonc`, `config/opencode/AGENTS.md`, `config/opencode/agents/{researcher,swe,reviewer,architect,steward,designer}.md`, `home/modules/upstream/default.nix`, this file.
 
 > 2026-09-13 — **rtk MCP tool (`rtk_run_command`) allowed for custom subagents**. Every deny-by-default agent (`researcher`/`swe`/`reviewer`/`architect`/`steward`/`designer`) now carries `- action: rtk_* / resource: "*" / effect: allow` alongside `codegraph_*` and `execute`/`shell`, fixing `Unknown tool 'rtk.run_command'` when subagents call `tools.rtk.run_command(...)`. `vision` skipped (no `shell`/`execute`, purely image analysis). Verified: `grep -l 'rtk_*' ~/.config/opencode/agents/*.md` lists all 6 edited files. Files: `config/opencode/agents/{researcher,swe,reviewer,architect,steward,designer}.md`, this file.
@@ -116,7 +118,6 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
   "experimental": { "subagent_depth": 3 },
   "providers": {
     "opencode-go": {
-      "settings": { "baseURL": "http://127.0.0.1:8787/v1" },
       "models": {
         "mimo-v2.5": {
           "variants": [
@@ -126,20 +127,18 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
           ]
         }
       }
-    },
-    "opencode": { "settings": { "baseURL": "http://127.0.0.1:8788/v1" } },
-    "openrouter": { "settings": { "baseURL": "http://127.0.0.1:8789/v1" } }
+    }
   },
   "mcp": {
     "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": false, "type": "local" },
-    "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0" } },
+    "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },
     "icm": { "command": ["icm", "serve"], "enabled": true, "type": "local" }
   },
   "shell": "/usr/bin/zsh"
 }
 ```
 
-Key: no `plugin` entries (live-local opencode-subagents, herdr-agent-state — plugin dirs not in config); provider baseURLs point at the local proxy ports (787/788/789); three MCPs (icm active, engram disabled for rollback, codegraph) — rtk MCP removed (redundant with V2 shell plugin); browser automation is agent-browser CLI (skill `agent-browser`; preferred per AGENTS.md), not an MCP; built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
+Key: no `plugin` entries (live-local opencode-subagents, herdr-agent-state — plugin dirs not in config); **no `providers.*.settings.baseURL` overrides** since 2026-09-23 (headroom removed — catalog endpoints used directly); MCPs `codegraph` + `icm` enabled, `engram` disabled for rollback (the 2026-09-23 diagnostic disable was reverted the same day); browser automation is agent-browser CLI (skill `agent-browser`; preferred per AGENTS.md), not an MCP; built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
 
 ## Agents (`~/projects/dotfiles/config/opencode/agents/*.md`)
 
@@ -195,7 +194,9 @@ Removed 2026-09-11: `playwright` MCP (`bun x @playwright/mcp`) — replaced by t
 - **CommandCode (CC)** — full removal: pacman `command-code` pkg (`/usr/bin/commandcode`), `cc-proxy.service` user unit (npx commandcode-api-proxy :8787, held CC_API_KEY), `~/.commandcode/` data, `~/.local/bin/cc-key`. `/usr/bin/cc` untouched (gcc symlink, separate pkg). opencode-go/zen gateway unaffected — direct auth verified post-removal.
 - **gmicloud provider** — dropped per user request (3 providers remain: opencode-go, opencode, openrouter); auth entry removed from `auth.json`.
 
-## Headroom compression proxy (2026-09-07, active)
+## Headroom compression proxy (2026-09-07 → **removed 2026-09-23**) — historical
+
+**Removed 2026-09-23** per user request (see top entry): units `headroom-opencode-go`/`-opencode`/`-openrouter` stopped, disabled and deleted; `uv tool uninstall headroom-ai`; `~/.headroom` deleted; `opencode.jsonc` baseURL overrides dropped. Ports 8787-8789 are free. Setup below is historical, kept for reference.
 
 69k★ `headroomlabs-ai/headroom` v0.37.0, installed via `uv tool install "headroom-ai[all]"`. Three systemd user units, one per upstream (native `--openai-api-url` routing):
 
@@ -205,9 +206,9 @@ Removed 2026-09-11: `playwright` MCP (`bun x @playwright/mcp`) — replaced by t
 | `headroom-opencode.service` | 8788 | https://opencode.ai/zen | off |
 | `headroom-openrouter.service` | 8789 | https://openrouter.ai/api | off |
 
-opencode.jsonc `providers.<id>.settings.baseURL` points at `http://127.0.0.1:87xx/v1`. Beacons off, rate-limit off, default `coding` profile (cache mode, prefix-safe, file reads never lossy).
+opencode.jsonc `providers.<id>.settings.baseURL` used to point at `http://127.0.0.1:87xx/v1` (dropped 2026-09-23). Beacons off, rate-limit off, default `coding` profile (cache mode, prefix-safe, file reads never lossy).
 
-**Gotchas learned**: (1) `x-headroom-base-url` header routing (shim-style) 502s silently in 0.37.0 — use native `--openai-api-url` per upstream instead; one instance per upstream. (2) auth.json zen tokens go stale; live tokens ride per-request from opencode — manual curl with auth.json token shows false 500/401. (3) `--port` omitted = default 8787, collides. Verify traffic: `curl -s http://127.0.0.1:8787/stats` → `summary.api_requests`.
+**Gotchas learned**: (1) `x-headroom-base-url` header routing (shim-style) 502s silently in 0.37.0 — use native `--openai-api-url` per upstream instead; one instance per upstream. (2) auth.json zen tokens go stale; live tokens ride per-request from opencode. (3) `--port` omitted = default 8787, collides. (4) **Auth is pure passthrough** (measured 2026-09-23): bogus bearer → the upstream's byte-identical `401 AuthError: Invalid API key.` direct *and* through the proxy (both `/v1/chat/completions` and `/v1/responses`); missing header → upstream `Missing API key.`; the proxy holds no credential, so a client-side auth fault can never be a headroom fault. (5) No OpenCode Console/zen OAuth support exists (0.37/0.38) — the only credential feature is `headroom copilot-auth` (GitHub Copilot device flow).
 
 ## Global Gitignore
 
