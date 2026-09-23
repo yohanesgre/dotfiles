@@ -4,6 +4,8 @@
 
 ## Recent changes
 
+> 2026-09-24 — **Revert: `luvus-state` overlay plugin removed; stock luvus opencode V2 integration only.** Why: user preference for the upstream integration. What changed: `cli.json` plugins back to `["./luvus-v2"]` (live + repo), repo `config/opencode/luvus-state/` deleted, live `~/.config/opencode/luvus-state/` deleted, `opencodeSyncLuvusState` activation removed from `home/modules/opencode/default.nix`. State now comes from the stock `luvus-v2` integration (ownership-only; state screen-scraped). Consequence: the false done/blocked cues on background subagents / unfocused tabs that the overlay fixed may return; cues are currently enabled (`sound_on_done`/`sound_on_blocked` = true). `luvus-v2` untouched (luvus-managed). No hm-switch, no TUI restart, no commit this session. Keeps the 2026-09-24 overlay entry below as history.
+
 > 2026-09-24 — **fix(opencode-subagents): resumed subagents show as running.** Why: OpenCode v2 keeps the last idle `outcome` on a session and never clears it on resume; `subagentStatus` checked `outcome` before the live status, so a resumed (done→running) subagent stayed "done" in the sidebar label, running-first ordering, and the "N run" aggregate. Fix: live running takes precedence; `outcome` applies only when not running. Tests: regression cases for resumed-after-failed/interrupted/succeeded — `bun test` 62 pass / 0 fail. Files: `config/opencode/plugins/opencode-subagents/{types.ts,variants.test.ts}`, this file.
 
 > 2026-09-24 — dotfiles-local git-workflow override: new project-local skill `.agents/skills/git-workflow/SKILL.md` (mirrors the global skill with control-checkout amendments — work in the main worktree commits directly on `main`, no branch/PR; worktree-isolated work keeps branch → push → PR → merge; releases direct in the control checkout, tag after). The global skill stays strict for other projects. `.gitignore` gains a tracked-path exception for hand-authored overrides under `.agents/skills/` (upstream-installed skills stay ignored). Files: `.agents/skills/git-workflow/SKILL.md`, `.gitignore`, this file.
@@ -42,7 +44,7 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
 │   ├── plugins/                 → opencode-subagents + rtk.ts + icm.ts + opencode-go-limit (managed)
 │   │                              + luvus-v2 (luvus integration, live, unmanaged)
 │   └── (no skills/ dir — single root `~/.agents/skills/`, restored 2026-09-06)
-│   └── MCP (4)                  → codegraph (active), icm (active), jev-mcp (active), engram (disabled)
+│   └── MCP (3)                  → codegraph (active), icm (active), jev-mcp (active)
 ├── ~/.agents/skills/            → cross-harness skills (canonical)
 └── ~/.config/opencode-archive-v1-20260906/ → v1 archive (table in `docs/configuration-changelog.md`)
 ```
@@ -75,7 +77,6 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
     }
   },
   "mcp": {
-    "engram": { "command": ["engram", "mcp", "--tools=agent"], "enabled": false, "type": "local" },
     "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },
     "icm": { "command": ["icm", "serve"], "enabled": true, "type": "local" },
     "jev-mcp": { "type": "local", "command": ["jev-mcp"], "enabled": true, "environment": { "TYPESAFE_API_KEY": "{env:TYPESAFE_API_KEY}" } }
@@ -84,7 +85,7 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
 }
 ```
 
-Key: no `plugin` entries in the config itself (TUI plugins are declared in `cli.json` — `./luvus-v2` since 2026-09-23); **no `providers.*.settings.baseURL` overrides** since 2026-09-23 (headroom removed — catalog endpoints used directly); MCPs `codegraph` + `icm` + `jev-mcp` enabled, `engram` disabled for rollback (the 2026-09-23 diagnostic disable was reverted the same day); browser automation is agent-browser CLI (skill `agent-browser`; preferred per AGENTS.md), not an MCP; built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
+Key: no `plugin` entries in the config itself (TUI plugins are declared in `cli.json` — `./luvus-v2` since 2026-09-23); **no `providers.*.settings.baseURL` overrides** since 2026-09-23 (headroom removed — catalog endpoints used directly); MCPs `codegraph` + `icm` + `jev-mcp` enabled (`engram` MCP removed entirely 2026-09-24); browser automation is agent-browser CLI (skill `agent-browser`; preferred per AGENTS.md), not an MCP; built-in build runs `mode: all` so it works as subagent; built-in explore/general enabled (custom researcher/architect/designer/swe/reviewer kept alongside); compaction native V2 (`buffer`, no `reserved`/`prune`).
 
 ## Agents (`~/projects/dotfiles/config/opencode/agents/*.md`)
 
@@ -119,12 +120,12 @@ All custom; `researcher`/`steward`/`vision` are `mode: subagent` (never primary)
 
 Tool Calling V2 (built-in tool list; delegation via `subagent`; MCP/browser as Code Mode namespaces via `execute`; shell via `shell` + rtk prefix + V2 plugin auto-rewrite), Memory (ICM: session start → `icm_wake_up`; store via `icm_memory_store`; conflicts via `icm_feedback_record`), Caveman Mode (incl. subagent inheritance: delegation prompts must carry "reply caveman-compressed" line; custom agent prompts embed the mandate; reviewer exempt), Tool Selection (incl. rtk preference via V2 plugin; researcher-first delegation — build/primary delegates multi-file exploration and all web research to `researcher` by default, cheap single-file lookups inline only), Codebase Knowledge Graph (codegraph: one-tool `codegraph_explore`, per-project `codegraph init` + `.codegraph/` index check, Code Mode `tools.codegraph.*`, grep fallback rules, delegation), Agent-Browser, Code Style, Quality, Error Recovery, Quality Gates (agent selection table incl. researcher as default for API/library + codebase exploration, design-artifacts→designer, design/ADR→architect), Prompt Templates, Commit Rules, Safety, Tool Installation Automation.
 
-## MCP Servers (4)
+## MCP Servers (3)
 
 | Server | Type | Purpose |
 |--------|------|---------|
 | icm | Rust binary `~/.local/bin/icm` (rtk-ai/icm, upstream installer) | Memory: SQLite+FTS5+sqlite-vec, hybrid semantic+keyword search. `icm serve` exposes OpenCode-native tools: `icm_memory_*` (store/recall/update/forget/consolidate/extract_patterns/list_topics/stats/health/embed_all), `icm_wake_up`/`icm_learn` (session), `icm_memoir_*` (knowledge graph), `icm_feedback_*` (corrections), `icm_transcript_*` (transcripts). Topic convention: `{kind}-{project}` |
-| engram | Go binary `~/go/bin/engram` | **Installed but disabled** (`mcp.engram.enabled: false`). Kept for rollback. Was: Memory SQLite+FTS5 `~/.engram/engram.db`, agent-only tools |
+| engram | — | **Removed 2026-09-24** (integration purged from dotfiles: config dir, home module, go install, MCP entries; `~/.engram/engram.db` kept as user data). Was: Go binary, memory SQLite+FTS5, agent-only tools |
 | codegraph | bun global `~/.bun/bin/codegraph` (v1.6.0) | Code graph: default exposes one tool, `codegraph_explore` (verbatim source + call paths + blast radius). Per-project index via `codegraph init` (`.codegraph/`); no index = inactive. Other tools via `CODEGRAPH_MCP_TOOLS` |
 | jev-mcp | bun global `jev-mcp` (TypeSafe Jev, 0.5.0) | Typed decision layer: `jev_classify`/`jev_score`/`jev_check`/`jev_ask`/`jev_triage`/`jev_models`. Advisory judgments only; requires `TYPESAFE_API_KEY` (env indirection in opencode.jsonc) — without it tools return an auth error. |
 

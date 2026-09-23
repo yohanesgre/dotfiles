@@ -16,16 +16,7 @@ is_upstream() {
 }
 
 export BUN_INSTALL="$HOME/.bun"
-mkdir -p "$HOME/.bun/bin" "$HOME/.local/bin" "$HOME/go/bin"
-
-# engram: Gentleman-Programming/engram — not in nixpkgs, update every run
-if command -v go >/dev/null 2>&1; then
-  info "installing/updating engram (Gentleman-Programming)..."
-  go install github.com/Gentleman-Programming/engram/cmd/engram@latest 2>&1 || warn "go install engram failed"
-  [ -x "$HOME/go/bin/engram" ] && [ ! -x "$HOME/.local/bin/engram" ] && ln -sf "$HOME/go/bin/engram" "$HOME/.local/bin/engram" 2>/dev/null || true
-else
-  warn "go not in PATH — skipping go install engram"
-fi
+mkdir -p "$HOME/.bun/bin" "$HOME/.local/bin"
 
 # bun: oven-sh/bun — official installer (nixpkgs lags: 1.3.13 vs 1.4.2 on 2026-09-07)
 if [ -L "$HOME/.bun/bin/bun" ]; then

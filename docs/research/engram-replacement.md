@@ -3,7 +3,7 @@
 - **Date:** 2026-09-13
 - **Worktree:** `/home/yohanes/projects/dotfiles-worktrees/engram-replacement`
 - **Branch:** `research/engram-replacement` (base `041096f8454415aa8e33a8122457b507ef269ba4`, main == origin/main)
-- **Status:** research only — no config changes, not committed
+- **Status:** research only — no config changes, not committed. Superseded: engram removed from dotfiles entirely 2026-09-24 (decision landed on ICM; see `docs/configuration-changelog.md`).
 
 ## Question
 

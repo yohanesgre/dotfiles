@@ -42,8 +42,7 @@ Append an entry when you:
 
 Do NOT record routine diffs, file lists, or anything already in the repo docs. One terse line each: `- YYYY-MM-DD [area] learning — why it matters`. Keep both files small.
 
-**If both `engram` and `codegraph` are available**, layer them on — otherwise file memory alone is enough:
-- engram: `mem_search` before, `mem_save` after — semantic, project-scoped memory across sessions/machines. Still write the file; engram is additive.
+**If `codegraph` is available**, layer it on — otherwise file memory alone is enough:
 - codegraph: `codegraph_explore` (or the `codegraph explore` CLI) for structural discovery — verbatim source + call paths + blast radius in one call; requires a `.codegraph/` index (`codegraph init`).
 
 ## Rules

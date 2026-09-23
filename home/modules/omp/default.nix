@@ -11,7 +11,7 @@ let
   #
   # top-level config documents omp reads; agents/ holds the subagent definitions
   #
-  # MCP set (mcp.json, 2026-09-23): engram (memory, mounted) + codegraph
+  # MCP set (mcp.json, 2026-09-24): codegraph
   # (codegraph serve --mcp, the successor of the removed codebase-memory-mcp —
   # omp's explorer/reviewer/swe skills already call codegraph_explore). playwright
   # is declared but omp silently drops browser MCPs while the native browser

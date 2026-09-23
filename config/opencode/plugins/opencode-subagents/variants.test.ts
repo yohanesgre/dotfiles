@@ -588,6 +588,34 @@ describe("windowChildren", () => {
     expect(res.visible.map((c) => c.sessionID)).toEqual(["done", "idle"]);
     expect(res.hiddenRunning).toBe(0);
   });
+
+  test("running outranks done and error even when their weight is better", () => {
+    const children = [
+      makeSummary({ sessionID: "done-rev", agent: "reviewer", status: "done", created: 1, updated: 100 }),
+      makeSummary({ sessionID: "err-swe", agent: "swe", status: "error", created: 2, updated: 99 }),
+      makeSummary({ sessionID: "run-stew", agent: "steward", status: "running", created: 3, updated: 1 }),
+    ];
+    const res = windowChildren(children);
+    expect(res.visible.map((c) => c.sessionID)).toEqual(["run-stew", "done-rev", "err-swe"]);
+    expect(res.hiddenRunning).toBe(0);
+  });
+
+  test("no done or error row takes a slot while a running row is hidden", () => {
+    const children = [
+      makeSummary({ sessionID: "run-rev", agent: "reviewer", status: "running", created: 1, updated: 5 }),
+      makeSummary({ sessionID: "run-st1", agent: "steward", status: "running", created: 2, updated: 4 }),
+      makeSummary({ sessionID: "run-st2", agent: "steward", status: "running", created: 3, updated: 3 }),
+      makeSummary({ sessionID: "run-st3", agent: "steward", status: "running", created: 4, updated: 2 }),
+      makeSummary({ sessionID: "run-st4", agent: "steward", status: "running", created: 5, updated: 1 }),
+      makeSummary({ sessionID: "done-swe", agent: "swe", status: "done", created: 6, updated: 200 }),
+      makeSummary({ sessionID: "err-res", agent: "researcher", status: "error", created: 7, updated: 201 }),
+    ];
+    const res = windowChildren(children);
+    expect(res.visible.length).toBe(MAX_UNITS);
+    expect(res.visible.every((c) => c.status === "running")).toBe(true);
+    expect(res.hiddenRunning).toBe(1);
+    expect(res.hidden).toBe(3);
+  });
 });
 
 describe("voidKind precedence", () => {

@@ -29,7 +29,7 @@ let
 in
 {
   # Runs before installPackages so tools (go, curl) exist for later
-  # activation steps (manualInstall go install, upstream installers).
+  # activation steps (upstream installers).
   home.activation.pacmanSync = lib.hm.dag.entryBefore [ "installPackages" ] ''
     set -u
     export PATH="/usr/bin:/bin:$PATH"

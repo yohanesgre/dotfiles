@@ -18,7 +18,6 @@
     ./modules/opencode
     ./modules/omp
     ./modules/luvus
-    ./modules/engram
     ./modules/neovim
     ./modules/nix
     ./modules/skills

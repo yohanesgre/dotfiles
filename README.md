@@ -50,8 +50,8 @@ home/common.nix             # shared config + imports
 home/hosts/{desktop,laptop}.nix   # host overrides (desktop imports hermes)
 home/modules/pacman/        # declarative pacman CLI list, synced every switch
 home/modules/upstream/      # bun / codegraph / rtk / icm / luvus / omp / jev-mcp installers
-home/modules/manual/        # engram (go install)
-home/modules/               # env, shell, terminal, opencode, omp, luvus, neovim, nix, engram, hermes, skills
+home/modules/manual/        # manual activation hook (no-op; installers live in upstream/)
+home/modules/               # env, shell, terminal, opencode, omp, luvus, neovim, nix, hermes, skills
                             # nix/ = weekly auto garbage collection (systemd user timer + sudo)
 config/                     # raw configs symlinked via xdg.configFile (omp: copied, see module)
 config/skills/              # committed skills only: local-authored + wired upstream exceptions
