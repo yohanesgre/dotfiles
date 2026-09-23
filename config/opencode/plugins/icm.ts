@@ -37,15 +37,18 @@
 // their exposed names stay identical to the old MCP tools (`icm_memory_store`,
 // `icm_wake_up`, `icm_feedback_record`, ...).
 
-// Capture tool output every N tool calls...
-const EXTRACT_EVERY = 3
+// Capture tool output every N tool calls. Tuned 2026-09-24: 3 -> 6 to halve
+// capture volume after detached drains showed ~400% CPU / ~2.1GB RSS bursts.
+const EXTRACT_EVERY = 6
 // ...but only drain the extraction queue (the step that loads the
 // fastembed model) once per N enqueues. Issue #239: running a full
 // `icm extract` on every 3rd tool call reloaded the embedding model
 // from scratch each time (~3.7s CPU + a few hundred MB RAM), so
 // reading many files produced visible CPU/RAM spikes. Enqueuing is
 // cheap (~50ms, no model); the heavy work is batched into one
-// detached drain.
+// detached drain. Tuned 2026-09-24: keep 10, so with EXTRACT_EVERY=6 a
+// drain fires every ~60 tool calls and each drain is smaller
+// (--limit 10) — rarer + smaller bursts, ~1/2 total extraction volume.
 const DRAIN_EVERY = 10
 let toolCallCount = 0
 let enqueueCount = 0
@@ -85,12 +88,13 @@ function icmEnqueue(project: string, input: string): void {
 
 /// Drain the pending-extraction queue in a detached background process.
 /// Fire-and-forget: the chat turn never waits on it, and the heavy
-/// fastembed model load happens at most once per drain.
+/// fastembed model load happens at most once per drain. `--limit 10`
+/// (was 30) keeps each drain's burst small — see the 2026-09-24 tuning note.
 function icmDrainDetached(): void {
   try {
     const B = bun()
     if (!B?.spawn) return
-    const child = B.spawn(["icm", "extract-pending", "--limit", "30"], {
+    const child = B.spawn(["icm", "extract-pending", "--limit", "10"], {
       detached: true,
       stdio: ["ignore", "ignore", "ignore"],
     })
