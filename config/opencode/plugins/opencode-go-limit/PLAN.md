@@ -3,7 +3,7 @@
 Show OpenCode Go usage limits in the OpenCode V2 TUI status line.
 Method: `design-thinking` (program) + `design-graph` (surface). Code must match the graph below.
 
-Status: **DONE + deployed & active. Tests 54/54. Key resolution fixed (active DB credential, not the stale auth.json). 5h reset countdown added. Phase 4 (optional) pending.**
+Status: **DONE + deployed & active. Tests 64/64. Key resolution fixed (active DB credential, not the stale auth.json). 5h reset countdown added. Console (device-OAuth) auth support added 2026-09-23. Phase 4 (optional) pending.**
 Decisions: mount = `prompt.footer.status` (status line, `append`); build = plan-first (this file).
 
 ---
@@ -23,7 +23,7 @@ Decisions: mount = `prompt.footer.status` (status line, `append`); build = plan-
 | Storage | `context.storage.store(key,{initial})` (durable, cross-instance) / `.memory(...)` | V2 CLI plugin docs §Storage |
 | Dialog / keymap | `context.ui.dialog.*`, `context.keymap.layer(fn)` | V2 CLI plugin docs |
 | Data API | `GET https://opencode.ai/zen/go/v1/usage`, `Authorization: Bearer <key>` | live: 401 unauth, 200 authed |
-| Key | precedence: active `opencode.db`→`credential` (`integration_id='opencode-go' AND active=1`) `.value.key` → `auth.json` `opencode-go` → `opencode` | `opencode auth list`, DB query, live sha check |
+| Key | precedence: active `opencode.db`→`credential` (`integration_id='opencode-go' AND active=1`) `.value.key` → active DB `opencode` OAuth (`type:'oauth'`, `metadata.server/orgID`) → `auth.json` `opencode-go` → `opencode` → `opencode` oauth | `opencode auth list`, DB query, live sha check, console probe |
 | Key gotcha | `auth.json` is **legacy/stale** and held a different account (sha `eced93…`) than the active DB credential (sha `7f616c…`, console-matching) | live `/zen/go/v1/usage` diff by key |
 | Payload | `usage.{rolling,weekly,monthly}.{status,percent,resetsAt}`, `percent` = **used 0..100**, `resetsAt` ISO | live call |
 | Limit model | 5h = 20%, weekly = 50%, monthly = 100% of per-model monthly $ cap | docs `/docs/go/` |
@@ -63,7 +63,7 @@ setup(context)                                            [tui.tsx]
   → context.ui.slot({ append: "prompt.footer.status", render })
       → <GoFooter>                                        [GoFooter.tsx, Solid]
           → useGoUsage(options)                           [useGoUsage.ts, reactive]
-              ├ → readKey()                               [auth.json → opencode-go.key]
+              ├ → resolveAuth()                           [db/api key or db/console oauth]
               ├ → fetchUsage(key, signal)                 [GET /zen/go/v1/usage, timeout]
               │     → decodeUsage(unknown)                [schema @ boundary → GoUsage]
               ├ → poll(refreshMs)                         [initial pull + interval, single-flight]
@@ -139,6 +139,8 @@ Acceptance: footer shows live used % for 3 windows; correct colors incl. rate-li
 **Phase 4 (optional) — detail dialog.** Palette/keybind command, dialog, manual refresh.
 
 **Phase 5 — deploy wiring.** `package.json` (deps as `opencode-subagents`); add `opencode-go-limit` sync block to `home/modules/opencode/default.nix` mirroring `opencodeSyncPlugins`; **add `index.ts` server stub (`Plugin.define({ id:"opencode-go-limit", setup(){} })`) — both working local plugin dirs have one, herdr's comment: "keeps the plugin directory valid for server-side discovery"**; `home-manager switch`; `opencode service restart`. Verify: `ls ~/.config/opencode/plugins/opencode-go-limit`, footer visible. Update `config/opencode/CONFIGURATION.md`; sync stays in dotfiles.
+
+**Phase 6 — OpenCode Console (device-OAuth) auth.** Added 2026-09-23. `resolveAuth(env?)` returns `Auth = {kind:"apiKey",key} | {kind:"oauth",access,server,orgID?}`. Precedence: active DB `opencode-go` key → active DB `opencode` OAuth → auth.json `opencode-go` key → auth.json `opencode` key → auth.json `opencode` OAuth. API key hits `/zen/go/v1/usage` (unchanged); OAuth hits `${metadata.server ?? https://opencode.ai/console}/api/go/status` with `Bearer <access>` + optional `x-org-id`. `decodeConsoleStatus` maps `access.meters.{fiveHour,week,month}` micro-cent strings → used % (rounded), `resetsAt` with `access.endsAt` fallback, `status` derived (`>=100%` → `rate-limited`); `404` → `Entitlement`. `readKey` kept (api key only, compat); `keySource` gains `db:oauth` / `auth:opencode-oauth`. Verify: `bun test` → `64 pass, 0 fail`.
 
 ## 12. File layout
 

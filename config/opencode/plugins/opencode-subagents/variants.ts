@@ -26,25 +26,70 @@ export interface Palette {
   textMuted: ThemeColor;
 }
 
-// Real 2.0.2 theme shape: no top-level status colors and no text.muted. Read
-// the first present token, degrading gracefully when a token is absent; never
-// string-coerce and never fall back to a hex literal. `status.*` are raw RGBA
-// colors; `feedback.*` are color groups ({ default, subdued }), so the usable
-// fg is the `.default` member.
+// Host theme shape (binary-verified, v2.0.15). The host's own TUI renders with
+// `text.base`, `text.muted`, `text.feedback.{success,error,warning}.base`, and
+// `hue.interactive[200]` for a running indicator; there is no `text.status.*`
+// group, no `text.default`/`text.subdued`, and `text.action` is a group
+// (`{primary,secondary,destructive}`), not a color. Legacy `.default` groups are
+// still accepted so an older theme does not resolve to nothing. Colors are RGBA
+// objects (or strings); groups are `{ base | default }`. Never pass a group as
+// `fg` — the renderer would fall back to white.
 export function palette(theme: unknown): Palette {
   const t = (theme ?? {}) as any;
   const text = t.text ?? {};
-  const status = text.status ?? {};
   const feedback = text.feedback ?? {};
+  const hue = t.hue ?? {};
   const first = (...c: unknown[]) => c.find((v) => v != null);
   return {
-    primary: first(status.running, status.active, status.pending, text.action),
-    success: first(feedback.success?.default, status.done, status.success, text.action),
-    error: first(feedback.error?.default, status.error),
-    warning: first(feedback.warning?.default, status.warning),
-    textDefault: first(text.default),
-    textMuted: first(text.subdued, text.action, text.default),
+    // Running accent: hue.interactive[200] (the host's running color), else the
+    // running status token (legacy), else info, else the primary action group.
+    primary: first(
+      resolveColor(hue.interactive?.[200]),
+      resolveColor(text.status?.running),
+      resolveColor(feedback.info),
+      resolveColor(text.action?.primary),
+      resolveColor(text.action),
+      resolveColor(text.base),
+    ),
+    success: first(
+      resolveColor(feedback.success),
+      resolveColor(text.status?.done),
+      resolveColor(text.status?.success),
+      resolveColor(text.action),
+      resolveColor(text.base),
+    ),
+    error: first(resolveColor(feedback.error), resolveColor(text.status?.error)),
+    warning: first(resolveColor(feedback.warning), resolveColor(text.status?.warning)),
+    textDefault: first(resolveColor(text.base), resolveColor(text.default)),
+    textMuted: first(
+      resolveColor(text.muted),
+      resolveColor(text.subdued),
+      resolveColor(text.action),
+      resolveColor(text.base),
+    ),
   };
+}
+
+// A theme color value is returned as-is; a color group is unwrapped to its
+// usable fg (`base` for current themes, `default` for legacy ones). Anything
+// that is neither a color nor a group resolves to undefined.
+function resolveColor(value: unknown): unknown {
+  if (value == null) return undefined;
+  if (isColorValue(value)) return value;
+  if (typeof value === "object") {
+    const o = value as Record<string, unknown>;
+    return resolveColor(o.base ?? o.default);
+  }
+  return undefined;
+}
+
+function isColorValue(value: unknown): boolean {
+  if (typeof value === "string") return value.length > 0;
+  if (typeof value === "object" && value !== null) {
+    const o = value as Record<string, unknown>;
+    return "buffer" in o || "intent" in o || "rgb" in o || ("r" in o && "g" in o && "b" in o);
+  }
+  return false;
 }
 
 export interface StatusStyle {

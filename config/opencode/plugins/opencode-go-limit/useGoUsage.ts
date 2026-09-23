@@ -1,6 +1,6 @@
 import { createSignal, onCleanup } from "solid-js";
 import type { DisplayState } from "./display";
-import { createUsageClient, readKey, type GoUsage, type UsageError } from "./usage";
+import { createUsageClient, resolveAuth, type GoUsage, type UsageError } from "./usage";
 
 const STORAGE_KEY = "opencode-go-limit";
 const DEFAULT_REFRESH_MS = 60_000;
@@ -56,7 +56,7 @@ export function useGoUsage(
   refreshMs: number = DEFAULT_REFRESH_MS,
 ): { state: () => DisplayState; now: () => number } {
   const client = createUsageClient();
-  const key = readKey();
+  const auth = resolveAuth();
 
   const data = context.data as DataApi | undefined;
   const on: DataApi["on"] =
@@ -70,7 +70,7 @@ export function useGoUsage(
     initial: { usage: null, fetchedAt: 0 },
   });
   const [state, setState] = createSignal<DisplayState>(
-    initialState(persisted, key !== undefined),
+    initialState(persisted, auth !== undefined),
   );
   const [now, setNow] = createSignal(Date.now());
   const controller = new AbortController();
@@ -101,10 +101,10 @@ export function useGoUsage(
   }
 
   async function refresh(): Promise<void> {
-    if (key === undefined || inflight || controller.signal.aborted) return;
+    if (auth === undefined || inflight || controller.signal.aborted) return;
     inflight = true;
     try {
-      const result = await client.fetchUsage(key, controller.signal);
+      const result = await client.fetchUsage(auth, controller.signal);
       if (isUsageError(result)) {
         applyFailure(result);
         return;

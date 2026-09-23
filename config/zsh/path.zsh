@@ -3,7 +3,7 @@
 #   1. HM profile            — home-manager + HM machinery (~/.nix-profile)
 #   2. Nix daemon profile    — /nix/var/nix/profiles/default
 #   3. Upstream installers   — managed by Nix activation scripts
-#                              (~/.bun bun, ~/.local/bin rtk/cbm/herdr/engram, ~/go/bin)
+#                              (~/.bun bun, ~/.local/bin rtk/icm/luvus/engram, ~/go/bin)
 #   4. pacman/CachyOS system — /usr/bin and everything else
 # pacman may provide the same tool (e.g. bun) — the Nix/upstream copy above
 # always shadows it. typeset -U keeps entries unique.

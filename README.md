@@ -49,11 +49,11 @@ flake.nix                   # nixpkgs-unstable + home-manager; mkHome (4 homeCon
 home/common.nix             # shared config + imports
 home/hosts/{desktop,laptop}.nix   # host overrides (desktop imports hermes)
 home/modules/pacman/        # declarative pacman CLI list, synced every switch
-home/modules/upstream/      # bun / codegraph / rtk / herdr official installers
+home/modules/upstream/      # bun / codegraph / rtk / icm / luvus / omp / jev-mcp installers
 home/modules/manual/        # engram (go install)
-home/modules/               # env, shell, terminal, opencode, neovim, nix, engram, hermes, skills
+home/modules/               # env, shell, terminal, opencode, omp, luvus, neovim, nix, engram, hermes, skills
                             # nix/ = weekly auto garbage collection (systemd user timer + sudo)
-config/                     # raw configs symlinked via xdg.configFile
+config/                     # raw configs symlinked via xdg.configFile (omp: copied, see module)
 config/skills/              # committed skills only: local-authored + wired upstream exceptions
 config/skills/sources.json  # externalized skill sources (per-project install manifest)
 scripts/                    # bootstrap, install-nix, hm-switch, pacman-sync, install-manual,

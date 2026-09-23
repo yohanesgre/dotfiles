@@ -49,7 +49,9 @@ const baseState: SubagentsState = {
   lastUpdated: 0,
 };
 
-// Real 2.0.2 host theme colors are RGBA objects with 0..1 floats, not strings.
+// Legacy theme shape (the pre-refactor assumption): colors at `text.default`/
+// `text.subdued`/`text.action`, a `text.status.*` group, and `feedback.*` groups
+// keyed `default`. Kept so the palette still resolves an older host theme.
 const RGBA = (r: number, g: number, b: number, a = 1) => ({ buffer: { r, g, b, a } });
 
 const mockTheme = {
@@ -63,8 +65,6 @@ const mockTheme = {
       error: RGBA(1, 0.1, 0.1),
       warning: RGBA(1, 0.7, 0.1),
     },
-    // feedback.* are color groups: the usable fg is `.default`, `.subdued` the
-    // muted variant. Passing the group object as fg renders white.
     feedback: {
       success: { default: RGBA(0, 1, 0), subdued: RGBA(0, 0.5, 0) },
       error: { default: RGBA(1, 0, 0), subdued: RGBA(0.5, 0, 0) },
@@ -73,8 +73,48 @@ const mockTheme = {
   },
 };
 
+// Current host theme shape (v2.0.15, binary-verified): `text.base`/`text.muted`,
+// `text.feedback.*.base` groups, `text.action` as a group, and running from
+// `hue.interactive[200]`.
+const realTheme = {
+  hue: { interactive: { 200: RGBA(0.3, 0.5, 1) } },
+  text: {
+    base: RGBA(0.9, 0.9, 0.9),
+    muted: RGBA(0.5, 0.5, 0.5),
+    action: {
+      primary: { base: RGBA(0.85, 0.85, 0.85), focused: RGBA(0.8, 0.8, 0.8) },
+      secondary: { base: RGBA(0.5, 0.5, 0.5) },
+    },
+    feedback: {
+      success: { base: RGBA(0, 1, 0) },
+      error: { base: RGBA(1, 0, 0) },
+      warning: { base: RGBA(1, 0.6, 0) },
+      info: { base: RGBA(0, 1, 1) },
+    },
+  },
+};
+
 describe("palette", () => {
-  test("resolves the real 2.0.2 tokens by presence", () => {
+  test("resolves the current host tokens (base/muted/feedback.base/hue.interactive)", () => {
+    const p = palette(realTheme);
+    expect(p.primary).toBe(realTheme.hue.interactive[200]);
+    expect(p.success).toBe(realTheme.text.feedback.success.base);
+    expect(p.error).toBe(realTheme.text.feedback.error.base);
+    expect(p.warning).toBe(realTheme.text.feedback.warning.base);
+    expect(p.textDefault).toBe(realTheme.text.base);
+    expect(p.textMuted).toBe(realTheme.text.muted);
+  });
+
+  test("never returns a color group as fg (current shape)", () => {
+    const p = palette(realTheme);
+    for (const v of [p.primary, p.success, p.error, p.warning, p.textDefault, p.textMuted]) {
+      expect(isColorValueForTest(v)).toBe(true);
+    }
+    expect(p.success).not.toBe(realTheme.text.feedback.success);
+    expect(p.primary).not.toBe(realTheme.text.action.primary);
+  });
+
+  test("still resolves the legacy shape", () => {
     const p = palette(mockTheme);
     expect(p.primary).toBe(mockTheme.text.status.running);
     expect(p.success).toBe(mockTheme.text.feedback.success.default);
@@ -84,7 +124,7 @@ describe("palette", () => {
     expect(p.textMuted).toBe(mockTheme.text.subdued);
   });
 
-  test("reads the .default member of each feedback color group, never the group", () => {
+  test("reads the member of each feedback color group, never the group", () => {
     const p = palette(mockTheme);
     expect(p.success).toBe(mockTheme.text.feedback.success.default);
     expect(p.success).not.toBe(mockTheme.text.feedback.success);
@@ -95,9 +135,9 @@ describe("palette", () => {
   });
 
   test("passes the raw RGBA value through unchanged (no string coercion)", () => {
-    const p = palette(mockTheme);
+    const p = palette(realTheme);
     expect(typeof p.primary).toBe("object");
-    expect(p.primary).toBe(mockTheme.text.status.running);
+    expect(p.primary).toBe(realTheme.hue.interactive[200]);
   });
 
   test("degrades through candidates, never to a hex string", () => {
@@ -116,6 +156,16 @@ describe("palette", () => {
     for (const v of Object.values(p)) expect(v).toBeUndefined();
   });
 });
+
+// Mirrors variants' internal color check for assertions on resolved values.
+function isColorValueForTest(v: unknown): boolean {
+  if (typeof v === "string") return v.length > 0;
+  if (typeof v === "object" && v !== null) {
+    const o = v as Record<string, unknown>;
+    return "buffer" in o || "intent" in o || "rgb" in o || ("r" in o && "g" in o && "b" in o);
+  }
+  return false;
+}
 
 describe("cellWidth", () => {
   test("cellWidth halves the content minus indent", () => {

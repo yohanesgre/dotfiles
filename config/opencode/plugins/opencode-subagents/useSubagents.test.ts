@@ -279,6 +279,46 @@ describe("descendantsFromClient", () => {
       { id: "a1", depth: 2 },
     ]);
   });
+
+  test("recovers from the cached adjacency when every server source rejects", async () => {
+    const client = {
+      v2: {
+        session: {
+          list: async () => {
+            throw new Error("v2 down");
+          },
+        },
+      },
+      session: {
+        children: async () => {
+          throw new Error("v1 down");
+        },
+      },
+    };
+    const infos: Info[] = [
+      { id: "a", parentID: "root", time: { created: 1 } },
+      { id: "a1", parentID: "a", time: { created: 2 } },
+    ];
+    const res = await descendantsFromClient(client, fakeData(infos), "root");
+    expect(res.fetchedAny).toBe(false);
+    expect(res.listCount).toBe(2);
+    expect(res.failures).toBe(0);
+    expect(res.ids).toEqual([
+      { id: "a", depth: 1 },
+      { id: "a1", depth: 2 },
+    ]);
+  });
+
+  test("tolerates a throwing list in the no-source path", async () => {
+    const data = fakeData();
+    data.session.list = () => {
+      throw new Error("cache down");
+    };
+    const res = await descendantsFromClient(undefined, data, "root");
+    expect(res.listCount).toBe(0);
+    expect(res.ids).toEqual([]);
+    expect(res.failures).toBe(0);
+  });
 });
 
 describe("seedFromList / seedFromCache", () => {

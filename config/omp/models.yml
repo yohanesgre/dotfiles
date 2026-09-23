@@ -1,0 +1,16 @@
+providers:
+  gmi-cloud:
+    baseUrl: https://api.gmi-serving.com/v1
+    api: openai-completions
+    apiKey: GMI_API_KEY
+    models:
+      - id: MiniMaxAI/MiniMax-M3
+        name: MiniMax M3 (gmi)
+        reasoning: true
+        contextWindow: 1000000
+        maxTokens: 131072
+      - id: MiniMaxAI/MiniMax-M2.7
+        name: MiniMax M2.7 (gmi)
+        reasoning: true
+        contextWindow: 196608
+        maxTokens: 131072

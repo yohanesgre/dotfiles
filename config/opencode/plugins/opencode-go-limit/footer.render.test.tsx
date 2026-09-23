@@ -27,10 +27,17 @@ function stubContext(): GoUsageContext {
       },
     },
     theme: {
-      success: "#7fd88f",
-      warning: "#e0af68",
-      error: "#f7768e",
-      text: { default: "#eeeeee", muted: "#808080" },
+      hue: { interactive: { 200: "#4dabf7" } },
+      text: {
+        base: "#eeeeee",
+        muted: "#808080",
+        action: { primary: { base: "#eeeeee" } },
+        feedback: {
+          success: { base: "#7fd88f" },
+          warning: { base: "#e0af68" },
+          error: { base: "#f7768e" },
+        },
+      },
     },
   };
 }
