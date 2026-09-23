@@ -38,6 +38,11 @@ config/nvim/lazyvim.json
 # externalized skills installed per project (upstream-managed, never commit)
 .agents/skills/
 skills-lock.json
+# exception: hand-authored project overrides ARE committed (e.g. git-workflow)
+!.agents/skills/
+.agents/skills/*
+!.agents/skills/git-workflow/
+!.agents/skills/git-workflow/**
 
 # local-only skill artifacts: design specs + work-plan tracking (never commit)
 .agents/brainstorm-studio/
