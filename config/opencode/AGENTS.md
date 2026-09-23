@@ -42,7 +42,7 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 - After `icm_memory_store`, check the response for conflict candidates — resolve them via `icm_feedback_record` (record the correction with subject/type/reasoning/evidence).
 - Use `icm_transcript_start_session` / `icm_memory_store` to register session lifecycle; `icm_wake_up` before session end to preserve state for the next session.
 - Topic convention: `{kind}-{project}` (e.g. `decision-dotfiles`, `pattern-lexa`). Memos (`icm_memoir_*`) for structured knowledge with references.
-- **ALWAYS update `~/.config/opencode/CONFIGURATION.md` after any configuration change** (opencode.jsonc, agent files, MCP servers, plugins, AGENTS.md, etc.). Keep it in sync with the current state. Verify changed configs parse (JSON/YAML validation).
+- **ALWAYS update `~/.config/opencode/CONFIGURATION.md` after any configuration change** (opencode.jsonc, agent files, MCP servers, plugins, AGENTS.md, etc.). Keep it in sync with the current state, and append a dated entry (newest first) to `~/projects/dotfiles/docs/configuration-changelog.md` — dated entries do not go into CONFIGURATION.md. Verify changed configs parse (JSON/YAML validation).
 - **AFTER updating local config, compare with `~/projects/dotfiles/`** — sync changes to the dotfiles repo so they don't drift. Key files: `config/opencode/opencode.jsonc`, `config/opencode/agents/`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`.
 
 ## Tool Selection
