@@ -4,6 +4,14 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — icm MCP → plugin tools + icm-http warm daemon
+
+- Removed the `icm` MCP entry; `config/opencode/plugins/icm.ts` now registers 31 tools under the `icm` namespace with unchanged exposed ids.
+- Added the `icm-http` systemd user service (`icm serve --http 127.0.0.1:11435`) and split heavy semantic work over HTTP from cheap CLI work. One warm embedding model replaces duplicate per-client models, reducing repeated model loads and CPU use.
+- Files: `config/opencode/{opencode.jsonc,plugins/icm.ts,AGENTS.md,CONFIGURATION.md}`, `home/modules/opencode/default.nix`, this file.
+- Verified: service active; `/health` reports `{"status":"ok","has_embedder":true}`; scratch smoke passed all 6 endpoints; live plugin calls returned 1,987 memories and 15 topics.
+- Restart OpenCode to unload the removed MCP entry; live `~/.config/opencode/opencode.jsonc` already matches the repo.
+
 > 2026-09-24 — **Dead config weight + full engram removal (user-approved).** Deleted dead weight: `config/opencode/skills/` (empty dir, never mapped — nix can't materialize empty dirs), stock `config/nvim/lua/plugins/example.lua`, unused `config/nvim/.neoconf.json` (no neoconf consumer plugin). Purged engram integration entirely: `config/engram/` (config.json), `home/modules/engram/` + its `home/common.nix` import, go-install block in `home/modules/manual/default.nix` (module now a no-op stub) and `scripts/install-manual.sh`, engram MCP entries in `config/omp/mcp.json` + `config/opencode/opencode.jsonc` (3 MCPs left: icm, codegraph, jev-mcp), live docs (`CONFIGURATION.md` MCP table/tree/sample/key note, `README.md` layout, `home/modules/{packages,omp,pacman}` comments, `config/zsh/path.zsh` PATH comment, `config/skills/swe/SKILL.md` layering note). System: `~/.local/bin/engram` removed; `~/.engram/engram.db` (20M user data) kept. Files: those above + `docs/research/engram-replacement.md` (status note), this file.
 
 > 2026-09-24 — jev review follow-up (F3/F4): designer's unscoped `edit` allow documented as prompt/skill-enforced (design-artifact boundary binding; a project may narrow the envelope in its own config); architect's `execute` allow documented as Code Mode-only (no fs/process; codegraph MCP) so the read-only claim holds. No permission semantics changed — clarity only. Jev pre-fix: designer gap 0.72 yes; architect execute 0.78 yes. Files: `config/opencode/agents/{designer,architect}.md`, this file.

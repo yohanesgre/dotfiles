@@ -15,7 +15,7 @@ Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fall
 Built-in tools: `read`, `glob`, `grep`, `edit`, `write`, `shell`, `webfetch`, `websearch`, `question`, `skill`, `subagent`, `execute`.
 
 - **Subagent delegation uses the `subagent` tool** — `subagent(agent, description, prompt, background?)`. Set `background: true` for async; pass the returned `sessionID` to continue that child. V2 has no `task()` or `delegate()`.
-- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.icm.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools["jev-mcp"].<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
+- **MCP, plugin, and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.icm.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools["jev-mcp"].<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
 - **Shell runs through the `shell` tool** — set `workdir` instead of `cd`; prefer the `rtk` token-optimized prefix.
 
 ## Caveman Mode — Output Compression

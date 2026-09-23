@@ -124,6 +124,25 @@
     fi
   '';
 
+  # Shared warm embedding daemon for the icm OpenCode plugin tools (icm.ts):
+  # `icm serve --http` loads the embedding model + SQLite store once and keeps
+  # them warm across requests. The plugin routes heavy semantic ops
+  # (store/recall/consolidate/stats/topics/health) to this daemon and shells out
+  # to the `icm` CLI for cheap/occasional ops — replacing the old `icm` MCP server.
+  systemd.user.services.icm-http = {
+    Unit = {
+      Description = "ICM HTTP daemon — shared warm embedding model for OpenCode plugin tools";
+    };
+    Service = {
+      ExecStart = "%h/.local/bin/icm serve --http 127.0.0.1:11435";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
   home.activation.opencodeSyncTools = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     if [ ! -e "$HOME/.config/opencode/tools/image.py" ]; then
       mkdir -p "$HOME/.config/opencode/tools"

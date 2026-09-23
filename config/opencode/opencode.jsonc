@@ -27,7 +27,10 @@
   },
   "mcp": {
     "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },
-    "icm": { "command": ["icm", "serve"], "enabled": true, "type": "local" },
+    // icm is no longer an MCP server (2026-09-24): its tools are registered by
+    // config/opencode/plugins/icm.ts under the `icm` namespace, backed by the
+    // `icm-http` systemd user service (home/modules/opencode/default.nix) and
+    // the `icm` CLI. Same exposed tool names (`icm_memory_*`, `icm_wake_up`, ...).
     // jev-mcp — TypeSafe Jev typed decision layer (diff review gate, change risk,
     // requirement check, coding-loop routing). Binary: `jev-mcp` (bun global,
     // home/modules/upstream). Live judgments require TYPESAFE_API_KEY; without it
