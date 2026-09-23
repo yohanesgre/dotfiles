@@ -4,7 +4,7 @@
   "default_agent": "build",
   "agents": {
     "build": { "mode": "all" },
-    "explore": { "model": "opencode-go/mimo-v2.5#none" }
+    "explore": { "model": "opencode-go/mimo-v2.6-flash#none" }
   },
   "lsp": true,
   "compaction": { "auto": true, "buffer": 10000 },
@@ -15,7 +15,7 @@
   "providers": {
     "opencode-go": {
       "models": {
-        "mimo-v2.5": {
+        "mimo-v2.6-flash": {
           "variants": [
             { "id": "none", "settings": { "reasoningEffort": "none" } },
             { "id": "low", "settings": { "reasoningEffort": "low" } },

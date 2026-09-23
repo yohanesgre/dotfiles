@@ -1,7 +1,7 @@
 ---
 description: 'Repo steward agent — routine, non-behavioral repo upkeep. Use PROACTIVELY and ALWAYS for: any repo status/health check (git status, dirty tree, ahead/behind, "is it clean"), validation/gate runs (validate.sh, flake check, lint/test/build), docs-sync drift (README/CONFIGURATION.md/AGENTS.md), repo hygiene, release chores (changelog/version/tag), and dependency bumps. Delegate even a single trivial-looking check — never run git/validate/docs-scan inline in the primary. Conservative: commits only when explicitly asked, never pushes unprompted; behavior changes go to swe.'
 mode: subagent
-model: opencode-go/mimo-v2.5#low
+model: opencode-go/mimo-v2.6-flash#low
 steps: 40
 permissions:
   - action: "*"
@@ -31,16 +31,13 @@ permissions:
   - action: skill
     resource: "*"
     effect: allow
-  - action: engram_mem_search
+  - action: icm_memory_*
     resource: "*"
     effect: allow
-  - action: engram_mem_context
+  - action: icm_wake_up
     resource: "*"
     effect: allow
-  - action: engram_mem_get_observation
-    resource: "*"
-    effect: allow
-  - action: engram_mem_save
+  - action: icm_feedback_*
     resource: "*"
     effect: allow
   - action: webfetch

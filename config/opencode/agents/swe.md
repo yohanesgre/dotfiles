@@ -31,16 +31,13 @@ permissions:
   - action: skill
     resource: "*"
     effect: allow
-  - action: engram_mem_search
+  - action: icm_memory_*
     resource: "*"
     effect: allow
-  - action: engram_mem_context
+  - action: icm_wake_up
     resource: "*"
     effect: allow
-  - action: engram_mem_get_observation
-    resource: "*"
-    effect: allow
-  - action: engram_mem_save
+  - action: icm_feedback_*
     resource: "*"
     effect: allow
   - action: codegraph_*

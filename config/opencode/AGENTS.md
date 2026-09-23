@@ -15,7 +15,7 @@ Invoke: native `skill` tool first (use skill ID from `<available_skills>`). Fall
 Built-in tools: `read`, `glob`, `grep`, `edit`, `write`, `shell`, `webfetch`, `websearch`, `question`, `skill`, `subagent`, `execute`.
 
 - **Subagent delegation uses the `subagent` tool** — `subagent(agent, description, prompt, background?)`. Set `background: true` for async; pass the returned `sessionID` to continue that child. V2 has no `task()` or `delegate()`.
-- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.icm.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
+- **MCP and browser tools are Code Mode namespaces** — reach them through `execute`: `tools.icm.<tool>(...)`, `tools.codegraph.<tool>(...)`, `tools["jev-mcp"].<tool>(...)`, `tools.browser.<tool>(...)`. They are not directly callable tools.
 - **Shell runs through the `shell` tool** — set `workdir` instead of `cd`; prefer the `rtk` token-optimized prefix.
 
 ## Caveman Mode — Output Compression
@@ -34,7 +34,7 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 
 **Off:** "stop caveman" or "normal mode" reverts to normal speech.
 
-**Subagents inherit this mandate.** Most custom agents (`~/.config/opencode/agents/*.md`) carry caveman output rules in their prompts — exception: `reviewer`, which runs full prose because compression drops the nuance findings need (`caveman` skill denied on that agent). When delegating via `subagent`, include in the prompt: "Reply caveman-compressed: findings only, no filler, no process narration" — except when delegating to `reviewer`. Subagent reports enter main context — a yappy subagent costs twice (its output + your reading of it); reviewer is the deliberate exception.
+**Subagents inherit this mandate.** Most custom agents (`~/.config/opencode/agents/*.md`) carry caveman output rules in their prompts — exceptions: `reviewer` (full prose, because compression drops the nuance findings need; `caveman` skill denied on that agent) and `vision` (compressed prose that keeps transcriptions verbatim — never truncates UI labels, chart values, or requested text). When delegating via `subagent`, include in the prompt: "Reply caveman-compressed: findings only, no filler, no process narration" — except when delegating to `reviewer` or `vision`. Subagent reports enter main context — a yappy subagent costs twice (its output + your reading of it); reviewer is the deliberate exception.
 
 ## Memory
 - At session start: `icm_wake_up` to load recent session history and project context. Use `icm_memory_recall` for topic lookups across sessions.
@@ -42,7 +42,7 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 - After `icm_memory_store`, check the response for conflict candidates — resolve them via `icm_feedback_record` (record the correction with subject/type/reasoning/evidence).
 - Use `icm_transcript_start_session` / `icm_memory_store` to register session lifecycle; `icm_wake_up` before session end to preserve state for the next session.
 - Topic convention: `{kind}-{project}` (e.g. `decision-dotfiles`, `pattern-lexa`). Memos (`icm_memoir_*`) for structured knowledge with references.
-- **ALWAYS update `~/.config/opencode/CONFIGURATION.md` after any configuration change** (opencode.json, slim agents, MCP servers, plugins, AGENTS.md, etc.). Keep it in sync with the current state. Verify changed configs parse (JSON/YAML validation).
+- **ALWAYS update `~/.config/opencode/CONFIGURATION.md` after any configuration change** (opencode.jsonc, agent files, MCP servers, plugins, AGENTS.md, etc.). Keep it in sync with the current state. Verify changed configs parse (JSON/YAML validation).
 - **AFTER updating local config, compare with `~/projects/dotfiles/`** — sync changes to the dotfiles repo so they don't drift. Key files: `config/opencode/opencode.jsonc`, `config/opencode/agents/`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`.
 
 ## Tool Selection
@@ -52,7 +52,7 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 - **Spawn `researcher` subagents with disjoint scopes.** Partition research into non-overlapping workstreams (no shared files/dirs/symbols/questions/sources); overlap wastes work and yields conflicting merges. Multiple parallel `researcher` subagents are correct when their scopes are disjoint — foreground calls issued together, or `background: true` only when the session continues and joins them. A single workstream gets exactly one researcher, and that researcher fans out read-only `explore` children foreground (never background) and merges before reporting (leaf-only; no recursion); split a workstream only when it exceeds one researcher's context/step budget. A single cheap lookup stays inline; strictly dependent lookups stay inside one researcher.
 - Codebase-exploration prompt: name the project, the exact question, known `qualified_name`s/paths, and the evidence expected (`path:line` + snippet). researcher routes internally: locate → `explorer`, trace → `call-graph`, structure/impact → codegraph.
 - Web-research prompt: state the library + pinned version, the exact question, and the source expectation (versioned official docs first). researcher fetches; never invent APIs.
-- **Every routine upkeep chore MUST route to `steward` — never `swe`.** Git lifecycle (status/stage/commit/branch/worktree/stash), docs sync (README/CONFIGURATION.md/AGENTS.md drift), repo hygiene (format, .gitignore, temp cleanup), release chores (changelog/version/tag), dependency bumps, and gate runs (lint/test/build) all go to `steward` on the cheap `mimo-v2.5`; only application-behavior changes go to `swe`/`designer`. **This includes read-only and trivial-looking checks**: a bare `git status`, "is the tree clean", "do the checks pass", "any docs drifted" MUST be delegated to `steward` — never run git/validate/docs-scan inline in the primary, even when the answer is one line.
+- **Every routine upkeep chore MUST route to `steward` — never `swe`.** Git lifecycle (status/stage/commit/branch/worktree/stash), docs sync (README/CONFIGURATION.md/AGENTS.md drift), repo hygiene (format, .gitignore, temp cleanup), release chores (changelog/version/tag), dependency bumps, and gate runs (lint/test/build) all go to `steward` on the cheap `mimo-v2.6-flash`; only application-behavior changes go to `swe`/`designer`. **This includes read-only and trivial-looking checks**: a bare `git status`, "is the tree clean", "do the checks pass", "any docs drifted" MUST be delegated to `steward` — never run git/validate/docs-scan inline in the primary, even when the answer is one line.
 - For planning a feature or refactor before implementation, use `architect` agent.
 - For UI/styling work, delegate to `designer` agent.
 
@@ -95,12 +95,12 @@ Query the codegraph index instead of re-grepping/re-reading files. Structural qu
 |----------|-------|--------|
 | Bounded implementation (feature/bugfix) | `swe` | Bash-first, test-driven minimal fixes |
 | Repo status/health check (even a single `git status` / "is it clean" / "do checks pass" / docs drift) | `steward` | Trivial-looking checks still delegate; primary never runs git/validate/docs-scan inline |
-| Git lifecycle (status/stage/commit/branch/worktree/stash) | `steward` | Cheap `mimo-v2.5`; keeps implementer tokens for `swe` |
-| Docs sync (README/CONFIGURATION.md/AGENTS.md drift) | `steward` | Cheap `mimo-v2.5`; non-behavior |
-| Repo hygiene (format, .gitignore, temp cleanup) | `steward` | Cheap `mimo-v2.5`; non-behavior |
-| Release chores (changelog/version/tag) | `steward` | Cheap `mimo-v2.5`; commits only when asked |
-| Dependency bumps | `steward` | Cheap `mimo-v2.5`; non-behavior |
-| Gate runs (lint/test/build) | `steward` | Cheap `mimo-v2.5`; no behavior change |
+| Git lifecycle (status/stage/commit/branch/worktree/stash) | `steward` | Cheap `mimo-v2.6-flash`; keeps implementer tokens for `swe` |
+| Docs sync (README/CONFIGURATION.md/AGENTS.md drift) | `steward` | Cheap `mimo-v2.6-flash`; non-behavior |
+| Repo hygiene (format, .gitignore, temp cleanup) | `steward` | Cheap `mimo-v2.6-flash`; non-behavior |
+| Release chores (changelog/version/tag) | `steward` | Cheap `mimo-v2.6-flash`; commits only when asked |
+| Dependency bumps | `steward` | Cheap `mimo-v2.6-flash`; non-behavior |
+| Gate runs (lint/test/build) | `steward` | Cheap `mimo-v2.6-flash`; no behavior change |
 | Multi-file bug / complex debugging | `swe` + `architect` | Plan first, then execute |
 | Vague idea / concept | `architect` | Structured exploration before code |
 | Feature planning / refactor >50 lines | `architect` | Phased plans with verify gates |
