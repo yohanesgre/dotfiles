@@ -46,10 +46,11 @@ export function subagentStatus(info: {
   outcome?: "succeeded" | "failed" | "interrupted";
   status: "idle" | "running";
 }): SubagentStatus {
+  if (info.status === "running") return "running";
   if (info.outcome === "failed") return "error";
   if (info.outcome === "interrupted") return "interrupted";
   if (info.outcome) return "done";
-  return info.status === "running" ? "running" : "idle";
+  return "idle";
 }
 
 export function modelLabel(model?: { providerID: string; id: string; variant?: string }): string {

@@ -576,7 +576,9 @@ describe("subagentStatus", () => {
     expect(subagentStatus({ outcome: "succeeded", status: "idle" })).toBe("done");
     expect(subagentStatus({ outcome: "failed", status: "idle" })).toBe("error");
     expect(subagentStatus({ outcome: "interrupted", status: "idle" })).toBe("interrupted");
-    expect(subagentStatus({ outcome: "failed", status: "running" })).toBe("error");
+    expect(subagentStatus({ outcome: "failed", status: "running" })).toBe("running");
+    expect(subagentStatus({ outcome: "succeeded", status: "running" })).toBe("running");
+    expect(subagentStatus({ outcome: "interrupted", status: "running" })).toBe("running");
   });
 
   test("statusStyle colours interrupted with the warning token", () => {
