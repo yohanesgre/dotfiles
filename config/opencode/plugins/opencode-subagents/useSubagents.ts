@@ -23,12 +23,13 @@ interface Data {
   };
 }
 
-// Descendant discovery hits the server; the TUI `data.session` layer is
-// SSE-cached only (empty after a service restart). 2.0.2 exposes
-// `v2.session.list({ parentID })`, the generated name for
-// GET /api/session?parentID; `session.children` is the V1 shim and
-// `data.session.list()` the final adjacency fallback when neither function
-// exists.
+// Descendant discovery prefers the generated HTTP client, but the TUI
+// `data.session` layer (SSE-cached, empty after a service restart) is the only
+// verified surface: REDESIGN.md records that `client.v2` and
+// `client.session.children` do NOT exist on 2.0.2. The client sources are
+// probed in order (`v2.session.list`, then the V1 shim `session.children`);
+// when none exists, or every probe rejects, the whole-list
+// `data.session.list()` adjacency is used instead.
 interface Client {
   v2?: {
     session?: {
@@ -124,6 +125,17 @@ function childList(res: unknown): SessionInfo[] {
   );
 }
 
+// The SSE-cached list is the only verified discovery surface; a missing or
+// throwing list() degrades to [] rather than failing hydration.
+function safeList(data: Data): SessionInfo[] {
+  try {
+    const list = data.session.list();
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+
 export interface ChildrenSource {
   name: "v2.session.list" | "session.children";
   fetch: (parentID: string) => Promise<unknown>;
@@ -193,7 +205,7 @@ export async function descendantsFromClient(
 ): Promise<WalkResult> {
   const sources = clientChildrenSources(client);
   if (sources.length === 0) {
-    const list = data.session.list();
+    const list = safeList(data);
     return {
       ids: descendantsFromList(data, sessionID, list),
       failures: 0,
@@ -223,6 +235,21 @@ export async function descendantsFromClient(
     }
   };
   await walk(sessionID, 1);
+  // Every server source rejected: recover from the cached adjacency instead of
+  // surfacing an error void, since data.session.list() is the verified surface.
+  // A recovered walk reports zero failures so it does not paint a false
+  // partial-sync footer.
+  if (!fetchedAny) {
+    const list = safeList(data);
+    if (list.length > 0) {
+      return {
+        ids: descendantsFromList(data, sessionID, list),
+        failures: 0,
+        fetchedAny: false,
+        listCount: list.length,
+      };
+    }
+  }
   return { ids: out, failures, lastError, fetchedAny, listCount: 0 };
 }
 

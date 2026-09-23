@@ -14,6 +14,9 @@ if [ -z "$PLAN" ]; then
   echo "usage: plan-check.sh <plan>"
   exit 2
 fi
+case "$PLAN" in
+  *[!a-z0-9-]*) echo "plan-check: invalid plan name '$PLAN' (want [a-z0-9-])" >&2; exit 2 ;;
+esac
 
 DIR="status/$PLAN"
 [ -f "$DIR/plan.md" ] || { bad "$DIR/plan.md missing"; }
@@ -24,13 +27,19 @@ if [ -f "$DIR/plan.md" ]; then
 fi
 
 if [ -f "$DIR/status.md" ]; then
-  LINES="$(wc -l < "$DIR/status.md")"
+  LINES="$(awk 'END{print NR}' "$DIR/status.md")"
   [ "$LINES" -eq 3 ] && ok "status.md is 3 lines" || bad "status.md is $LINES lines, want 3"
   for key in state ts msg; do
     grep -q "^$key:" "$DIR/status.md" && ok "status.md has $key" || bad "status.md missing $key"
   done
-  if grep -q "^state: DONE" "$DIR/status.md"; then
-    [ -f "$DIR/report.md" ] && ok "DONE has report.md" || bad "DONE without report.md"
+  STATE="$(sed -n 's/^state:[[:space:]]*//p' "$DIR/status.md" | head -1 | tr -d '\r' | sed 's/[[:space:]]*$//')"
+  case "$STATE" in
+    PLAN|WAIT|WORKING|DONE|FAILED) ok "status.md state valid: $STATE" ;;
+    "") bad "status.md has no state value" ;;
+    *) bad "status.md state '$STATE' not in PLAN|WAIT|WORKING|DONE|FAILED" ;;
+  esac
+  if [ "$STATE" = "DONE" ] || [ "$STATE" = "FAILED" ]; then
+    [ -f "$DIR/report.md" ] && ok "$STATE has report.md" || bad "$STATE without report.md"
   fi
 fi
 
@@ -52,7 +61,7 @@ if [ -d "$DIR/lanes" ]; then
     ok "lanes dir empty (none dispatched yet)"
   else
     for lane in "${LANES[@]}"; do
-      LINES="$(wc -l < "$lane")"
+      LINES="$(awk 'END{print NR}' "$lane")"
       [ "$LINES" -eq 3 ] && ok "lane $(basename "$lane") is 3 lines" || bad "lane $(basename "$lane") is $LINES lines, want 3"
     done
   fi

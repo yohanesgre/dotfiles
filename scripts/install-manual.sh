@@ -56,13 +56,25 @@ fi
 info "installing/updating rtk (rtk-ai)..."
 curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh 2>&1 || warn "rtk install/update failed"
 
-# herdr: herdrdev — official installer (`herdr update` only works on direct installs)
-if is_upstream herdr; then
-  info "updating herdr..."
-  herdr update 2>&1 || warn "herdr update failed"
+# luvus: RizRiyz/luvus — official installer (replaces herdr). LUVUS_INSTALL_DIR is
+# pinned to ~/.local/bin so the installer never picks a writable /usr/local/bin.
+info "installing/updating luvus (RizRiyz)..."
+curl -fsSL https://luvus.dev/install.sh | LUVUS_INSTALL_DIR="$HOME/.local/bin" sh 2>&1 || warn "luvus install/update failed"
+
+# omp: oh-my-pi — bun global install (bin: omp; config via home/modules/omp)
+if [ -x "$HOME/.bun/bin/bun" ]; then
+  info "installing/updating omp (oh-my-pi)..."
+  "$HOME/.bun/bin/bun" install -g --trust @oh-my-pi/pi-coding-agent@latest 2>&1 || warn "omp install/update failed"
 else
-  info "installing herdr (herdrdev)..."
-  curl -fsSL https://herdr.dev/install.sh | sh 2>&1 || warn "herdr install failed"
+  warn "bun missing — skipping omp"
+fi
+
+# jev-mcp: TypeSafe Jev MCP server for OpenCode (bin: jev-mcp)
+if [ -x "$HOME/.bun/bin/bun" ]; then
+  info "installing/updating jev-mcp (TypeSafe)..."
+  "$HOME/.bun/bin/bun" install -g --trust jev-mcp@latest 2>&1 || warn "jev-mcp install/update failed"
+else
+  warn "bun missing — skipping jev-mcp"
 fi
 
 # opencode via bun (see home/modules/opencode): always install -g --trust = install or update.

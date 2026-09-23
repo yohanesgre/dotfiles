@@ -14,8 +14,10 @@
   # - rtk: nix 0.45.0 vs upstream v0.48.0 (2026-09-04) — 3 releases behind.
   # - codegraph: colbymchenry/codegraph — bun global install (OpenCode MCP); reinstalled
   #   on every switch.
-  # - herdr: nix 0.8.2 == upstream stable today, but `herdr update` self-update
-  #   only works on direct installs (Nix installs must update via Nix).
+  # - luvus: RizRiyz/luvus — official installer, replaces herdr (2026-09-23);
+  #   re-running the installer updates the direct install in ~/.local/bin.
+  # - omp: oh-my-pi — bun global install (config declarative via home/modules/omp).
+  # - jev-mcp: TypeSafe Jev MCP server (OpenCode MCP entry; bin in ~/.bun/bin).
   # - icm: rtk-ai/icm — official installer bundles the ONNX runtime, so
   #   semantic search works out of the box (no extra model/runtime setup).
   # Stable CLI (git/curl/jq/rg/fd/fzf/bat/eza/zoxide/nodejs/go/neovim/tmux)
@@ -99,13 +101,45 @@
     fi
     curl -fsSL https://raw.githubusercontent.com/rtk-ai/icm/main/install.sh | sh -s -- --version icm-v0.10.63 2>&1 || warn "icm install/update failed (continuing)"
 
-    # herdr: herdrdev/herdr — official installer (https://herdr.dev/install.sh).
-    if is_upstream herdr; then
-      info "updating herdr..."
-      herdr update 2>&1 || warn "herdr update failed (continuing)"
+    # luvus: RizRiyz/luvus — official installer (https://luvus.dev/install.sh).
+    # Replaces herdr as the agent multiplexer (2026-09-23). LUVUS_INSTALL_DIR is
+    # pinned: the installer prefers /usr/local/bin whenever that is writable, which
+    # would drop the binary outside the user profile and outside is_upstream's
+    # ~/.local/bin convention. Re-running the installer = update (same as rtk/icm);
+    # `luvus update` also self-updates this direct install.
+    if is_upstream luvus; then
+      info "updating luvus..."
     else
-      info "installing herdr (herdrdev)..."
-      curl -fsSL https://herdr.dev/install.sh | sh 2>&1 || warn "herdr install failed (continuing)"
+      info "installing luvus (RizRiyz)..."
+    fi
+    curl -fsSL https://luvus.dev/install.sh | LUVUS_INSTALL_DIR="$HOME/.local/bin" sh 2>&1 || warn "luvus install/update failed (continuing)"
+
+    # omp: oh-my-pi — bun global install (bin: omp). Config is declarative
+    # (home/modules/omp copies ~/.omp/agent from config/omp); the binary comes
+    # from upstream like opencode, since nixpkgs has no oh-my-pi package.
+    if [ -x "$HOME/.bun/bin/bun" ]; then
+      if is_upstream omp; then
+        info "updating omp..."
+      else
+        info "installing omp (oh-my-pi)..."
+      fi
+      "$HOME/.bun/bin/bun" install -g --trust @oh-my-pi/pi-coding-agent@latest 2>&1 || warn "omp install/update failed (continuing)"
+    else
+      warn "bun missing — skipping omp"
+    fi
+
+    # jev-mcp: TypeSafe Jev decision layer as an MCP server (OpenCode MCP entry in
+    # config/opencode/opencode.jsonc; bin: jev-mcp). Live judgments need
+    # TYPESAFE_API_KEY (see .env.toml.example).
+    if [ -x "$HOME/.bun/bin/bun" ]; then
+      if is_upstream jev-mcp; then
+        info "updating jev-mcp..."
+      else
+        info "installing jev-mcp (TypeSafe)..."
+      fi
+      "$HOME/.bun/bin/bun" install -g --trust jev-mcp@latest 2>&1 || warn "jev-mcp install/update failed (continuing)"
+    else
+      warn "bun missing — skipping jev-mcp"
     fi
 
     # never block switch

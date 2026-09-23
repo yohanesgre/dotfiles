@@ -1,0 +1,54 @@
+modelRoles:
+  slow: gmi-cloud/MiniMaxAI/MiniMax-M3:high
+  smol: gmi-cloud/MiniMaxAI/MiniMax-M2.7:medium
+  plan: gmi-cloud/MiniMaxAI/MiniMax-M3:high
+  commit: gmi-cloud/MiniMaxAI/MiniMax-M2.7
+  designer: gmi-cloud/MiniMaxAI/MiniMax-M3:high
+  task: gmi-cloud/MiniMaxAI/MiniMax-M2.7:medium
+  advisor: gmi-cloud/MiniMaxAI/MiniMax-M3:high
+  default: opencode-go/deepseek-v4.1-flash
+  vision: gmi-cloud/MiniMaxAI/MiniMax-M2.7:medium
+  tiny: gmi-cloud/MiniMaxAI/MiniMax-M2.7
+task:
+  agentModelOverrides:
+    task: gmi-cloud/MiniMaxAI/MiniMax-M3:high
+  maxConcurrency: 4
+  maxRecursionDepth: 2
+  defaultIsolation: worktree
+setupVersion: 2
+hideThinkingBlock: false
+theme:
+  dark: dark
+composer:
+  shape: band
+  tokenRate: true
+statusLine:
+  preset: nerd
+  separator: powerline
+  contextLine: embedded
+  sessionAccent: true
+  transparent: false
+  compactThinkingLevel: true
+  showHookStatus: true
+tui:
+  textSizing: false
+  resizeScrollback: rebuild
+omitThinking: false
+retry:
+  fallbackChains:
+    slow:
+      - openrouter/stealth/ox-alpha
+    plan:
+      - openrouter/stealth/ox-alpha
+    designer:
+      - openrouter/stealth/ox-alpha
+    advisor:
+      - openrouter/stealth/ox-alpha
+defaultThinkingLevel: auto
+display:
+  shimmer: classic
+bash:
+  enabled: true
+providers:
+  maxInFlightRequests:
+    {}

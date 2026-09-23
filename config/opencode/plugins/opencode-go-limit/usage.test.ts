@@ -5,9 +5,12 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   createUsageClient,
+  decodeConsoleStatus,
   decodeUsage,
   keySource,
   readKey,
+  resolveAuth,
+  type Auth,
   type GoUsage,
   type UsageError,
 } from "./usage";
@@ -18,6 +21,45 @@ const PAYLOAD = {
     weekly: { status: "rate-limited", percent: 100, resetsAt: "2026-09-14T00:00:00.261Z" },
     monthly: { status: "ok", percent: 80, resetsAt: "2026-09-26T16:04:38.261Z" },
   },
+};
+
+const CONSOLE_PAYLOAD = {
+  access: {
+    startsAt: "2026-08-26T16:04:02.000Z",
+    endsAt: "2026-09-26T16:04:02.000Z",
+    meters: {
+      fiveHour: {
+        startsAt: "2026-09-23T14:50:19.478Z",
+        resetsAt: "2026-09-23T19:50:19.478Z",
+        limitMicroCents: "1200000000",
+        usedMicroCents: "5214303",
+      },
+      week: {
+        startsAt: "2026-09-21T00:00:00.000Z",
+        resetsAt: "2026-09-28T00:00:00.000Z",
+        limitMicroCents: "3000000000",
+        usedMicroCents: "76402613",
+      },
+      month: { limitMicroCents: "6000000000", usedMicroCents: "4933070664" },
+    },
+  },
+};
+
+const CONSOLE_SERVER = "https://opencode.ai/console";
+
+const OAUTH_DB_ROW: CredentialRow = {
+  id: "c-oauth",
+  integration_id: "opencode",
+  label: "OpenCode Console",
+  value: JSON.stringify({
+    type: "oauth",
+    methodID: "device",
+    access: "st_oauth",
+    refresh: "rt_oauth",
+    expires: 1792751374590,
+    metadata: { server: CONSOLE_SERVER, orgID: "wrk_1" },
+  }),
+  active: 1,
 };
 
 function isErr(value: GoUsage | UsageError): value is UsageError {
@@ -417,5 +459,199 @@ describe("createUsageClient", () => {
     await client.fetchUsage("k");
     await client.fetchUsage("k");
     expect(f.calls()).toBe(2);
+  });
+});
+
+describe("decodeConsoleStatus", () => {
+  test("maps micro-cent meters to the three windows", () => {
+    const result = decodeConsoleStatus(CONSOLE_PAYLOAD);
+    expect(isErr(result)).toBe(false);
+    const usage = result as GoUsage;
+    expect(usage.rolling.percent).toBe(0);
+    expect(usage.weekly.percent).toBe(3);
+    expect(usage.monthly.percent).toBe(82);
+    expect(usage.rolling.status).toBe("ok");
+    expect(usage.rolling.resetsAt).toBe("2026-09-23T19:50:19.478Z");
+  });
+
+  test("monthly falls back to access.endsAt when resetsAt is absent", () => {
+    const usage = decodeConsoleStatus(CONSOLE_PAYLOAD) as GoUsage;
+    expect(usage.monthly.resetsAt).toBe("2026-09-26T16:04:02.000Z");
+  });
+
+  test("full meter derives rate-limited", () => {
+    const body = {
+      access: {
+        endsAt: "2026-09-26T16:04:02.000Z",
+        meters: {
+          fiveHour: { resetsAt: "r", limitMicroCents: "100", usedMicroCents: "100" },
+          week: { resetsAt: "r", limitMicroCents: "100", usedMicroCents: "50" },
+          month: { limitMicroCents: "100", usedMicroCents: "0" },
+        },
+      },
+    };
+    const usage = decodeConsoleStatus(body) as GoUsage;
+    expect(usage.rolling.status).toBe("rate-limited");
+    expect(usage.rolling.percent).toBe(100);
+    expect(usage.weekly.percent).toBe(50);
+  });
+
+  test("rejects malformed bodies", () => {
+    for (const body of [
+      undefined,
+      null,
+      {},
+      { access: {} },
+      { access: { meters: {} } },
+      { access: { meters: { fiveHour: {}, week: {}, month: {} } } },
+      { access: { meters: { fiveHour: { limitMicroCents: "0", usedMicroCents: "0" }, week: { limitMicroCents: "1", usedMicroCents: "0" }, month: { limitMicroCents: "1", usedMicroCents: "0" } } } },
+      "nope",
+    ]) {
+      const result = decodeConsoleStatus(body);
+      expect(isErr(result)).toBe(true);
+      expect((result as UsageError).kind).toBe("BadSchema");
+    }
+  });
+});
+
+describe("resolveAuth", () => {
+  test("no credentials -> undefined", () => {
+    withTempDir((dir) => {
+      expect(resolveAuth({ XDG_DATA_HOME: dir })).toBeUndefined();
+    });
+  });
+
+  test("active DB opencode-go key resolves to apiKey", () => {
+    withTempDir((dir) => {
+      writeDb(dir, [ACTIVE_DB_ROW]);
+      expect(resolveAuth({ XDG_DATA_HOME: dir })).toEqual({ kind: "apiKey", key: "db-key" });
+    });
+  });
+
+  test("active DB opencode oauth resolves to oauth with server and org", () => {
+    withTempDir((dir) => {
+      writeDb(dir, [OAUTH_DB_ROW]);
+      expect(resolveAuth({ XDG_DATA_HOME: dir })).toEqual({
+        kind: "oauth",
+        access: "st_oauth",
+        server: CONSOLE_SERVER,
+        orgID: "wrk_1",
+      });
+      expect(keySource({ XDG_DATA_HOME: dir })).toBe("db:oauth");
+      expect(readKey({ XDG_DATA_HOME: dir })).toBeUndefined();
+    });
+  });
+
+  test("DB opencode-go key outranks DB oauth", () => {
+    withTempDir((dir) => {
+      writeDb(dir, [ACTIVE_DB_ROW, OAUTH_DB_ROW]);
+      expect(resolveAuth({ XDG_DATA_HOME: dir })).toEqual({ kind: "apiKey", key: "db-key" });
+      expect(keySource({ XDG_DATA_HOME: dir })).toBe("db");
+    });
+  });
+
+  test("auth.json opencode oauth uses the default server", () => {
+    withTempDir((dir) => {
+      writeAuth(dir, { opencode: { type: "oauth", access: "st_file" } });
+      expect(resolveAuth({ XDG_DATA_HOME: dir })).toEqual({
+        kind: "oauth",
+        access: "st_file",
+        server: CONSOLE_SERVER,
+        orgID: undefined,
+      });
+      expect(keySource({ XDG_DATA_HOME: dir })).toBe("auth:opencode-oauth");
+    });
+  });
+
+  test("inactive DB oauth is ignored", () => {
+    withTempDir((dir) => {
+      writeDb(dir, [{ ...OAUTH_DB_ROW, active: 0 }]);
+      expect(resolveAuth({ XDG_DATA_HOME: dir })).toBeUndefined();
+    });
+  });
+});
+
+describe("createUsageClient oauth", () => {
+  const auth: Auth = {
+    kind: "oauth",
+    access: "st_oauth",
+    server: CONSOLE_SERVER,
+    orgID: "wrk_1",
+  };
+
+  test("calls the console status endpoint with bearer and org header", async () => {
+    let seenUrl: string | undefined;
+    let seenHeaders: Record<string, string> | undefined;
+    const f = fakeFetch((input, init) => {
+      seenUrl = String(input);
+      seenHeaders = init?.headers as Record<string, string>;
+      return jsonResponse(CONSOLE_PAYLOAD);
+    });
+    const client = createUsageClient({ fetch: f.fetch, retries: 0, sleep: async () => {} });
+    const result = await client.fetchUsage(auth);
+    expect(isErr(result)).toBe(false);
+    expect(seenUrl).toBe(`${CONSOLE_SERVER}/api/go/status`);
+    expect(seenHeaders?.Authorization).toBe("Bearer st_oauth");
+    expect(seenHeaders?.["x-org-id"]).toBe("wrk_1");
+  });
+
+  test("server trailing slash is normalized", async () => {
+    let seenUrl: string | undefined;
+    const f = fakeFetch((input) => {
+      seenUrl = String(input);
+      return jsonResponse(CONSOLE_PAYLOAD);
+    });
+    const client = createUsageClient({ fetch: f.fetch, retries: 0, sleep: async () => {} });
+    await client.fetchUsage({ ...auth, server: `${CONSOLE_SERVER}/` });
+    expect(seenUrl).toBe(`${CONSOLE_SERVER}/api/go/status`);
+  });
+
+  test("omits x-org-id when org is unknown", async () => {
+    let seenHeaders: Record<string, string> | undefined;
+    const f = fakeFetch((_input, init) => {
+      seenHeaders = init?.headers as Record<string, string>;
+      return jsonResponse(CONSOLE_PAYLOAD);
+    });
+    const client = createUsageClient({ fetch: f.fetch, retries: 0, sleep: async () => {} });
+    await client.fetchUsage({ kind: "oauth", access: "st_oauth", server: CONSOLE_SERVER });
+    expect(seenHeaders?.["x-org-id"]).toBeUndefined();
+  });
+
+  test("401 -> AuthError without retry", async () => {
+    const f = fakeFetch(() => new Response(null, { status: 401 }));
+    const client = createUsageClient({ fetch: f.fetch, retries: 3, sleep: async () => {} });
+    expect(await client.fetchUsage(auth)).toEqual({ kind: "AuthError" });
+    expect(f.calls()).toBe(1);
+  });
+
+  test("404 -> Entitlement without retry", async () => {
+    const f = fakeFetch(() => new Response(null, { status: 404 }));
+    const client = createUsageClient({ fetch: f.fetch, retries: 3, sleep: async () => {} });
+    expect(await client.fetchUsage(auth)).toEqual({ kind: "Entitlement" });
+    expect(f.calls()).toBe(1);
+  });
+
+  test("apiKey 404 stays Network", async () => {
+    const f = fakeFetch(() => new Response(null, { status: 404 }));
+    const client = createUsageClient({ fetch: f.fetch, retries: 3, sleep: async () => {} });
+    const result = await client.fetchUsage("k");
+    expect(isErr(result) && result.kind).toBe("Network");
+  });
+
+  test("oauth single-flight is keyed by access token", async () => {
+    let release: (() => void) | undefined;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const f = fakeFetch(async () => {
+      await gate;
+      return jsonResponse(CONSOLE_PAYLOAD);
+    });
+    const client = createUsageClient({ fetch: f.fetch, retries: 0, sleep: async () => {} });
+    const first = client.fetchUsage(auth);
+    const second = client.fetchUsage({ ...auth });
+    release?.();
+    await Promise.all([first, second]);
+    expect(f.calls()).toBe(1);
   });
 });

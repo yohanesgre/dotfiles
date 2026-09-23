@@ -298,16 +298,21 @@ within existing nodes.
   - Session fields present: `id`, `parentID`, `agent`, `model`, `cost`,
     `tokens{input,output,reasoning,cache{read,write}}`, `outcome`, `time{created,updated,idle,viewed}`, `title`, `location.directory`.
 
-### Reading the live sidebar from an agent (herdr)
+### Reading the live sidebar from an agent (luvus)
 
 The TUI is a full-screen app; capture it via the pane, then isolate the right
 column:
 
 ```sh
-herdr pane zoom <pane> --on
-herdr pane read <pane> --source visible --lines 60 --format text > /tmp/x.txt
+luvus pane read <pane> --lines 60 > /tmp/x.txt
 # sidebar is the right ~38 columns; slice and print with markers
 ```
+
+Caveat (verified 2026-09-23, luvus 0.14.2): `luvus pane read` returns empty
+text when no client is attached to render that pane, so the capture only works
+from inside an attached session. `luvus search <text>` and
+`luvus wait output <pane> --match <text>` work headless and are the better
+inspection primitives.
 
 `opencode api get /api/session` returns `{data:[...], cursor}`, which is the
 cheapest way to verify what the plugin's `data.session.list()` will see.

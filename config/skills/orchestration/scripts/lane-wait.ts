@@ -1,15 +1,16 @@
 #!/usr/bin/env bun
 /**
- * lane-wait.ts — reactive wait for a herdr lane's persisted return file.
+ * lane-wait.ts — reactive wait for a luvus lane's persisted return file.
  *
- *   bun ~/.agents/skills/goal/scripts/lane-wait.ts <return-file> [timeout-ms]
+ *   bun ~/.agents/skills/orchestration/scripts/lane-wait.ts <return-file> [timeout-ms]
  *
- * A `/goal` lane runs foreground in its own pane (the user watches live
+ * An orchestration lane runs foreground in its own pane (the user watches live
  * progress there) and the pane persists at DONE. Completion is still a
  * durable artifact, not scrollback: the runner writes the lane
  * report/output to `<return-file>.tmp` and atomically renames it onto
- * `<return-file>` as the LAST step — so the file's appearance can only
- * mean real completion. This script waits for that file (bounded 200ms
+ * `<return-file>` as the LAST step — so the file's appearance means the
+ * runner finished (its `rc=` line carries real completion: `rc=0` ok,
+ * `rc!=0` failed). This script waits for that file (bounded 200ms
  * poll + Effect timeout) and prints its contents on success.
  *
  * Exit 0 = return file appeared (+ elapsed, contents printed), 1 = timeout,

@@ -4,5 +4,6 @@
   },
   "tabs": {
     "layout": "horizontal"
-  }
+  },
+  "plugins": ["./luvus-v2"]
 }

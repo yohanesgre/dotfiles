@@ -7,7 +7,6 @@
 {
   xdg.configFile."opencode/opencode.jsonc".source = ../../../config/opencode/opencode.jsonc;
   xdg.configFile."opencode/AGENTS.md".source = ../../../config/opencode/AGENTS.md;
-  xdg.configFile."opencode/cli.json".source = ../../../config/opencode/cli.json;
   xdg.configFile."opencode/CONFIGURATION.md".source = ../../../config/opencode/CONFIGURATION.md;
   xdg.configFile."opencode/agents".source = ../../../config/opencode/agents;
   xdg.configFile."opencode/agents".recursive = true;
@@ -26,6 +25,20 @@
     echo "opencode: installing/updating @opencode/cli@latest via bun (global)..."
     "$BUN_BIN" install -g --trust @opencode/cli@latest || echo "opencode: bun install -g failed (continuing)"
     mkdir -p "$HOME/.bun/bin"
+  '';
+
+  # cli.json is the TUI config, and it is NOT read-only: `luvus integration install
+  # opencode` rewrites it to register its TUI plugin (./luvus-v2). A /nix/store
+  # symlink would be replaced by a real file on that write, and the next switch
+  # would then move the real file to .backup — churn every time. Copy instead
+  # (cmp-guarded, dotfiles win), same pattern as the plugins below.
+  home.activation.opencodeSyncCliJson = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    SRC="$HOME/projects/dotfiles/config/opencode/cli.json"
+    DST="$HOME/.config/opencode/cli.json"
+    if [ -f "$SRC" ] && { [ ! -f "$DST" ] || ! cmp -s "$SRC" "$DST"; }; then
+      $DRY_RUN_CMD cp -f "$SRC" "$DST"
+      echo "opencode: synced cli.json"
+    fi
   '';
 
   # Plugin must be real mutable files (not nix-store symlinks): bun resolves
@@ -48,6 +61,7 @@
       fi
       rm -rf "$DST"
       cp -a "$SRC" "$DST"
+      rm -rf "$DST/node_modules" "$DST/bun.lock"
       if [ "$HAD_NODE_MODULES" = 1 ]; then
         mv "$NODE_MODULES_TMP" "$DST/node_modules"
       fi

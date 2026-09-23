@@ -16,6 +16,8 @@
     ./modules/terminal/ghostty.nix
     ./modules/env
     ./modules/opencode
+    ./modules/omp
+    ./modules/luvus
     ./modules/engram
     ./modules/neovim
     ./modules/nix

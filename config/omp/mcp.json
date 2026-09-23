@@ -1,0 +1,28 @@
+{
+  "$schema": "https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/src/config/mcp-schema.json",
+  "mcpServers": {
+    "engram": {
+      "type": "stdio",
+      "command": "engram",
+      "args": ["mcp", "--tools=agent"],
+      "enabled": true
+    },
+    "codegraph": {
+      "type": "stdio",
+      "command": "codegraph",
+      "args": ["serve", "--mcp"],
+      "env": {
+        "CODEGRAPH_TELEMETRY": "0",
+        "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000"
+      },
+      "timeout": 120000,
+      "enabled": true
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "bun",
+      "args": ["x", "@playwright/mcp"],
+      "enabled": true
+    }
+  }
+}
