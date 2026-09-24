@@ -4,7 +4,7 @@
   "default_agent": "build",
   "agents": {
     "build": { "mode": "all" },
-    "explore": { "model": "opencode-go/space-bunny-free", "steps": 12 }
+    "explore": { "model": "opencode-go/space-bunny-free#low", "steps": 12 }
   },
   "lsp": true,
   "compaction": { "auto": true, "buffer": 10000 },
@@ -20,6 +20,11 @@
             { "id": "none", "settings": { "reasoningEffort": "none" } },
             { "id": "low", "settings": { "reasoningEffort": "low" } },
             { "id": "medium", "settings": { "reasoningEffort": "medium" } }
+          ]
+        },
+        "space-bunny-free": {
+          "variants": [
+            { "id": "low", "settings": { "reasoningEffort": "low" } }
           ]
         }
       }

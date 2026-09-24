@@ -13,6 +13,15 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 - Files: `config/opencode/agents/researcher.md`, `config/opencode/opencode.jsonc`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`, this file.
 - Applied via `scripts/hm-switch.sh` (exit 0); live symlinks verified (`researcher` steps 16, `explore` steps 12). Takes effect on new subagent sessions.
 
+## 2026-09-24 — compressed thinking: steward + explore #low (bunny)
+
+- `space-bunny-free` (reasoning-capable per catalog) gains a custom `low` reasoning-effort variant in `opencode.jsonc` (`providers.opencode-go.models.space-bunny-free.variants`; array form). `none` was tried first and is **rejected upstream** (`invalid_request_error`) — not defined.
+- Pins: `steward` → `opencode-go/space-bunny-free#low`; built-in `explore` → `opencode-go/space-bunny-free#low` (via `agents.explore.model`). `researcher` stays on the default variant — extended thinking kept by request; all other agent pins unchanged.
+- Smoke (`opencode run --standalone`, fresh config): `#none` → upstream `invalid_request_error`; `#low` → clean `OK`. Identical trivial prompt: default variant 221 reasoning tokens vs `#low` 7; prior live `explore` children on the default variant burned 26-30k reasoning tokens each — the compression target.
+- Real-task `explore` smoke post-switch (`#low`, steps 12): repo-wide grep task returned 6/6 hits matching an independent grep, `tokens_reasoning` 14.
+- Why: user request — speed for the mechanical/search agents; reasoning tokens add TTFT with no quality need.
+- Files: `config/opencode/{opencode.jsonc,agents/steward.md,CONFIGURATION.md}`, this file.
+
 ## 2026-09-24 — fastfetch: logo top aligned with first text row
 
 - `logo.padding.top` 1 → 3 so the kitty image's first row lands on the `user@host` title row (the module list starts with three blank rows).
