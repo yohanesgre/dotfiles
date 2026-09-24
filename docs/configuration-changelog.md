@@ -4,6 +4,13 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — wired upstream tracking: --report + hardened --wired
+
+- `scripts/skills-sync.sh --wired --report` (new): shallow-clones each wired upstream, compares against the committed copy (ignoring `.openskills.json`, normalizing the `hidden: true` strip) and prints a per-skill drift table (`same | behind | local-mods | missing-upstream`) with upstream sha/date. Read-only; never npx; exit 0. `--report` without `--wired` exits 2.
+- `--wired` writer hardened: skips `local-mods` skills unless `--force`; strips `.openskills.json` after copy; records `upstream_sha` + `upstream_imported` on the source entry after a refresh. Usage header updated. `config/skills/frontend-design/.openskills.json` removed (install artifact).
+- First live report: same=7, behind=3 (finishing-a-development-branch, systematic-debugging, test-driven-development), local-mods=16, missing-upstream=0. Conservative default: upstream rewordings since import count as local-mods, so all refreshes stay review-gated.
+- Verified: `bash scripts/validate.sh` + `bash scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0 (48 skills). No commit.
+
 ## 2026-09-24 — dropped extract-design-system
 
 - Removed `config/skills/extract-design-system` on user request (unused; wired copy from arvindrk/extract-design-system, upstream idle since 2026-06-19). `sources.json`: source re-scoped `wired` → `dropped` with a reinstall note; `keep` 45→44; `updated` bumped. CONFIGURATION.md inventory 44 dirs (18 local, 26 wired); designer routing row removed; stale `~/.agents/skills/extract-design-system` symlink removed.
