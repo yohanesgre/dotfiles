@@ -4,6 +4,15 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — researcher/explore depth + speed pass (nested fan-out)
+
+- `researcher`: `steps` 40 → 16; answer-first budget added (stop at the first evidence-complete answer; no broad sweeps, no re-verification, no extra context). Fan-out tightened: ≤2 independent codebase lookups stay inline; `explore` children only for ≥3 independent lookups, cap 3 → 2 children per run, one wave only (incomplete children become reported gaps, never a second wave); child prompts carry a quick-pass budget (answer exactly this question, ≤~6 tool calls, stop at the first complete answer, terse `path:line` report).
+- Built-in `explore` (config `agents.explore`): `steps: 12` added — hard cap for nested children. `subagent_depth` stays 3: depth 2 would reject `explore` itself (`depth >= limit`; top-level session 0, child 1, `explore` 2) and 3 already blocks depth-3 spawns.
+- `AGENTS.md`: delegation caps updated (≤2 `explore` children per fan-out, ≥3-lookup fan-out threshold, quick-pass child budget, one-wave rule); codebase-exploration prompt template gains the depth budget.
+- Why: user request — researcher/explore nested sessions too slow/too deep. Model pins unchanged (`opencode-go/space-bunny-free`).
+- Files: `config/opencode/agents/researcher.md`, `config/opencode/opencode.jsonc`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`, this file.
+- Applied via `scripts/hm-switch.sh` (exit 0); live symlinks verified (`researcher` steps 16, `explore` steps 12). Takes effect on new subagent sessions.
+
 ## 2026-09-24 — fastfetch: logo top aligned with first text row
 
 - `logo.padding.top` 1 → 3 so the kitty image's first row lands on the `user@host` title row (the module list starts with three blank rows).
