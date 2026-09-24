@@ -115,7 +115,7 @@ File count is a hint, never a gate — classify on contract surface.
 
 ## Phase 1 — Deepen (design before protocol)
 
-- UI/surface work → `design-graph`: draw Surface<C,V,N> first. C =
+- UI/surface work → `design-thinking`: draw Surface<C,V,N> first. C =
   happy-path content flow, V = void states
   (empty/loading/partial/error/denied), N = needs
   (data/permission/prior-step/viewport).

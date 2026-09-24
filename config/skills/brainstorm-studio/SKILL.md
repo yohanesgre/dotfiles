@@ -115,7 +115,7 @@ The design you present is the graph, not prose about it. Follow the `design-thin
 Route by material before drawing:
 
 - **Any logic that must be correct** (backend, API, data flow, algorithm, state machine, pipeline, error handling, tests) → load `design-thinking`; draw the happy-path graph (A), break points (E), and requirements (R).
-- **Interface surfaces** (screen, layout, user flow, empty/error states) → load `design-graph`; draw surfaces with their content flow (C), void states (V), and needs (N) — C/V/N is A/E/R turned on the interface.
+- **Interface surfaces** (screen, layout, user flow, empty/error states) → load `design-thinking`; draw surfaces with their content flow (C), void states (V), and needs (N) — C/V/N is A/E/R turned on the interface.
 - **Multi-step work or delegation** (subagents, parallel waves) → draw the task graph per `design-thinking`'s graph-protocol.
 - **"How does X work / what calls X / trace a flow"** → load `call-graph`.
 

@@ -1,6 +1,6 @@
 ---
 name: call-graph
-description: 'Answer how-it-works, caller/callee, request-path, execution-flow, and architecture-trace questions with a verified plain-text hierarchical call graph in a `ts` fence (two-space-indented `→` children, path:line evidence per node). Trigger on "how does X work", "what calls X", "where does X go", trace, flow, upstream/downstream; Indonesian: "gimana cara kerja X", "siapa manggil X", "alur/request path/trace". Do NOT graph trivial single facts (ports, versions, simple definitions, text edits, rename-only). Part of the r17x graph-first paradigm; to draw a design/flow graph before coding use `design-thinking` / `design-graph`.'
+description: 'Answer how-it-works, caller/callee, request-path, execution-flow, and architecture-trace questions with a verified plain-text hierarchical call graph in a `ts` fence (two-space-indented `→` children, path:line evidence per node). Trigger on "how does X work", "what calls X", "where does X go", trace, flow, upstream/downstream; Indonesian: "gimana cara kerja X", "siapa manggil X", "alur/request path/trace". Do NOT graph trivial single facts (ports, versions, simple definitions, text edits, rename-only). Part of the r17x graph-first paradigm; to draw a design/flow graph before coding use `design-thinking`.'
 ---
 
 # Call Graph

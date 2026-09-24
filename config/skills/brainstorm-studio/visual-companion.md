@@ -2,7 +2,7 @@
 
 Browser-based visual brainstorming companion for showing mockups, diagrams, design graphs, and options.
 
-The companion is a **surface the user walks**, not a folder of pages. Design it with the graph method (`design-graph`, Surface<C,V,N>): content flow (**C**), void states (**V**), needs (**N**). The frame is the constant; screens flow through it. If the frame can render a state this guide cannot name, the interface is lying.
+The companion is a **surface the user walks**, not a folder of pages. Design it with the graph method (`design-thinking`, Surface<C,V,N>): content flow (**C**), void states (**V**), needs (**N**). The frame is the constant; screens flow through it. If the frame can render a state this guide cannot name, the interface is lying.
 
 ## The Graph
 

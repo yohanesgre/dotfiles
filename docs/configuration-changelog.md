@@ -4,6 +4,13 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — design-graph folded back into design-thinking
+
+- Merged per Jev review (`docs/reviews/skills-review-2026-09-24.md`; `jev_ask` A_fold 0.62, merge flagged by both triage passes). `design-graph` was promoted to a standalone skill on 2026-09-08 for independent auto-discovery; 48h usage was 0 invocations / 0 direct reads and the promotion rationale no longer held (0.26).
+- `references/design-graph.md` (138 lines) moved under `config/skills/design-thinking/`; design-thinking's router gains the interface row and its description absorbs the UI triggers (screens/components/layouts/user flows, Surface<C,V,N>, Indonesian UI phrases); `call-graph` stays standalone.
+- Dependents updated: `designer` (+evals README), `brainstorm-studio`, `goal`, `call-graph` description, `orchestration` note, `sources.json` keep (46→45), CONFIGURATION.md inventory (45 dirs; 18 local, 27 wired; 2 r17x). Stale `~/.agents/skills/design-graph` symlink removed.
+- Verified: `bash scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0 (49 skills). No commit.
+
 ## 2026-09-24 — jev as the background triage layer (scripts/tools + subagent waves)
 
 - `AGENTS.md` § Jev gains a background-work block: (1) *dispatch* — prefer one `jev_ask` over a proposed background wave with the Parallel Execution Checklist as checks (disjoint files, independent outputs, self-contained prompts; non-interactive + safe-unattended for scripts/tools); a failing check is a signal to fix/serialize/foreground, never a block; (2) *script/tool output* — redirect background runs to `.tmp/<name>.log`, then `jev_triage` the log as a `path` item (`failed` / `needs_action`) on completion or mid-run to decide wait/intervene/kill, pulling only the flagged tail into context; (3) *subagent reports* — write-capable background children write the full report to `.tmp/<name>.md` and reply with only path + one-line status; the parent triages the report before reading it (read-only children keep the inline report; § Caveman Mode exceptions apply). § Parallel Execution Checklist now names the checklist as the default `jev_ask` pack for a wave.

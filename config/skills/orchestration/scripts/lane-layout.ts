@@ -5,7 +5,7 @@
  *   bun lane-layout.ts --anchor <orchestrator-pane> --lanes '<json>' \
  *       [--master-ratio 0.34] [--max-per-tab 6] [--dry-run]
  *
- * Shape (design-graph, variant C):
+ * Shape (design-thinking, variant C):
  *   ┌─────────────┬───────────────────────────┐
  *   │             │ lane 1                    │
  *   │ ORCHESTRATOR├───────────────────────────┤

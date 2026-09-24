@@ -212,7 +212,7 @@ WAIT + re-dispatch). luvus agent kinds name backends, not roles — the role tra
 in the brief. If no fitting agent exists, keep the lane WAIT and report the
 gap; never invent an agent name.
 
-Layout (design-graph variant C, built once per wave by
+Layout (design-thinking variant C, built once per wave by
 `scripts/lane-layout.ts`): the orchestrator keeps a fixed left master column
 at full height; lanes tile a balanced grid to the right (target tile aspect
 ~2:1), never a widening row of skinny columns. luvus exposes no pane

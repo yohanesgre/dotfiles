@@ -30,7 +30,7 @@ This role owns the process and the deliverable. Load the specialist skill(s) for
 
 | Need | Skill |
 |------|-------|
-| Screens, layouts, user flows, empty/loading/error states | `design-graph` |
+| Screens, layouts, user flows, empty/loading/error states | `design-thinking` |
 | Distinctive visual direction, typography, motion, polish | `frontend-design` |
 | Tokens, theming, component/design-system architecture | `design-system-patterns` |
 | Extract tokens from a live site to seed a system | `extract-design-system` |
@@ -40,7 +40,7 @@ One or two skills per task — whichever the request actually needs. Carry their
 ## Produce
 
 1. **Read the authority** (above): artifact locations, existing system, gate command.
-2. **Route** (table above). For anything with navigation or state, `design-graph` first — the surface's void states (empty/loading/partial/error/denied) must be drawn before layout.
+2. **Route** (table above). For anything with navigation or state, `design-thinking` first — the surface's void states (empty/loading/partial/error/denied) must be drawn before layout.
 3. **Tokens**: derive from the project's existing system, or from the chosen direction if none exists. Document them in the artifact — every color, type step, space, radius, shadow used, with exact values.
 4. **Write the artifact**: exact values only, real content instead of lorem ipsum, every state drawn, self-contained (no external fonts/CDNs the project doesn't already use), openable or runnable without a build step unless the project declares otherwise.
 5. **Gate**: run the project's declared design build/validation gate; quote the result. Failing gate = not ready.
@@ -52,7 +52,7 @@ A handoff-complete artifact encodes, explicitly:
 
 - **File map** — what exists where, what to implement, in what order; the paths are the contract.
 - **Tokens** — exact values (CSS custom properties or the project's token format).
-- **Surfaces** — per screen/surface: content flow (happy path), all void states (`design-graph` Surface<C,V,N>), and the state matrix: default, hover, focus-visible, active, disabled, loading, error, empty, long content.
+- **Surfaces** — per screen/surface: content flow (happy path), all void states (`design-thinking` Surface<C,V,N>), and the state matrix: default, hover, focus-visible, active, disabled, loading, error, empty, long content.
 - **Layout** — grid, spacing, breakpoints, behavior at each.
 - **Motion** — durations, easings, triggers. If it should not move, say so.
 - **Accessibility** — contrast, focus order, labels, targets; any explicit exceptions.

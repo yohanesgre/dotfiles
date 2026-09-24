@@ -68,7 +68,7 @@ Mapping assertions to checks (eval-0):
    new skill.
 7. No implementation edits — `sha256sum -c .control/pre.sha` in the run copy;
    both lanes should pass (control).
-8. Graph vocabulary — cites `design-graph` / `Surface<C,V,N>` / void states.
+8. Graph vocabulary — cites `design-thinking` / `Surface<C,V,N>` / void states.
 
 Measured results (2026-09-11, one run per lane, inline verbatim skill text):
 
