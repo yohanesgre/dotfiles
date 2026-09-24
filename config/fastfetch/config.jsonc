@@ -1,133 +1,73 @@
-
 {
-// Theme adapted from HyprFlux (MIT) — github.com/ahmad9059/HyprFlux (colors mapped to Tokyo Night hexes, de row added, fixes)
-"$schema": "https://raw.githubusercontent.com/fastfetch-cli/fastfetch/2.68.1/doc/json_schema.json",
-"logo": {
- "source": "~/.config/fastfetch/logo.png",
- "type": "kitty",
- "height": 18,
- "width": 38,
-"padding": {
-"top": 1
-}
-},
-"display": {
-"separator": " 󰑃  "
-},
-"modules": [
+  // Preset: LierB/fastfetch "full-info" (github.com/LierB/fastfetch) — every module.
+  // Previous theme kept as hyprflux.jsonc (switch back by swapping the two files).
+  "$schema": "https://raw.githubusercontent.com/fastfetch-cli/fastfetch/2.68.1/doc/json_schema.json",
+  "logo": {
+    "source": "~/.config/fastfetch/logo.png",
+    "type": "kitty",
+    "height": 18,
+    "width": 38,
+    "padding": {
+      "top": 1
+    }
+  },
+  "modules": [
+    "title",
+    "separator",
+    "os",
+    "host",
+    "bios",
+    "board",
+    "chassis",
+    "kernel",
+    "uptime",
+    "processes",
+    "packages",
+    "shell",
+    "display",
+    "brightness",
+    "monitor",
+    "lm",
+    "de",
+    "wm",
+    "wmtheme",
+    "theme",
+    "icons",
+    "font",
+    "cursor",
+    "wallpaper",
+    "terminal",
+    "terminalfont",
+    "terminalsize",
+    "terminaltheme",
+    "cpu",
+    "cpuusage",
+    "gpu",
+    "memory",
+    "swap",
+    "disk",
+    "battery",
+    "poweradapter",
+    "player",
+    "media",
+    "publicip",
+    "localip",
+    "wifi",
+    "datetime",
+    "locale",
+    "vulkan",
+    "opengl",
+    "opencl",
+    "users",
+    "bluetooth",
+    "sound",
+    "gamepad",
+    "weather",
+    "netio",
+    "diskio",
+    "physicaldisk",
+    "version",
     "break",
-    {
-    "type": "os",
-    "key": " DISTRO",
-    "keyColor": "#E0AF68"
-    },
-    {
-    "type": "kernel",
-    "key": "│ ├",
-    "keyColor": "#E0AF68"
-    },
-    {
-    "type": "packages",
-    "key": "│ ├󰏖",
-    "keyColor": "#E0AF68"
-    },
-    {
-    "type": "shell",
-    "key": "│ └",
-    "keyColor": "#E0AF68"
-    },
-    {
-    "type": "wm",
-    "key": " DE/WM",
-    "keyColor": "#7AA2F7"
-    },
-    {
-    "type": "de",
-    "key": "│ ├󰧨",
-    "keyColor": "#7AA2F7"
-    },
-    {
-    "type": "wmtheme",
-    "key": "│ ├󰉼",
-    "keyColor": "#7AA2F7"
-    },
-    {
-    "type": "icons",
-    "key": "│ ├󰀻",
-    "keyColor": "#7AA2F7"
-    },
-    {
-        "type": "cursor",
-        "key": "│ ├",
-        "keyColor": "#7AA2F7"
-    },
-    {
-        "type": "terminalfont",
-        "key": "│ ├",
-        "keyColor": "#7AA2F7"
-    },
-    {
-    "type": "terminal",
-    "key": "│ └",
-    "keyColor": "#7AA2F7"
-    },
-    {
-    "type": "host",
-    "key": "󰌢 SYSTEM",
-    "keyColor": "#9ECE6A"
-    },
-    {
-    "type": "cpu",
-    "key": "│ ├󰻠",
-    "keyColor": "#9ECE6A"
-    },
-    {
-    "type": "gpu",
-    "key": "│ ├󰻑",
-    "format": "{2}",
-    "keyColor": "#9ECE6A"
-    },
-    {
-            "type": "display",
-    "key": "│ ├󰍹",
-    "keyColor": "#9ECE6A",
-    "compactType": "original-with-refresh-rate"
-    },
-    {
-    "type": "memory",
-    "key": "│ ├󰾆",
-    "keyColor": "#9ECE6A"
-    },
-    {
-    "type": "swap",
-    "key": "│ ├󰓡",
-    "keyColor": "#9ECE6A"
-    },
-    {
-    "type": "uptime",
-    "key": "│ ├󰅐",
-    "keyColor": "#9ECE6A"
-    },
-    {
-    "type": "sound",
-    "key": " AUDIO",
-    "format": "{2}",
-    "keyColor": "#BB9AF7"
-    },
-    {
-    "type": "player",
-    "key": "│ ├󰥠",
-    "keyColor": "#BB9AF7"
-    },
-    {
-    "type": "media",
-    "key": "│ └󰝚",
-    "keyColor": "#BB9AF7"
-    },
-    {
-    "type": "custom",
-    "format": "\u001b[40m  \u001b[41m  \u001b[42m  \u001b[43m  \u001b[44m  \u001b[45m  \u001b[46m  \u001b[47m  \u001b[100m  \u001b[101m  \u001b[102m  \u001b[103m  \u001b[104m  \u001b[105m  \u001b[106m  \u001b[107m  \u001b[0m"
-    },
-    "break"
-    ]
+    "colors"
+  ]
 }

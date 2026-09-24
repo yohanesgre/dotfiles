@@ -1,12 +1,14 @@
 # Jev judgment layer (advisory)
 
 `jev-mcp` is the typed decision layer: `tools["jev-mcp"].*` (`jev_check`,
-`jev_ask`, `jev_triage`, `jev_score`, `jev_classify`) called through
-`execute` (Code Mode — MCP namespace, not shell). When reachable, the
+`jev_ask`, `jev_triage`, `jev_score`, `jev_classify`, `jev_models`) called
+through `execute` (Code Mode — MCP namespace, not shell). When reachable, the
 orchestrator uses it as a cheap, typed pre-filter at three points. It is
 ADVISORY: it never replaces the human execution gate, the `reviewer`
 subagent, CI, or the evidence rule — a jev verdict is never a completion
-signal.
+signal. Direct subagent calls are permission-gated by the nested `jev-mcp_*`
+allow (`architect`/`researcher`/`reviewer`/`swe` since 2026-09-24); the
+primary session is allowed.
 
 - **Gate pre-check.** `jev_check` on the frozen plan (acceptance list +
   wave graph + route + lane models): "internally consistent, correctly

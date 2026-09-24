@@ -4,6 +4,16 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — jev usable frequently: nested `jev-mcp_*` allows + key-file hardening + AGENTS.md cadence
+
+- **Root cause (live-audited):** nested MCP calls are gated twice — outer `execute` (Code Mode) **and** a per-tool allow named `<server>_<tool>`. No custom agent allowed `jev-mcp_*`, so the wildcard deny blocked jev in every subagent even where `execute` was allowed; only the primary session (global `permission: "allow"`) could call it. Plain `jev_*` / `jev_check` actions do not match server `jev-mcp`.
+- **Permissions:** added `- action: jev-mcp_*` to `architect`, `researcher`, `reviewer`, `swe` (after the wildcard deny, alongside `codegraph_*`). `designer` / `steward` / `vision` deliberately excluded (they also lack `execute`).
+- **Key-file hardening:** `home/modules/env` gains `writeTypeSafeKey` — extracts `TYPESAFE_API_KEY` from `.env.toml`, writes `~/.config/typesafe/key` (0600, cmp-guarded) on every switch. The `opencode.jsonc` jev-mcp entry drops its `environment` block: the daemonized service can start with an empty `TYPESAFE_API_KEY`, an empty string is not nullish, and jev-mcp's precedence (`TYPESAFE_API_KEY ?? JEV_API_KEY ?? key file`) means it would win over the file and poison every judgment with an auth error. The same startup-env footgun remains for `browser-use` / `OPENAI_API_KEY` (noted in CONFIGURATION.md).
+- **Cadence:** new AGENTS.md § Jev — frequent cheap typed judgments (`jev_check` one yes/no; `jev_ask` ≤64 questions over ONE shared state in a single request — the batch lever; `jev_triage` ≤50 items, `path` items read server-side, one request per item), triggers (ambiguous decisions, plan/design sanity, pre-commit self-check, diff pre-filter, borderline classification), advisory-only contract (never a completion signal; never replaces reviewer/CI/evidence; skip on error/abstain). `jev-layer.md` gains `jev_models` in the tool list + the subagent-permission note.
+- **Cost/limits** (docs.typesafe.ai, fetched 2026-09-24): $42/B input tokens, output free; 1,200 req/min, 250k tok/s; 64k request context (32k state side); official bench: 13 questions batched = 12.2x cheaper / 10x faster than singles — prefer `jev_ask`.
+- **Verified:** `bash scripts/validate.sh` exit 0 (46 pass / 0 fail / 4 skip); after the switch, a `researcher` subagent called `tools["jev-mcp"].jev_models()` successfully (previously permission-denied); `~/.config/typesafe/key` written 0600 by the activation; primary-session jev OK.
+- Files: `config/opencode/agents/{architect,researcher,reviewer,swe}.md`, `config/opencode/opencode.jsonc`, `config/opencode/{AGENTS.md,CONFIGURATION.md}`, `config/skills/orchestration/references/jev-layer.md`, `home/modules/env/default.nix`, this file.
+
 ## 2026-09-24 — fastfetch theme → adapted HyprFlux
 
 - Replaced the initial hand-rolled config with an adapted HyprFlux theme (910★, MIT, pinned `$schema` 2.68.1).

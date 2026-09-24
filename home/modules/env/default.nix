@@ -77,4 +77,44 @@
         unset _py _out _keys _toml_file _base
         unset -f _load_toml 2>/dev/null || true
   '';
+
+  # jev-mcp reads its key from ~/.config/typesafe/key (its JEV_KEY_FILE default).
+  # Writing it here from .env.toml removes the MCP child's dependency on the
+  # daemonized opencode service inheriting the systemd user env: an empty
+  # TYPESAFE_API_KEY in that env is not nullish, so it would win over the file
+  # and poison every judgment with an auth error. Never echoed to the log.
+  home.activation.writeTypeSafeKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        _py=${pkgs.python3}/bin/python3
+        if ! [ -x "$_py" ]; then _py=python3; fi
+
+        _toml=""
+        for _base in "$HOME/projects/dotfiles" "$HOME"; do
+          if [ -f "$_base/.env.toml" ]; then _toml="$_base/.env.toml"; break; fi
+        done
+
+        if [ -n "$_toml" ]; then
+          _key=$("$_py" - "$_toml" 2>/dev/null <<'PY'
+    import sys, tomllib
+    try:
+        data = tomllib.load(open(sys.argv[1], "rb"))
+    except Exception:
+        sys.exit(0)
+    print(data.get("TYPESAFE_API_KEY", ""))
+    PY
+    )
+          if [ -n "$_key" ]; then
+            _tmp=$(mktemp)
+            printf '%s\n' "$_key" > "$_tmp"
+            if ! cmp -s "$_tmp" "$HOME/.config/typesafe/key" 2>/dev/null; then
+              $DRY_RUN_CMD mkdir -p "$HOME/.config/typesafe"
+              $DRY_RUN_CMD install -m 600 "$_tmp" "$HOME/.config/typesafe/key"
+              echo "env: wrote jev key file ~/.config/typesafe/key (0600)"
+            fi
+            rm -f "$_tmp"
+          else
+            echo "env: TYPESAFE_API_KEY empty in $_toml — key file untouched" >&2
+          fi
+        fi
+        unset _py _toml _key _tmp _base
+  '';
 }

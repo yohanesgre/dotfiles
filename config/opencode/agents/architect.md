@@ -25,6 +25,9 @@ permissions:
   - action: codegraph_*
     resource: "*"
     effect: allow
+  - action: jev-mcp_*
+    resource: "*"
+    effect: allow
   - action: execute
     resource: "*"
     effect: allow
