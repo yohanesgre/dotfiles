@@ -73,9 +73,13 @@ Query the codegraph index instead of re-grepping/re-reading files. Structural qu
 
 - `jev_check` — one yes/no over a state (diff, artifact, plan, decision). Always pass `yes_means`/`no_means`; keep `state` structured and small.
 - `jev_ask` — several typed questions over ONE shared state in one request (≤64): the batch lever — far cheaper and faster than N calls. Prefer it whenever one state answers several questions.
-- `jev_triage` — pre-filter many items (≤50); `path` items are read server-side and never enter your context (use for diffs), `text` items are inline. One upstream request per item.
+- `jev_triage` — pre-filter many items (≤50); `path` items are read server-side and never enter your context (use for diffs, logs, reports), `text` items are inline. Paths must sit below `file_roots` (reported by `jev_triage`; default = the server's working directory — the workspace; paths outside it, e.g. `/tmp`, are refused). One upstream request per item.
 - `jev_classify` / `jev_score` — quick typed routing/scoring. `jev_models` — key/model sanity check.
 - Triggers: ambiguous yes/no calls; design/plan sanity before executing; self-check before claiming done; pre-filtering a diff before `reviewer`; classifying borderline findings. Skip for deterministic facts, arithmetic, formatting, and anything a test decides.
+- **Background work — jev is the default triage path for scripts, tools, and subagent waves (advisory; unavailable/abstain → fall back to the manual checklist):**
+  - *Dispatch*: before dispatching a parallel wave (background or issued together), prefer one `jev_ask` over the proposed batch with the Parallel Execution Checklist as checks (disjoint files? independent outputs? self-contained prompts?) plus "non-interactive and safe unattended?" for script/tool members; for a single command whose safety/interactivity is unclear, one `jev_check` on the command. A failing check is a signal to fix, serialize, or keep foreground; it never blocks the wave by itself.
+  - *Script/tool output*: redirect a background run to a gitignored log in the workspace (`mkdir -p .tmp && <cmd> > .tmp/<name>.log 2>&1`; `/tmp` sits outside the workspace root and is refused). On completion — or mid-run to decide wait/intervene/kill — `jev_triage` the log as a `path` item (`failed` / `needs_action`) and pull only the flagged tail into context. Bound long logs first (`tail -n 200` into a second file): jev reads the whole file, and an oversized item fails rather than truncates (`JEV_MAX_STATE_CHARS`, default 200k chars). Skip when the output is short or you must read it anyway.
+  - *Subagent reports*: background prompts for write-capable agents write the full report to `.tmp/<name>.md` and reply with only the path + one-line status; `jev_triage` that report before reading it. Read-only agents keep the inline report (§ Caveman Mode exceptions apply).
 - Key: `~/.config/typesafe/key` (0600, written from `.env.toml` by the `home/modules/env` activation). Never put the key back into the MCP `environment` block — an empty `{env:...}` value wins over the key file.
 
 ## Code Style
@@ -124,7 +128,7 @@ Query the codegraph index instead of re-grepping/re-reading files. Structural qu
 | Code review before merge | `reviewer` | Adversarial, severity-graded findings |
 
 ### Parallel Execution Checklist
-Before using `subagent` (background) for parallel subagents, verify:
+Before using `subagent` for a parallel wave (background or issued together), verify (the default pack for one `jev_ask` over the proposed wave — § Jev; jev unavailable → verify manually):
 1. Subtasks don't share files (no write conflicts)
 2. Subtasks don't depend on each other's output
 3. Each prompt is self-contained with full context

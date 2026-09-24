@@ -176,7 +176,7 @@ rejection or change request ("gas", "oke", "lanjut", 👍 all count;
 
 ## Jev judgment layer (advisory)
 
-When `jev-mcp` is reachable: a cheap typed pre-filter at the gate, review wave, and pre-merge — ADVISORY only, never replacing the human gate, the `reviewer`, CI, or the evidence rule. Contract: `references/jev-layer.md`.
+When `jev-mcp` is reachable: a cheap typed pre-filter at the gate, background dispatch/return, review wave, and pre-merge — ADVISORY only, never replacing the human gate, the `reviewer`, CI, or the evidence rule. Contract: `references/jev-layer.md`.
 
 ## Phase 4 — Execute (zero questions from here)
 

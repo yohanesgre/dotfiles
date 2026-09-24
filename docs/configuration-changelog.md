@@ -4,14 +4,17 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
-## 2026-09-24 — researcher/explore depth + speed pass (nested fan-out)
+## 2026-09-24 — jev as the background triage layer (scripts/tools + subagent waves)
 
-- `researcher`: `steps` 40 → 16; answer-first budget added (stop at the first evidence-complete answer; no broad sweeps, no re-verification, no extra context). Fan-out tightened: ≤2 independent codebase lookups stay inline; `explore` children only for ≥3 independent lookups, cap 3 → 2 children per run, one wave only (incomplete children become reported gaps, never a second wave); child prompts carry a quick-pass budget (answer exactly this question, ≤~6 tool calls, stop at the first complete answer, terse `path:line` report).
-- Built-in `explore` (config `agents.explore`): `steps: 12` added — hard cap for nested children. `subagent_depth` stays 3: depth 2 would reject `explore` itself (`depth >= limit`; top-level session 0, child 1, `explore` 2) and 3 already blocks depth-3 spawns.
-- `AGENTS.md`: delegation caps updated (≤2 `explore` children per fan-out, ≥3-lookup fan-out threshold, quick-pass child budget, one-wave rule); codebase-exploration prompt template gains the depth budget.
-- Why: user request — researcher/explore nested sessions too slow/too deep. Model pins unchanged (`opencode-go/space-bunny-free`).
-- Files: `config/opencode/agents/researcher.md`, `config/opencode/opencode.jsonc`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`, this file.
-- Applied via `scripts/hm-switch.sh` (exit 0); live symlinks verified (`researcher` steps 16, `explore` steps 12). Takes effect on new subagent sessions.
+- `AGENTS.md` § Jev gains a background-work block: (1) *dispatch* — prefer one `jev_ask` over a proposed background wave with the Parallel Execution Checklist as checks (disjoint files, independent outputs, self-contained prompts; non-interactive + safe-unattended for scripts/tools); a failing check is a signal to fix/serialize/foreground, never a block; (2) *script/tool output* — redirect background runs to `.tmp/<name>.log`, then `jev_triage` the log as a `path` item (`failed` / `needs_action`) on completion or mid-run to decide wait/intervene/kill, pulling only the flagged tail into context; (3) *subagent reports* — write-capable background children write the full report to `.tmp/<name>.md` and reply with only path + one-line status; the parent triages the report before reading it (read-only children keep the inline report; § Caveman Mode exceptions apply). § Parallel Execution Checklist now names the checklist as the default `jev_ask` pack for a wave.
+- `orchestration/references/jev-layer.md`: fourth point — background wave triage at dispatch + return (lanes/children); triage paragraph: artifacts must sit below the server's allowed root (worktree + `.worktrees/` sibling qualify; `/tmp` refused).
+- **Live probe:** `jev_triage` with 3 `path` items — `/tmp/opencode/*.log` → `file_access` errors ("Path is outside the allowed roots"); repo file served; response `file_roots: ["/home/yohanes/projects/dotfiles"]` (server cwd = workspace). The 150-line doc item cost 13.9k input tokens, none entering main context. Model `jev-1.13.0`. Hence the workspace-relative `.tmp/` rule.
+- Jev on the draft: `jev_check` 0.63 uncertain → diagnostic `jev_ask` pack located the flaw (hard-dependency implication 0.70); revised text → advisory 0.15, caveman-conflict 0.19, over-trigger 0.36, dispatch-scope 0.82 (control test pinned `noul` = P(yes): 0.96/0.02).
+- **Optimality follow-up (jev review of the landed change):** `jev_score` 2.05/3 "sound with gaps" (action `review`); `jev_ask` pack flagged stale summary 0.69, unbounded artifact 0.64, coverage 0.74, overhead 0.47. Fixed: `orchestration/SKILL.md:179` summary now lists four points (gate, background dispatch/return, review, pre-merge); long artifacts must be bounded before triage (`tail` — jev reads the file whole; oversized items fail rather than truncate, `JEV_MAX_STATE_CHARS` default 200k chars); dispatch + checklist scope broadened to parallel waves "background or issued together" (file-conflict risk is not background-specific). Block stays in AGENTS.md (overhead 0.47 — not disproportionate).
+- **Reviewer pass (pre-commit):** APPROVE WITH NITS, no SEV — 4 MEDs fixed: `file_roots` is reported by `jev_triage` only (not every call); the redirect needs `mkdir -p .tmp` first (`.tmp/` absent in the repo); the unsourced "64k request context" replaced by the installed-surface cap (`JEV_MAX_STATE_CHARS` 200k chars/item, fail-not-truncate); jev-layer return triage now matches `lane-wait.ts` printing the last ~4000 chars before triage. NITs: dispatch split (wave `jev_ask` pack vs single risky command `jev_check`); caveman exceptions noted for read-only children; lane-artifact rule rephrased to "below the allowed root" (`.worktrees/` sibling qualifies).
+- Diff also carries a pre-existing newest-first reorder of two prior 2026-09-24 entries (content unchanged).
+- **Verified:** `bash scripts/validate.sh` pass (38 pass / 0 fail / 4 skip) both rounds; `bash scripts/hm-switch.sh` exit 0 both rounds; live `~/.config/opencode/AGENTS.md` shows the new text (`default triage path` ×1, `file_roots` ×2, `Bound long logs first` ×1, `parallel wave (background or issued together)` ×2 — dispatch + checklist). Committed in one commit on `main`; no push.
+- Files: `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`, `config/skills/orchestration/{SKILL.md,references/jev-layer.md}`, this file.
 
 ## 2026-09-24 — compressed thinking: steward + explore #low (bunny)
 
@@ -21,6 +24,15 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 - Real-task `explore` smoke post-switch (`#low`, steps 12): repo-wide grep task returned 6/6 hits matching an independent grep, `tokens_reasoning` 14.
 - Why: user request — speed for the mechanical/search agents; reasoning tokens add TTFT with no quality need.
 - Files: `config/opencode/{opencode.jsonc,agents/steward.md,CONFIGURATION.md}`, this file.
+
+## 2026-09-24 — researcher/explore depth + speed pass (nested fan-out)
+
+- `researcher`: `steps` 40 → 16; answer-first budget added (stop at the first evidence-complete answer; no broad sweeps, no re-verification, no extra context). Fan-out tightened: ≤2 independent codebase lookups stay inline; `explore` children only for ≥3 independent lookups, cap 3 → 2 children per run, one wave only (incomplete children become reported gaps, never a second wave); child prompts carry a quick-pass budget (answer exactly this question, ≤~6 tool calls, stop at the first complete answer, terse `path:line` report).
+- Built-in `explore` (config `agents.explore`): `steps: 12` added — hard cap for nested children. `subagent_depth` stays 3: depth 2 would reject `explore` itself (`depth >= limit`; top-level session 0, child 1, `explore` 2) and 3 already blocks depth-3 spawns.
+- `AGENTS.md`: delegation caps updated (≤2 `explore` children per fan-out, ≥3-lookup fan-out threshold, quick-pass child budget, one-wave rule); codebase-exploration prompt template gains the depth budget.
+- Why: user request — researcher/explore nested sessions too slow/too deep. Model pins unchanged (`opencode-go/space-bunny-free`).
+- Files: `config/opencode/agents/researcher.md`, `config/opencode/opencode.jsonc`, `config/opencode/AGENTS.md`, `config/opencode/CONFIGURATION.md`, this file.
+- Applied via `scripts/hm-switch.sh` (exit 0); live symlinks verified (`researcher` steps 16, `explore` steps 12). Takes effect on new subagent sessions.
 
 ## 2026-09-24 — fastfetch: logo top aligned with first text row
 
