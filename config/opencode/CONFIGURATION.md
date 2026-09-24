@@ -51,7 +51,7 @@ opencode (@opencode/cli@latest, v2) + OpenCode Go provider ($10/mo)
 
 ## Fastfetch
 
-Declarative terminal system summary managed by Home Manager. Source: `config/fastfetch/config.jsonc` and `config/fastfetch/logo.png`; `home/modules/fastfetch/default.nix` links both to `~/.config/fastfetch/` and is imported by `home/common.nix`. `fastfetch` comes from the pacman package list in `home/modules/pacman/default.nix`. Display uses an adapted HyprFlux theme (`github.com/ahmad9059/HyprFlux`, MIT) with a Kitty-protocol PNG logo, Nerd Font tree-style keys, truecolor Tokyo Night hexes (`#E0AF68`, `#7AA2F7`, `#9ECE6A`, `#BB9AF7`), and a 16-block palette footer. Falls back to an ASCII logo when the terminal/pipe mode does not support the Kitty graphics protocol.
+Declarative terminal system summary managed by Home Manager; `fastfetch` comes from the pacman package list in `home/modules/pacman/default.nix`. Source: `config/fastfetch/config.jsonc` (LierB/fastfetch “full-info” module preset, `github.com/LierB/fastfetch`) plus `config/fastfetch/logo.png` (Kitty-protocol image logo, adapted HyprFlux asset); `home/modules/fastfetch/default.nix` links both to `~/.config/fastfetch/`. `config/fastfetch/hyprflux.jsonc` holds the previous adapted HyprFlux theme as a swappable variant. ASCII fallback when the terminal or pipe mode lacks Kitty graphics support.
 
 ## Main Config (`opencode.jsonc`)
 

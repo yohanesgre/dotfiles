@@ -4,6 +4,13 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — fastfetch config → LierB full-info preset
+
+- Switched module layout to LierB/fastfetch full-info (all modules, upstream order).
+- Kept the kitty image logo.
+- Pinned `$schema` to 2.68.1.
+- Preserved the adapted HyprFlux theme as `config/fastfetch/hyprflux.jsonc` for switching back.
+
 ## 2026-09-24 — jev usable frequently: nested `jev-mcp_*` allows + key-file hardening + AGENTS.md cadence
 
 - **Root cause (live-audited):** nested MCP calls are gated twice — outer `execute` (Code Mode) **and** a per-tool allow named `<server>_<tool>`. No custom agent allowed `jev-mcp_*`, so the wildcard deny blocked jev in every subagent even where `execute` was allowed; only the primary session (global `permission: "allow"`) could call it. Plain `jev_*` / `jev_check` actions do not match server `jev-mcp`.
