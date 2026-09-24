@@ -4,6 +4,26 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — question policy + one-level fan-out
+
+- `AGENTS.md`: prefer proceeding over blocking `question` calls (reversible choices → recommended default + stated assumption; `question` reserved for irreversible/ambiguous forks); one-level fan-out (`explore` children are leaves, no child spawns); dedupe research branches before spawning.
+- `researcher.md`: child prompts must state leaf-only; skip questions already covered in-run or by siblings.
+- Why: browser-use session forensics — one `question` call idled 4h12m (80.5% of session wall-clock); 8 depth-3 spawn failures; 1,361 external calls with 1,055 in `explore`.
+
+## 2026-09-24 — fastfetch: Thermal sub-group
+
+- Added Thermal before Power: board, chipset, and NVMe/SSD temperatures via hwmon, plus self-hiding fan RPM and GPU temp rows (live-verified).
+- `gpupower` is now power-only (`nvidia-smi --query-gpu=power.draw`); temperature moved to Thermal.
+- Machine limits: no readable RAM/DIMM temperature or power sensor (only SPD EEPROM `ee1004`); motherboard temperatures are available, but motherboard power is not software-readable (no Super I/O rails); CPU RAPL `energy_uj` is root-only, so `cpupower` hides when unreadable.
+- NVIDIA kernel module `610.57.04` vs NVML library `615.71` mismatch keeps GPU rows hidden until reboot/driver sync.
+
+## 2026-09-24 — fastfetch: power sub-group last + CPU temp + guarded power rows
+
+- Moved Power to the bottom of the PC group, after Display.
+- CPU row now appends `{temperature}` from coretemp hwmon.
+- Added self-hiding `command` rows: `gpuusage` in Compute; `cpupower` and `gpupower` in Power; `case` guards filter broken `nvidia-smi` text.
+- RAPL `energy_uj` is root-only on this desktop, so `cpupower` hides when unreadable. Current `nvidia-smi` NVML mismatch (`Driver/library version mismatch`, library 615.71) keeps GPU rows hidden until driver sync/reboot resolves it.
+
 ## 2026-09-24 — fastfetch groups preset: nested sub-groups
 
 - Introduced nested sub-group headings (`custom` rows, bold group color, no separator) and nested tree rails (`│ ├`/`│ └`).
@@ -64,7 +84,8 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 - Added pinned `browser-use[cli]==0.13.10` stdio MCP (`uvx --from browser-use[cli]==0.13.10 browser-use --mcp`) for user-requested LLM-driven autonomous browser tasks; the pin prevents silent `uvx` upgrades, while upstream CLI/API changes remain a degradation risk.
 - Routes LLM calls through OpenCode Go at `https://opencode.ai/zen/go/v1`: browser-use 0.13.10 honors `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `BROWSER_USE_LLM_MODEL` (verified in pinned source `config.py:495-499` and `mcp/server.py`); local MCP maps `OPENAI_API_KEY` to `{env:OPENCODE_BROWSER_USE_API_KEY}` for static Bearer auth. `OPENCODE_BROWSER_USE_API_KEY` must exist in the OpenCode process environment; saved auth is not auto-exported to local MCP children. Dedicated key naming: `OPENCODE_BROWSER_USE_API_KEY`; `BROWSER_USE_API_KEY` belongs to Browser Use Cloud.
-- Uses `kimi-k3` for tool calls, vision, and strict `json_schema` required by `retry_with_browser_use_agent`. browser-use sends `temperature=0.7` and `frequency_penalty=0.3`; Kimi may reject those non-default sampling params, so fallback `mimo-v2.6-flash` lacks guaranteed strict `json_schema`. Free Go/Zen models such as `space-bunny-free` are OpenCode-client-only, so external agents require a paid key. Grants browser + filesystem access, so use for scoped autonomous tasks only.
+- **Key provisioning:** the key is provisioned via `.env.toml` as `OPENCODE_BROWSER_USE_API_KEY` (placeholder in `.env.toml.example`); `home/modules/env` imports it on switch, so OpenCode must restart from a key-bearing environment.
+- Uses `deepseek-v4.1-flash` for tool calls and vision; if `retry_with_browser_use_agent` needs strict `json_schema`, falls back to `kimi-k3`. Free Go/Zen models such as `space-bunny-free` are OpenCode-client-only, so external agents require a paid key. Grants browser + filesystem access, so use for scoped autonomous tasks only.
 - Survey chose `browser-use/browser-use` (116k stars, active) as complement to `agent-browser`; rejected `ChromeDevTools/chrome-devtools-mcp` and `microsoft/playwright-mcp` as redundant with built-in browser tools, `BrowserMCP/mcp` as stale with one contributor, and `browserbase/mcp-server-browserbase` as archived. Repo: https://github.com/browser-use/browser-use.
 
 ## 2026-09-24 — opencode-subagents overflow popup table
