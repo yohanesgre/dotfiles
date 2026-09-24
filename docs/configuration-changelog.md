@@ -4,6 +4,30 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — fastfetch: logo top aligned with first text row
+
+- `logo.padding.top` 1 → 3 so the kitty image's first row lands on the `user@host` title row (the module list starts with three blank rows).
+- Verified with a numbered text-logo substitution: logo row 1 == title row.
+
+
+## 2026-09-24 — fastfetch: colors forced with `display.pipe: false`
+
+- Output showed black-and-white when `NO_COLOR` was set or stdout was not a TTY (fastfetch auto-enables pipe mode). Added `display.pipe: false` so the Catppuccin palette and kitty logo are always emitted.
+- Verified: piped runs and `NO_COLOR=1` runs now carry the full truecolor palette (OS `#F38BA8`, WM `#A6E3A1`, PC `#F9E2AF`, values `#CDD6F4`); Ghostty render unchanged (image + palette).
+
+## 2026-09-24 — fastfetch: separator, info expansion, Catppuccin Mocha palette
+
+- Replaced the chevron separator with two-space spacing (`display.separator`).
+- Added the title and system-state rows (Uptime, Load avg, Processes, Init), Graphics and Network sub-groups (OpenGL/Vulkan/OpenCL; Local IP/DNS), Wallpaper, TPM, CPU cache, BTRFS, and Brightness, plus footer Date/Locale/Fastfetch/Palette.
+- Replaced ANSI 31/32/33/36 with the Catppuccin Mocha truecolor palette: OS `#F38BA8`, WM `#A6E3A1`, PC `#F9E2AF`, footer labels `#6C7086`, and values `#CDD6F4`. Deployed and live-verified: truecolor escapes confirmed; kitty logo intact.
+
+## 2026-09-24 — fastfetch: icon+label keys, Cores row, user-readable RAPL
+
+- Changed all module rows to icon+label keys; `display.key.width: 18` keeps values aligned.
+- Added per-core `Cores` Thermal row.
+- Added `scripts/rapl-user-access.sh` and applied its `/etc/udev/rules.d/99-rapl-readable.rules`; `CPU W` now shows live package watts.
+- GPU rows remain hidden pending an NVML fix: kernel module `610.57.04` mismatches library `615.71` until reboot/driver sync.
+
 ## 2026-09-24 — question policy + one-level fan-out
 
 - `AGENTS.md`: prefer proceeding over blocking `question` calls (reversible choices → recommended default + stated assumption; `question` reserved for irreversible/ambiguous forks); one-level fan-out (`explore` children are leaves, no child spawns); dedupe research branches before spawning.

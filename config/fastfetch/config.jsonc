@@ -7,240 +7,282 @@
     "type": "kitty",
     "height": 20,
     "padding": {
-      "top": 1
+      "top": 3
     }
   },
   "display": {
-    "separator": " ➜  "
+    "pipe": false,
+    "separator": "  ",
+    "key": { "width": 18 },
+    "color": { "output": "#CDD6F4" }
   },
   "modules": [
     "break",
     "break",
     "break",
+    { "type": "title", "format": "\u001b[1m{##B4BEFE}{user-name}{##6C7086}@{##89B4FA}{host-name}\u001b[0m" },
     {
       "type": "os",
-      "key": "OS   ",
-      "keyColor": "31"
+      "key": "OS",
+      "keyColor": "#F38BA8"
     },
     {
       "type": "kernel",
-      "key": " ├  ",
-      "keyColor": "31"
+      "key": " ├ {icon} Kernel",
+      "keyColor": "#F38BA8"
     },
     {
       "type": "packages",
       "format": "{pacman} (pacman)",
-      "key": " ├ 󰏖 ",
-      "keyColor": "31"
+      "key": " ├ {icon} Packages",
+      "keyColor": "#F38BA8"
     },
     {
       "type": "shell",
-      "key": " └  ",
-      "keyColor": "31"
+      "key": " ├ {icon} Shell",
+      "keyColor": "#F38BA8"
     },
+    { "type": "uptime", "key": " ├ {icon} Uptime", "keyColor": "#F38BA8" },
+    { "type": "loadavg", "key": " ├ {icon} Load avg", "keyColor": "#F38BA8" },
+    { "type": "processes", "key": " ├ {icon} Processes", "keyColor": "#F38BA8" },
+    { "type": "initsystem", "key": " └ {icon} Init", "keyColor": "#F38BA8" },
     "break",
     {
       "type": "wm",
-      "key": "WM   ",
-      "keyColor": "32"
+      "key": "WM",
+      "keyColor": "#A6E3A1"
     },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[32m ├  Session\u001b[0m"
+      "format": "\u001b[1m{##A6E3A1} ├  Session\u001b[0m"
     },
     {
       "type": "de",
-      "key": " │ ├ {icon} ",
-      "keyColor": "32"
+      "key": " │ ├ {icon} DE",
+      "keyColor": "#A6E3A1"
     },
     {
       "type": "lm",
-      "key": " │ └ {icon} ",
-      "keyColor": "32"
+      "key": " │ └ {icon} Login",
+      "keyColor": "#A6E3A1"
     },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[32m ├  Theme\u001b[0m"
+      "format": "\u001b[1m{##A6E3A1} ├  Theme\u001b[0m"
     },
     {
       "type": "wmtheme",
-      "key": " │ ├ 󰉼 ",
-      "keyColor": "32"
+      "key": " │ ├ {icon} Theme",
+      "keyColor": "#A6E3A1"
     },
     {
       "type": "icons",
-      "key": " │ ├ 󰀻 ",
-      "keyColor": "32"
+      "key": " │ ├ {icon} Icons",
+      "keyColor": "#A6E3A1"
     },
     {
       "type": "cursor",
-      "key": " │ └  ",
-      "keyColor": "32"
+      "key": " │ ├ {icon} Cursor",
+      "keyColor": "#A6E3A1"
     },
+    { "type": "wallpaper", "key": " │ └ {icon} Wallpaper", "keyColor": "#A6E3A1" },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[32m └  Terminal\u001b[0m"
+      "format": "\u001b[1m{##A6E3A1} └  Terminal\u001b[0m"
     },
     {
       "type": "terminal",
-      "key": "   ├  ",
-      "keyColor": "32"
+      "key": "   ├ {icon} Terminal",
+      "keyColor": "#A6E3A1"
     },
     {
       "type": "terminalfont",
-      "key": "   └  ",
-      "keyColor": "32"
+      "key": "   └ {icon} Font",
+      "keyColor": "#A6E3A1"
     },
     "break",
     {
       "type": "host",
       "format": "{name}",
-      "key": "PC   ",
-      "keyColor": "33"
+      "key": "PC",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "chassis",
-      "key": " ├ {icon} ",
-      "keyColor": "33"
+      "key": " ├ {icon} Chassis",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[33m ├  Firmware\u001b[0m"
+      "format": "\u001b[1m{##F9E2AF} ├  Firmware\u001b[0m"
     },
     {
       "type": "bios",
-      "key": " │ ├ {icon} ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} BIOS",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "board",
-      "key": " │ ├ {icon} ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} Board",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "bootmgr",
-      "key": " │ └ {icon} ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} Boot",
+      "keyColor": "#F9E2AF"
     },
+    { "type": "tpm", "key": " │ └ {icon} TPM", "keyColor": "#F9E2AF" },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[33m ├  Compute\u001b[0m"
+      "format": "\u001b[1m{##F9E2AF} ├  Compute\u001b[0m"
     },
     {
       "type": "cpu",
       "format": "{name} ({cores-logical}) @ {freq-max} [{temperature}]",
       "temp": true,
-      "key": " │ ├  ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} CPU",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "cpuusage",
-      "key": " │ ├ {icon} ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} CPU load",
+      "keyColor": "#F9E2AF"
     },
+    { "type": "cpucache", "key": " │ ├ {icon} CPU cache", "keyColor": "#F9E2AF" },
     {
       "type": "gpu",
       "format": "{name} [{type}]",
-      "key": " │ └ 󰢮 ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} GPU",
+      "keyColor": "#F9E2AF"
     },
-    { "type": "command", "key": " │ └ 󰓅 ", "keyColor": "33", "text": "out=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader 2>/dev/null); case \"$out\" in *%) echo \"$out\";; esac" },
+    { "type": "command", "key": " │ └ {icon} GPU load", "keyColor": "#F9E2AF", "text": "out=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader 2>/dev/null); case \"$out\" in *%) echo \"$out\";; esac" },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[33m ├  Memory\u001b[0m"
+      "format": "\u001b[1m{##F9E2AF} ├  Graphics\u001b[0m"
+    },
+    { "type": "opengl", "key": " │ ├ {icon} OpenGL", "keyColor": "#F9E2AF" },
+    { "type": "vulkan", "key": " │ ├ {icon} Vulkan", "keyColor": "#F9E2AF" },
+    { "type": "opencl", "key": " │ └ {icon} OpenCL", "keyColor": "#F9E2AF" },
+    {
+      "type": "custom",
+      "format": "\u001b[1m{##F9E2AF} ├  Memory\u001b[0m"
     },
     {
       "type": "memory",
-      "key": " │ ├  ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} RAM",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "swap",
-      "key": " │ └ 󰓡 ",
-      "keyColor": "33"
+      "key": " │ └ {icon} Swap",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[33m ├  Storage\u001b[0m"
+      "format": "\u001b[1m{##F9E2AF} ├  Storage\u001b[0m"
     },
     {
       "type": "physicaldisk",
-      "key": " │ ├ {icon} ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} Drive",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "disk",
-      "key": " │ └ 󰋊 ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} Disk /",
+      "keyColor": "#F9E2AF"
     },
+    { "type": "btrfs", "key": " │ └ {icon} BTRFS", "keyColor": "#F9E2AF" },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[33m ├  I/O\u001b[0m"
+      "format": "\u001b[1m{##F9E2AF} ├  I/O\u001b[0m"
     },
     {
       "type": "netio",
-      "key": " │ ├ {icon} ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} Net I/O",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "diskio",
-      "key": " │ └ {icon} ",
-      "keyColor": "33"
+      "key": " │ └ {icon} Disk I/O",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[33m ├  Media\u001b[0m"
+      "format": "\u001b[1m{##F9E2AF} ├  Network\u001b[0m"
+    },
+    { "type": "localip", "key": " │ ├ {icon} Local IP", "keyColor": "#F9E2AF", "format": "{ipv4} ({ifname})" },
+    { "type": "dns", "key": " │ └ {icon} DNS", "keyColor": "#F9E2AF" },
+    {
+      "type": "custom",
+      "format": "\u001b[1m{##F9E2AF} ├  Media\u001b[0m"
     },
     {
       "type": "sound",
-      "key": " │ ├ {icon} ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} Sound",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "codec",
-      "key": " │ ├ {icon} ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} Codec",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "camera",
-      "key": " │ └ {icon} ",
-      "keyColor": "33"
+      "key": " │ └ {icon} Camera",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[33m ├  Display\u001b[0m"
+      "format": "\u001b[1m{##F9E2AF} ├  Display\u001b[0m"
     },
     {
       "type": "monitor",
-      "key": " │ └  ",
-      "keyColor": "33"
+      "key": " │ ├ {icon} Monitor",
+      "keyColor": "#F9E2AF"
     },
+    { "type": "brightness", "key": " │ └ {icon} Brightness", "keyColor": "#F9E2AF" },
+    { "type": "custom", "format": "\u001b[1m{##F9E2AF} ├  Thermal\u001b[0m" },
+    { "type": "command", "key": " │ ├ {icon} Board", "keyColor": "#F9E2AF", "text": "for h in /sys/class/hwmon/hwmon*; do [ \"$(cat $h/name 2>/dev/null)\" = acpitz ] && { awk '{printf \"%.0f°C\", $1/1000}' $h/temp1_input; break; }; done" },
+    { "type": "command", "key": " │ ├ {icon} Chipset", "keyColor": "#F9E2AF", "text": "for h in /sys/class/hwmon/hwmon*; do case \"$(cat $h/name 2>/dev/null)\" in pch_*) awk '{printf \"%.0f°C\", $1/1000}' $h/temp1_input; break;; esac; done" },
+    {
+      "type": "command",
+      "key": " │ ├ {icon} Cores",
+      "keyColor": "#F9E2AF",
+      "text": "for h in /sys/class/hwmon/hwmon*; do [ \"$(cat $h/name 2>/dev/null)\" = coretemp ] || continue; out=\"\"; for f in $h/temp*_input; do case \"$f\" in */temp1_input) continue;; esac; [ -e \"$f\" ] || continue; v=$(( $(cat $f) / 1000 )); [ -n \"$out\" ] && out=\"$out/$v\" || out=\"$v\"; done; [ -n \"$out\" ] && echo \"${out}°C\"; break; done"
+    },
+    { "type": "command", "key": " │ ├ {icon} SSD", "keyColor": "#F9E2AF", "text": "for h in /sys/class/hwmon/hwmon*; do [ \"$(cat $h/name 2>/dev/null)\" = nvme ] && { awk '{printf \"%.0f°C\", $1/1000}' $h/temp1_input; break; }; done" },
+    { "type": "command", "key": " │ ├ {icon} Fan", "keyColor": "#F9E2AF", "text": "for f in /sys/class/hwmon/hwmon*/fan*_input; do [ -e \"$f\" ] || continue; v=$(cat \"$f\" 2>/dev/null); [ -n \"$v\" ] && [ \"$v\" -gt 0 ] 2>/dev/null && { echo \"$v RPM\"; break; }; done" },
+    { "type": "command", "key": " │ └ {icon} GPU temp", "keyColor": "#F9E2AF", "text": "out=$(nvidia-smi --query-gpu=temperature.gpu --format=csv,noheader 2>/dev/null); case \"$out\" in [0-9]*) echo \"${out}°C\";; esac" },
     {
       "type": "custom",
-      "format": "\u001b[1m\u001b[33m └  Power\u001b[0m"
+      "format": "\u001b[1m{##F9E2AF} └  Power\u001b[0m"
     },
     {
       "type": "battery",
-      "key": "   ├ {icon} ",
-      "keyColor": "33"
+      "key": "   ├ {icon} Battery",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "poweradapter",
-      "key": "   ├ {icon} ",
-      "keyColor": "33"
+      "key": "   ├ {icon} AC",
+      "keyColor": "#F9E2AF"
     },
     {
       "type": "command",
-      "key": "   ├ 󰓅 ",
-      "keyColor": "33",
+      "key": "   ├ {icon} CPU W",
+      "keyColor": "#F9E2AF",
       "text": "e1=$(cat /sys/class/powercap/intel-rapl:0/energy_uj 2>/dev/null); [ -n \"$e1\" ] && { sleep 0.4; e2=$(cat /sys/class/powercap/intel-rapl:0/energy_uj 2>/dev/null); [ -n \"$e2\" ] && echo \"$(( (e2 - e1) / 400000 )) W\"; }"
     },
     {
       "type": "command",
-      "key": "   └ 󰢮 ",
-      "keyColor": "33",
-      "text": "out=$(nvidia-smi --query-gpu=power.draw,temperature.gpu --format=csv,noheader 2>/dev/null); case \"$out\" in *W*) echo \"$out\" | sed 's/, / · /; s/$/°C/';; esac"
+      "key": "   └ {icon} GPU W",
+      "keyColor": "#F9E2AF",
+      "text": "out=$(nvidia-smi --query-gpu=power.draw --format=csv,noheader 2>/dev/null); case \"$out\" in *W*) echo \"$out\";; esac"
     },
+    { "type": "datetime", "key": "Date", "keyColor": "#6C7086" },
+    { "type": "locale", "key": "Locale", "keyColor": "#6C7086" },
+    { "type": "version", "key": "Fastfetch", "keyColor": "#6C7086" },
+    { "type": "colors", "key": "Palette", "keyColor": "#6C7086", "symbol": "block" },
     "break",
     "break"
   ]
