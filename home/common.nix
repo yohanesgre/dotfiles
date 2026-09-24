@@ -16,6 +16,7 @@
     ./modules/terminal/ghostty.nix
     ./modules/fastfetch
     ./modules/env
+    ./modules/browser-use
     ./modules/opencode
     ./modules/omp
     ./modules/luvus
