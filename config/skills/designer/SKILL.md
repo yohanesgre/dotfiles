@@ -33,7 +33,6 @@ This role owns the process and the deliverable. Load the specialist skill(s) for
 | Screens, layouts, user flows, empty/loading/error states | `design-thinking` |
 | Distinctive visual direction, typography, motion, polish | `frontend-design` |
 | Tokens, theming, component/design-system architecture | `design-system-patterns` |
-| Extract tokens from a live site to seed a system | `extract-design-system` |
 
 One or two skills per task — whichever the request actually needs. Carry their decisions into the artifact; the implementer should not need to load them.
 

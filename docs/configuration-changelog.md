@@ -4,6 +4,11 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — dropped extract-design-system
+
+- Removed `config/skills/extract-design-system` on user request (unused; wired copy from arvindrk/extract-design-system, upstream idle since 2026-06-19). `sources.json`: source re-scoped `wired` → `dropped` with a reinstall note; `keep` 45→44; `updated` bumped. CONFIGURATION.md inventory 44 dirs (18 local, 26 wired); designer routing row removed; stale `~/.agents/skills/extract-design-system` symlink removed.
+- Verified: `bash scripts/validate.sh` + `bash scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0 (48 skills). No commit.
+
 ## 2026-09-24 — design-graph folded back into design-thinking
 
 - Merged per Jev review (`docs/reviews/skills-review-2026-09-24.md`; `jev_ask` A_fold 0.62, merge flagged by both triage passes). `design-graph` was promoted to a standalone skill on 2026-09-08 for independent auto-discovery; 48h usage was 0 invocations / 0 direct reads and the promotion rationale no longer held (0.26).

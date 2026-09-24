@@ -100,6 +100,7 @@ SKILL.md reads, `mem` = historical memory hits, `src`: L local-authored / W wire
   loads — `using-superpowers` ("use when starting any conversation" → 50 explore-child
   loads) and `verification-before-completion` (62 loads, mostly steward before DONE).
   These are real use, but mechanical; they are not evidence of user-facing demand.
+- Post-review update (2026-09-24): `extract-design-system` removed on user decision — see docs/configuration-changelog.md.
 
 ## design-graph → design-thinking merge exploration
 
