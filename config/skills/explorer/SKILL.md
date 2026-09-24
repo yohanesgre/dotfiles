@@ -17,6 +17,11 @@ Bound the scope, pick the cheapest tool that answers, verify the hit:
 
 Graph tools answer structure exactly; regex guesses it. Use the graph when available. When the MCP is absent, the index is missing, or the graph returns empty, fall back to grep/ripgrep and say which path you used.
 
+## Retrieval fast paths (2026-09-24)
+
+- GitHub source/repos: with `gh_*` tools → `gh_file`/`gh_search_*`/`gh_repo`/`gh_api`; with `shell` → `gh search code|repos|issues ... --json`, `gh api <path>`, or `gh api repos/{owner}/{repo}/contents/{path}?ref={tag} -H 'Accept: application/vnd.github.raw'`; else `raw.githubusercontent.com/<owner>/<repo>/<tag>/<path>`. Never webfetch rendered `github.com` HTML when an API/raw path exists.
+- Web: batch independent fetches in ONE step; prefer raw/markdown/API endpoints; avoid proxy/stream endpoints (`r.jina.ai`, `sourcegraph.com/search/stream`); one file/section per call (5 MiB cap); on 403/404/too-large switch endpoint or report the gap — never retry identically.
+
 ## Evidence contract
 
 - Every result: `path:line` plus the exact quoted snippet.

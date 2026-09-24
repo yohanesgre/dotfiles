@@ -4,6 +4,39 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — fastfetch groups preset: nested sub-groups
+
+- Introduced nested sub-group headings (`custom` rows, bold group color, no separator) and nested tree rails (`│ ├`/`│ └`).
+- WM group nests Session/Theme/Terminal.
+- PC group nests Firmware/Compute/Memory/Storage/I/O/Media/Power/Display.
+- Power/camera rows stay silent on hardware without them.
+- Deployed and verified live (kitty logo intact).
+
+## 2026-09-24 — fan-out caps + explorer fast paths
+
+- Delegation caps: ≤3 parallel `researcher` spawns and ≤3 `explore` children per fan-out; excess questions batch into those children (`AGENTS.md`, `researcher.md`). Fan-out is the most expensive pattern — use the fewest agents that cover the work; check the usage footer before heavy fan-out.
+- `explorer` skill gains retrieval fast paths: `gh`/raw-URL ladder for GitHub source, batched raw-preferring web fetches (children no longer scrape rendered HTML).
+
+## 2026-09-24 — fastfetch groups preset: IO/audio/capability rows
+
+- PC group += `bootmgr`, `netio`, `diskio`, `sound`, `codec`, `camera`.
+- Verified live: camera silent; no camera hardware.
+- Logo, palette, separator unchanged.
+
+## 2026-09-24 — fastfetch groups preset expanded with device info
+
+- PC group += `chassis`/`bios`/`board`/`cpuusage`/`physicaldisk`/`battery`/`poweradapter`.
+- WM group += `de`/`lm`.
+- New rows use fastfetch `{icon}` substitutions.
+- Logo, palette, separator, and existing keys otherwise unchanged.
+
+## 2026-09-24 — fastfetch config → LierB groups preset
+
+- Switched active preset to LierB groups (OS/WM/PC color groups).
+- Adapted deprecated numeric format placeholders for fastfetch 2.68.1 (`{pacman}`, `{name}`, `{cores-logical}`, `{freq-max}`).
+- Added penrose-sky kitty image logo (600x600, resized from upstream 1080x1080).
+- Preserved full-info as `full-info.jsonc`.
+
 ## 2026-09-24 — fastfetch config → LierB full-info preset
 
 - Switched module layout to LierB/fastfetch full-info (all modules, upstream order).
@@ -15,7 +48,7 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 - **Root cause (live-audited):** nested MCP calls are gated twice — outer `execute` (Code Mode) **and** a per-tool allow named `<server>_<tool>`. No custom agent allowed `jev-mcp_*`, so the wildcard deny blocked jev in every subagent even where `execute` was allowed; only the primary session (global `permission: "allow"`) could call it. Plain `jev_*` / `jev_check` actions do not match server `jev-mcp`.
 - **Permissions:** added `- action: jev-mcp_*` to `architect`, `researcher`, `reviewer`, `swe` (after the wildcard deny, alongside `codegraph_*`). `designer` / `steward` / `vision` deliberately excluded (they also lack `execute`).
-- **Key-file hardening:** `home/modules/env` gains `writeTypeSafeKey` — extracts `TYPESAFE_API_KEY` from `.env.toml`, writes `~/.config/typesafe/key` (0600, cmp-guarded) on every switch. The `opencode.jsonc` jev-mcp entry drops its `environment` block: the daemonized service can start with an empty `TYPESAFE_API_KEY`, an empty string is not nullish, and jev-mcp's precedence (`TYPESAFE_API_KEY ?? JEV_API_KEY ?? key file`) means it would win over the file and poison every judgment with an auth error. The same startup-env footgun remains for `browser-use` / `OPENAI_API_KEY` (noted in CONFIGURATION.md).
+- **Key-file hardening:** `home/modules/env` gains `writeTypeSafeKey` — extracts `TYPESAFE_API_KEY` from `.env.toml`, writes `~/.config/typesafe/key` (0600, cmp-guarded) on every switch. The `opencode.jsonc` jev-mcp entry drops its `environment` block: the daemonized service can start with an empty `TYPESAFE_API_KEY`, an empty string is not nullish, and jev-mcp's precedence (`TYPESAFE_API_KEY ?? JEV_API_KEY ?? key file`) means it would win over the file and poison every judgment with an auth error. The same startup-env footgun remains for `browser-use`: `OPENCODE_BROWSER_USE_API_KEY` must exist in the OpenCode process environment because saved auth is not auto-exported to local MCP children (it is mapped to `OPENAI_API_KEY`; noted in CONFIGURATION.md).
 - **Cadence:** new AGENTS.md § Jev — frequent cheap typed judgments (`jev_check` one yes/no; `jev_ask` ≤64 questions over ONE shared state in a single request — the batch lever; `jev_triage` ≤50 items, `path` items read server-side, one request per item), triggers (ambiguous decisions, plan/design sanity, pre-commit self-check, diff pre-filter, borderline classification), advisory-only contract (never a completion signal; never replaces reviewer/CI/evidence; skip on error/abstain). `jev-layer.md` gains `jev_models` in the tool list + the subagent-permission note.
 - **Cost/limits** (docs.typesafe.ai, fetched 2026-09-24): $42/B input tokens, output free; 1,200 req/min, 250k tok/s; 64k request context (32k state side); official bench: 13 questions batched = 12.2x cheaper / 10x faster than singles — prefer `jev_ask`.
 - **Verified:** `bash scripts/validate.sh` exit 0 (46 pass / 0 fail / 4 skip); after the switch, a `researcher` subagent called `tools["jev-mcp"].jev_models()` successfully (previously permission-denied); `~/.config/typesafe/key` written 0600 by the activation; primary-session jev OK.
@@ -30,7 +63,8 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 ## 2026-09-24 — browser-use MCP added
 
 - Added pinned `browser-use[cli]==0.13.10` stdio MCP (`uvx --from browser-use[cli]==0.13.10 browser-use --mcp`) for user-requested LLM-driven autonomous browser tasks; the pin prevents silent `uvx` upgrades, while upstream CLI/API changes remain a degradation risk.
-- Requires `OPENAI_API_KEY` (constructs `ChatOpenAI`; `OPENAI_BASE_URL` may point at OpenRouter). Grants browser + filesystem access, so use for scoped autonomous tasks only.
+- Routes LLM calls through OpenCode Go at `https://opencode.ai/zen/go/v1`: browser-use 0.13.10 honors `OPENAI_API_KEY`, `OPENAI_BASE_URL`, and `BROWSER_USE_LLM_MODEL` (verified in pinned source `config.py:495-499` and `mcp/server.py`); local MCP maps `OPENAI_API_KEY` to `{env:OPENCODE_BROWSER_USE_API_KEY}` for static Bearer auth. `OPENCODE_BROWSER_USE_API_KEY` must exist in the OpenCode process environment; saved auth is not auto-exported to local MCP children. Dedicated key naming: `OPENCODE_BROWSER_USE_API_KEY`; `BROWSER_USE_API_KEY` belongs to Browser Use Cloud.
+- Uses `kimi-k3` for tool calls, vision, and strict `json_schema` required by `retry_with_browser_use_agent`. browser-use sends `temperature=0.7` and `frequency_penalty=0.3`; Kimi may reject those non-default sampling params, so fallback `mimo-v2.6-flash` lacks guaranteed strict `json_schema`. Free Go/Zen models such as `space-bunny-free` are OpenCode-client-only, so external agents require a paid key. Grants browser + filesystem access, so use for scoped autonomous tasks only.
 - Survey chose `browser-use/browser-use` (116k stars, active) as complement to `agent-browser`; rejected `ChromeDevTools/chrome-devtools-mcp` and `microsoft/playwright-mcp` as redundant with built-in browser tools, `BrowserMCP/mcp` as stale with one contributor, and `browserbase/mcp-server-browserbase` as archived. Repo: https://github.com/browser-use/browser-use.
 
 ## 2026-09-24 — opencode-subagents overflow popup table
