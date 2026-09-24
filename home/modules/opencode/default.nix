@@ -124,6 +124,21 @@
     fi
   '';
 
+  # gh plugin: read-only GitHub tools wrapping the authenticated `gh` CLI.
+  # Sourced from the flake store path (not $HOME/projects/dotfiles) so it
+  # deploys correctly from any checkout or worktree.
+  home.activation.opencodeSyncGhPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    GH_SRC="${../../../config/opencode/plugins/gh.ts}"
+    GH_DST="$HOME/.config/opencode/plugins/gh.ts"
+    if [ -f "$GH_SRC" ]; then
+      mkdir -p "$HOME/.config/opencode/plugins"
+      if ! cmp -s "$GH_SRC" "$GH_DST"; then
+        cp -f "$GH_SRC" "$GH_DST"
+        echo "opencode: synced gh plugin"
+      fi
+    fi
+  '';
+
   # Shared warm embedding daemon for the icm OpenCode plugin tools (icm.ts):
   # `icm serve --http` loads the embedding model + SQLite store once and keeps
   # them warm across requests. The plugin routes heavy semantic ops

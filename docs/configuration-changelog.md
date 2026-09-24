@@ -16,6 +16,13 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 - `icm extract-pending --limit` 30 → 10: each drain processes 10 items, with roughly half the previous extraction volume.
 - Why: each drain cold-loads its ONNX model (~31s, ~400% CPU, ~2.1GB RSS); rarer, smaller bursts reduce fan noise. Live plugin copy already synced; service reload required for effect.
 
+## 2026-09-24 — researcher GitHub tools + inline external research
+
+- New `config/opencode/plugins/gh.ts` registers six read-only GitHub tools (`gh_search_code`, `gh_search_repos`, `gh_search_issues`, `gh_repo`, `gh_file`, `gh_api`) wrapping the authenticated `gh` CLI via `execFile` — fixed read-only subcommands, validated args, 20 s timeout, 40 KB output cap; unit tests in `config/opencode/plugins/gh.test.ts`.
+- `researcher` gains `action: gh / resource: "*" / effect: allow` plus inline external-research rules (independent `webfetch`/`websearch`/`gh_*` calls in one parallel step; `explore` children only for codebase fan-out) and fetch hygiene (raw/API over HTML, batched fetches, avoid slow proxy endpoints, no identical retry).
+- `librarian` skill gains a retrieval fast-paths section (gh tools / `shell` / raw-URL ladder for GitHub; batched raw-preferring web fetches).
+- `home/modules/opencode/default.nix` gains a store-sourced copy activation (`opencodeSyncGhPlugin`) so the plugin deploys from any checkout/worktree.
+
 ## 2026-09-24 — icm MCP → plugin tools + icm-http warm daemon
 
 - Removed the `icm` MCP entry; `config/opencode/plugins/icm.ts` now registers 31 tools under the `icm` namespace with unchanged exposed ids.

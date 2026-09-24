@@ -25,6 +25,11 @@ Find the version before reading docs: read the project's manifest or lockfile (`
 - `websearch` to discover the right URL, find a raw/mirror copy, or when fetch fails (JS-rendered, 403, paywall).
 - Everything fails → ask the user to paste the page, and mark the answer unverified.
 
+## Retrieval fast paths (2026-09-24)
+
+- **GitHub**: with `gh_*` tools → `gh_file` for pinned raw source, `gh_search_*` for discovery, `gh_repo` for metadata, `gh_api` for read-only GET; with `shell` → `gh search code|repos|issues ... --json`, `gh api <path>`, `gh api repos/{owner}/{repo}/contents/{path}?ref={tag} -H 'Accept: application/vnd.github.raw'`; else `raw.githubusercontent.com/<owner>/<repo>/<tag>/<path>`. Avoid rendered `github.com` HTML and `compare/*.diff`.
+- **Web**: batch independent fetches in ONE step (parallel). Prefer raw/markdown/API endpoints over rendered pages. Avoid proxy/stream endpoints (`r.jina.ai`, `sourcegraph.com/search/stream`). One file/section per call — `webfetch` caps at 5 MiB. On 403/404/too-large, switch endpoint or report the gap; never retry identically.
+
 ## Evidence contract
 
 - Every claim: statement + source URL + version + quoted snippet when it is code.
