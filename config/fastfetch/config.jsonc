@@ -1,73 +1,247 @@
 {
-  // Preset: LierB/fastfetch "full-info" (github.com/LierB/fastfetch) — every module.
-  // Previous theme kept as hyprflux.jsonc (switch back by swapping the two files).
+// Preset: LierB/fastfetch "groups" (github.com/LierB/fastfetch) — OS / WM / PC color groups.
+// Variants kept alongside: full-info.jsonc, hyprflux.jsonc (swap file contents to switch).
   "$schema": "https://raw.githubusercontent.com/fastfetch-cli/fastfetch/2.68.1/doc/json_schema.json",
   "logo": {
-    "source": "~/.config/fastfetch/logo.png",
+    "source": "~/.config/fastfetch/penrose-sky-wp.png",
     "type": "kitty",
-    "height": 18,
-    "width": 38,
+    "height": 20,
     "padding": {
       "top": 1
     }
   },
+  "display": {
+    "separator": " ➜  "
+  },
   "modules": [
-    "title",
-    "separator",
-    "os",
-    "host",
-    "bios",
-    "board",
-    "chassis",
-    "kernel",
-    "uptime",
-    "processes",
-    "packages",
-    "shell",
-    "display",
-    "brightness",
-    "monitor",
-    "lm",
-    "de",
-    "wm",
-    "wmtheme",
-    "theme",
-    "icons",
-    "font",
-    "cursor",
-    "wallpaper",
-    "terminal",
-    "terminalfont",
-    "terminalsize",
-    "terminaltheme",
-    "cpu",
-    "cpuusage",
-    "gpu",
-    "memory",
-    "swap",
-    "disk",
-    "battery",
-    "poweradapter",
-    "player",
-    "media",
-    "publicip",
-    "localip",
-    "wifi",
-    "datetime",
-    "locale",
-    "vulkan",
-    "opengl",
-    "opencl",
-    "users",
-    "bluetooth",
-    "sound",
-    "gamepad",
-    "weather",
-    "netio",
-    "diskio",
-    "physicaldisk",
-    "version",
     "break",
-    "colors"
+    "break",
+    "break",
+    {
+      "type": "os",
+      "key": "OS   ",
+      "keyColor": "31"
+    },
+    {
+      "type": "kernel",
+      "key": " ├  ",
+      "keyColor": "31"
+    },
+    {
+      "type": "packages",
+      "format": "{pacman} (pacman)",
+      "key": " ├ 󰏖 ",
+      "keyColor": "31"
+    },
+    {
+      "type": "shell",
+      "key": " └  ",
+      "keyColor": "31"
+    },
+    "break",
+    {
+      "type": "wm",
+      "key": "WM   ",
+      "keyColor": "32"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[32m ├  Session\u001b[0m"
+    },
+    {
+      "type": "de",
+      "key": " │ ├ {icon} ",
+      "keyColor": "32"
+    },
+    {
+      "type": "lm",
+      "key": " │ └ {icon} ",
+      "keyColor": "32"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[32m ├  Theme\u001b[0m"
+    },
+    {
+      "type": "wmtheme",
+      "key": " │ ├ 󰉼 ",
+      "keyColor": "32"
+    },
+    {
+      "type": "icons",
+      "key": " │ ├ 󰀻 ",
+      "keyColor": "32"
+    },
+    {
+      "type": "cursor",
+      "key": " │ └  ",
+      "keyColor": "32"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[32m └  Terminal\u001b[0m"
+    },
+    {
+      "type": "terminal",
+      "key": "   ├  ",
+      "keyColor": "32"
+    },
+    {
+      "type": "terminalfont",
+      "key": "   └  ",
+      "keyColor": "32"
+    },
+    "break",
+    {
+      "type": "host",
+      "format": "{name}",
+      "key": "PC   ",
+      "keyColor": "33"
+    },
+    {
+      "type": "chassis",
+      "key": " ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[33m ├  Firmware\u001b[0m"
+    },
+    {
+      "type": "bios",
+      "key": " │ ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "board",
+      "key": " │ ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "bootmgr",
+      "key": " │ └ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[33m ├  Compute\u001b[0m"
+    },
+    {
+      "type": "cpu",
+      "format": "{name} ({cores-logical}) @ {freq-max} [{temperature}]",
+      "temp": true,
+      "key": " │ ├  ",
+      "keyColor": "33"
+    },
+    {
+      "type": "cpuusage",
+      "key": " │ ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "gpu",
+      "format": "{name} [{type}]",
+      "key": " │ └ 󰢮 ",
+      "keyColor": "33"
+    },
+    { "type": "command", "key": " │ └ 󰓅 ", "keyColor": "33", "text": "out=$(nvidia-smi --query-gpu=utilization.gpu --format=csv,noheader 2>/dev/null); case \"$out\" in *%) echo \"$out\";; esac" },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[33m ├  Memory\u001b[0m"
+    },
+    {
+      "type": "memory",
+      "key": " │ ├  ",
+      "keyColor": "33"
+    },
+    {
+      "type": "swap",
+      "key": " │ └ 󰓡 ",
+      "keyColor": "33"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[33m ├  Storage\u001b[0m"
+    },
+    {
+      "type": "physicaldisk",
+      "key": " │ ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "disk",
+      "key": " │ └ 󰋊 ",
+      "keyColor": "33"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[33m ├  I/O\u001b[0m"
+    },
+    {
+      "type": "netio",
+      "key": " │ ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "diskio",
+      "key": " │ └ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[33m ├  Media\u001b[0m"
+    },
+    {
+      "type": "sound",
+      "key": " │ ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "codec",
+      "key": " │ ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "camera",
+      "key": " │ └ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[33m ├  Display\u001b[0m"
+    },
+    {
+      "type": "monitor",
+      "key": " │ └  ",
+      "keyColor": "33"
+    },
+    {
+      "type": "custom",
+      "format": "\u001b[1m\u001b[33m └  Power\u001b[0m"
+    },
+    {
+      "type": "battery",
+      "key": "   ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "poweradapter",
+      "key": "   ├ {icon} ",
+      "keyColor": "33"
+    },
+    {
+      "type": "command",
+      "key": "   ├ 󰓅 ",
+      "keyColor": "33",
+      "text": "e1=$(cat /sys/class/powercap/intel-rapl:0/energy_uj 2>/dev/null); [ -n \"$e1\" ] && { sleep 0.4; e2=$(cat /sys/class/powercap/intel-rapl:0/energy_uj 2>/dev/null); [ -n \"$e2\" ] && echo \"$(( (e2 - e1) / 400000 )) W\"; }"
+    },
+    {
+      "type": "command",
+      "key": "   └ 󰢮 ",
+      "keyColor": "33",
+      "text": "out=$(nvidia-smi --query-gpu=power.draw,temperature.gpu --format=csv,noheader 2>/dev/null); case \"$out\" in *W*) echo \"$out\" | sed 's/, / · /; s/$/°C/';; esac"
+    },
+    "break",
+    "break"
   ]
 }

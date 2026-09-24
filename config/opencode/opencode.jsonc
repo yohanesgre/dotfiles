@@ -27,14 +27,19 @@
   },
   "mcp": {
     // browser-use MCP (2026-09-24) — official stdio server for LLM-driven
-    // autonomous browser tasks. Pinned; needs an OpenAI-compatible key
-    // (constructs ChatOpenAI; OPENAI_BASE_URL may point at OpenRouter).
-    // Grants browser + filesystem access — prefer agent-browser for routine work.
+    // autonomous browser tasks. Pinned; LLM calls route to OpenCode Go via
+    // dedicated OPENCODE_BROWSER_USE_API_KEY (paid only — free models are
+    // OpenCode-only). Model kimi-k3; fallback mimo-v2.6-flash if sampling
+    // params rejected. Browser + filesystem access — agent-browser stays default.
     "browser-use": {
       "type": "local",
       "command": ["uvx", "--from", "browser-use[cli]==0.13.10", "browser-use", "--mcp"],
       "enabled": true,
-      "environment": { "OPENAI_API_KEY": "{env:OPENAI_API_KEY}" }
+      "environment": {
+        "OPENAI_API_KEY": "{env:OPENCODE_BROWSER_USE_API_KEY}",
+        "OPENAI_BASE_URL": "https://opencode.ai/zen/go/v1",
+        "BROWSER_USE_LLM_MODEL": "kimi-k3"
+      }
     },
     "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },
     // icm is no longer an MCP server (2026-09-24): its tools are registered by
