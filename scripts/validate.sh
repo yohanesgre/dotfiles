@@ -97,7 +97,7 @@ _suggest() { echo -e "         ${CYAN}→ $*${NC}"; }
 echo -e "${BOLD}Check 1: JSON Validity${NC}"
 
 for f in $(find "$REPO_ROOT" -type f \( -name '*.json' -o -name '*.jsonc' \) \
-    ! -path '*/node_modules/*' ! -path '*/.git/*' 2>/dev/null | sort); do
+    ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/.tmp/*' 2>/dev/null | sort); do
     rel="${f#$REPO_ROOT/}"
     if [[ "$f" == *.jsonc ]]; then
         check "parse $rel" _jsonc_valid "$f"

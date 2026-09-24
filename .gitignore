@@ -54,6 +54,9 @@ status/
 # browser automation state (playwright MCP, kept out if it returns)
 .playwright-mcp/
 
+# local scratch (concurrent tooling; never commit)
+.tmp/
+
 # codegraph index (per-project, rebuilt via `codegraph init`)
 .codegraph/
 
