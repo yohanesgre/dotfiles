@@ -117,4 +117,44 @@
         fi
         unset _py _toml _key _tmp _base
   '';
+
+  # browser-use MCP reads OPENAI_API_KEY from its process env, but the
+  # daemonized opencode service is respawned by TUI processes that lack the key,
+  # so `environment` {env:OPENCODE_BROWSER_USE_API_KEY} resolves empty and poisons
+  # every LLM call. The `browser-use-mcp` wrapper instead reads this file (0600)
+  # directly — no env indirection. Never echoed to the log.
+  home.activation.writeBrowserUseKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+        _py=${pkgs.python3}/bin/python3
+        if ! [ -x "$_py" ]; then _py=python3; fi
+
+        _toml=""
+        for _base in "$HOME/projects/dotfiles" "$HOME"; do
+          if [ -f "$_base/.env.toml" ]; then _toml="$_base/.env.toml"; break; fi
+        done
+
+        if [ -n "$_toml" ]; then
+          _key=$("$_py" - "$_toml" 2>/dev/null <<'PY'
+    import sys, tomllib
+    try:
+        data = tomllib.load(open(sys.argv[1], "rb"))
+    except Exception:
+        sys.exit(0)
+    print(data.get("OPENCODE_BROWSER_USE_API_KEY", ""))
+    PY
+    )
+          if [ -n "$_key" ]; then
+            _tmp=$(mktemp)
+            printf '%s\n' "$_key" > "$_tmp"
+            if ! cmp -s "$_tmp" "$HOME/.config/browser-use/key" 2>/dev/null; then
+              $DRY_RUN_CMD mkdir -p "$HOME/.config/browser-use"
+              $DRY_RUN_CMD install -m 600 "$_tmp" "$HOME/.config/browser-use/key"
+              echo "env: wrote browser-use key file ~/.config/browser-use/key (0600)"
+            fi
+            rm -f "$_tmp"
+          else
+            echo "env: OPENCODE_BROWSER_USE_API_KEY empty in $_toml — key file untouched" >&2
+          fi
+        fi
+        unset _py _toml _key _tmp _base
+  '';
 }

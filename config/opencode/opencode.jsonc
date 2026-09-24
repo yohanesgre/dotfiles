@@ -27,18 +27,25 @@
   },
   "mcp": {
     // browser-use MCP (2026-09-24) — official stdio server for LLM-driven
-    // autonomous browser tasks. Pinned; LLM calls route to OpenCode Go via
-    // dedicated OPENCODE_BROWSER_USE_API_KEY (paid only — free models are
-    // OpenCode-only). Model kimi-k3; fallback mimo-v2.6-flash if sampling
-    // params rejected. Browser + filesystem access — agent-browser stays default.
+    // autonomous browser tasks. Version pin now lives in the `browser-use-mcp`
+    // wrapper (home/modules/opencode). The key is read from
+    // ~/.config/browser-use/key (0600), written from .env.toml by the
+    // home/modules/env activation — no env indirection, so an empty
+    // OPENCODE_BROWSER_USE_API_KEY in the daemonized service env can no longer
+    // poison it. Model mimo-v2.6-flash — cheapest Go model that passes strict
+    // json_schema (deepseek-v4.1-flash fails structured output). Base URL goes
+    // through the localhost browser-use-llm-proxy (systemd user service, see
+    // home/modules/opencode) which adds the Go-required x-opencode-session
+    // header; the key still comes from ~/.config/browser-use/key via the
+    // browser-use-mcp wrapper. Browser + filesystem access — agent-browser
+    // stays default.
     "browser-use": {
       "type": "local",
-      "command": ["uvx", "--from", "browser-use[cli]==0.13.10", "browser-use", "--mcp"],
+      "command": ["browser-use-mcp"],
       "enabled": true,
       "environment": {
-        "OPENAI_API_KEY": "{env:OPENCODE_BROWSER_USE_API_KEY}",
-        "OPENAI_BASE_URL": "https://opencode.ai/zen/go/v1",
-        "BROWSER_USE_LLM_MODEL": "kimi-k3"
+        "OPENAI_BASE_URL": "http://127.0.0.1:49381/v1",
+        "BROWSER_USE_LLM_MODEL": "mimo-v2.6-flash"
       }
     },
     "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },

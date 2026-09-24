@@ -12,10 +12,24 @@
   xdg.configFile."opencode/agents".recursive = true;
   xdg.configFile."opencode/commands".source = ../../../config/opencode/commands;
   xdg.configFile."opencode/commands".recursive = true;
+  xdg.configFile."opencode/browser-use-llm-proxy.py".source =
+    ../../../config/opencode/browser-use-llm-proxy.py;
 
   # stdenv.cc.cc.lib kept so `LD_LIBRARY_PATH=/nix/store/.../lib:$LD_LIBRARY_PATH opencode` works for sharp/image tool.
   # DO NOT set home.sessionVariables.LD_LIBRARY_PATH globally — breaks KDE (libstdc++ mismatch).
-  home.packages = with pkgs; [ stdenv.cc.cc.lib ];
+  home.packages = with pkgs; [
+    stdenv.cc.cc.lib
+    # browser-use MCP wrapper: reads the key file directly instead of an
+    # {env:...} indirection, so an empty key in the daemonized service env can
+    # no longer poison the MCP child. Version pin lives here.
+    (pkgs.writeShellScriptBin "browser-use-mcp" ''
+      if [ -r "$HOME/.config/browser-use/key" ]; then
+        OPENAI_API_KEY="$(cat "$HOME/.config/browser-use/key")"
+        export OPENAI_API_KEY
+      fi
+      exec uvx --from 'browser-use[cli]==0.13.10' browser-use --mcp
+    '')
+  ];
 
   home.activation.opencodeBunInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     # prefer upstream bun (~/.bun, see home/modules/upstream); nix bun only as bootstrap
@@ -150,6 +164,23 @@
     };
     Service = {
       ExecStart = "%h/.local/bin/icm serve --http 127.0.0.1:11435";
+      Restart = "on-failure";
+      RestartSec = 3;
+    };
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+  };
+
+  # browser-use LLM proxy: OpenCode Go rejects external clients missing the
+  # `x-opencode-session` header, and browser-use cannot set custom headers.
+  # This stdlib-only localhost proxy injects a stable session id per process.
+  systemd.user.services.browser-use-llm-proxy = {
+    Unit = {
+      Description = "Localhost proxy adding x-opencode-session for browser-use → OpenCode Go";
+    };
+    Service = {
+      ExecStart = "${pkgs.python3}/bin/python3 %h/.config/opencode/browser-use-llm-proxy.py";
       Restart = "on-failure";
       RestartSec = 3;
     };
