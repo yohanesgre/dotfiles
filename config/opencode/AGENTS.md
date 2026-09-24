@@ -52,7 +52,7 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 - **Spawn `researcher` subagents with disjoint scopes.** Partition research into non-overlapping workstreams (no shared files/dirs/symbols/questions/sources); overlap wastes work and yields conflicting merges. Multiple parallel `researcher` subagents are correct when their scopes are disjoint — foreground calls issued together, or `background: true` only when the session continues and joins them. A single workstream gets exactly one researcher, and that researcher fans out read-only `explore` children foreground (never background) and merges before reporting (leaf-only; no recursion); split a workstream only when it exceeds one researcher's context/step budget. A single cheap lookup stays inline; strictly dependent lookups stay inside one researcher.
 - Codebase-exploration prompt: name the project, the exact question, known `qualified_name`s/paths, and the evidence expected (`path:line` + snippet). researcher routes internally: locate → `explorer`, trace → `call-graph`, structure/impact → codegraph.
 - Web-research prompt: state the library + pinned version, the exact question, and the source expectation (versioned official docs first). researcher fetches; never invent APIs.
-- **Every routine upkeep chore MUST route to `steward` — never `swe`.** Git lifecycle (status/stage/commit/branch/worktree/stash), docs sync (README/CONFIGURATION.md/AGENTS.md drift), repo hygiene (format, .gitignore, temp cleanup), release chores (changelog/version/tag), dependency bumps, and gate runs (lint/test/build) all go to `steward` on the cheap `mimo-v2.6-flash`; only application-behavior changes go to `swe`/`designer`. **This includes read-only and trivial-looking checks**: a bare `git status`, "is the tree clean", "do the checks pass", "any docs drifted" MUST be delegated to `steward` — never run git/validate/docs-scan inline in the primary, even when the answer is one line.
+- **Every routine upkeep chore MUST route to `steward` — never `swe`.** Git lifecycle (status/stage/commit/branch/worktree/stash), docs sync (README/CONFIGURATION.md/AGENTS.md drift), repo hygiene (format, .gitignore, temp cleanup), release chores (changelog/version/tag), dependency bumps, and gate runs (lint/test/build) all go to `steward` on the cheap `space-bunny-free`; only application-behavior changes go to `swe`/`designer`. **This includes read-only and trivial-looking checks**: a bare `git status`, "is the tree clean", "do the checks pass", "any docs drifted" MUST be delegated to `steward` — never run git/validate/docs-scan inline in the primary, even when the answer is one line.
 - For planning a feature or refactor before implementation, use `architect` agent.
 - For UI/styling work, delegate to `designer` agent.
 
@@ -65,6 +65,17 @@ Query the codegraph index instead of re-grepping/re-reading files. Structural qu
 **Grep still wins:** string literals, error messages, config values, non-code files, raw-content regex, or when codegraph returns nothing.
 
 **Delegation:** subagents don't see MCP initialize guidance — tell them to call `codegraph_explore` (or the `codegraph explore` CLI). Include the project name and known `file:line`/symbols so they skip re-discovery.
+
+## Jev — Typed Decisions
+
+`jev-mcp` is the typed decision layer, reached through `execute` (Code Mode): `tools["jev-mcp"].*`. Agents allowed to call it directly: `architect`, `researcher`, `reviewer`, `swe` (nested `jev-mcp_*` allow in their permission envelopes; the primary session allows all tools). Use it often — cheap and fast — but ADVISORY only: never a completion signal, never a replacement for `reviewer`, CI, tests, or pasted evidence, never a blocker. Unreachable / error / `abstain` → skip and fall back.
+
+- `jev_check` — one yes/no over a state (diff, artifact, plan, decision). Always pass `yes_means`/`no_means`; keep `state` structured and small.
+- `jev_ask` — several typed questions over ONE shared state in one request (≤64): the batch lever — far cheaper and faster than N calls. Prefer it whenever one state answers several questions.
+- `jev_triage` — pre-filter many items (≤50); `path` items are read server-side and never enter your context (use for diffs), `text` items are inline. One upstream request per item.
+- `jev_classify` / `jev_score` — quick typed routing/scoring. `jev_models` — key/model sanity check.
+- Triggers: ambiguous yes/no calls; design/plan sanity before executing; self-check before claiming done; pre-filtering a diff before `reviewer`; classifying borderline findings. Skip for deterministic facts, arithmetic, formatting, and anything a test decides.
+- Key: `~/.config/typesafe/key` (0600, written from `.env.toml` by the `home/modules/env` activation). Never put the key back into the MCP `environment` block — an empty `{env:...}` value wins over the key file.
 
 ## Code Style
 - Follow existing conventions in the codebase. Do not reformat or restyle unrelated code.
@@ -95,12 +106,12 @@ Query the codegraph index instead of re-grepping/re-reading files. Structural qu
 |----------|-------|--------|
 | Bounded implementation (feature/bugfix) | `swe` | Bash-first, test-driven minimal fixes |
 | Repo status/health check (even a single `git status` / "is it clean" / "do checks pass" / docs drift) | `steward` | Trivial-looking checks still delegate; primary never runs git/validate/docs-scan inline |
-| Git lifecycle (status/stage/commit/branch/worktree/stash) | `steward` | Cheap `mimo-v2.6-flash`; keeps implementer tokens for `swe` |
-| Docs sync (README/CONFIGURATION.md/AGENTS.md drift) | `steward` | Cheap `mimo-v2.6-flash`; non-behavior |
-| Repo hygiene (format, .gitignore, temp cleanup) | `steward` | Cheap `mimo-v2.6-flash`; non-behavior |
-| Release chores (changelog/version/tag) | `steward` | Cheap `mimo-v2.6-flash`; commits only when asked |
-| Dependency bumps | `steward` | Cheap `mimo-v2.6-flash`; non-behavior |
-| Gate runs (lint/test/build) | `steward` | Cheap `mimo-v2.6-flash`; no behavior change |
+| Git lifecycle (status/stage/commit/branch/worktree/stash) | `steward` | Cheap `space-bunny-free`; keeps implementer tokens for `swe` |
+| Docs sync (README/CONFIGURATION.md/AGENTS.md drift) | `steward` | Cheap `space-bunny-free`; non-behavior |
+| Repo hygiene (format, .gitignore, temp cleanup) | `steward` | Cheap `space-bunny-free`; non-behavior |
+| Release chores (changelog/version/tag) | `steward` | Cheap `space-bunny-free`; commits only when asked |
+| Dependency bumps | `steward` | Cheap `space-bunny-free`; non-behavior |
+| Gate runs (lint/test/build) | `steward` | Cheap `space-bunny-free`; no behavior change |
 | Multi-file bug / complex debugging | `swe` + `architect` | Plan first, then execute |
 | Vague idea / concept | `architect` | Structured exploration before code |
 | Feature planning / refactor >50 lines | `architect` | Phased plans with verify gates |

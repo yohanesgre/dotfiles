@@ -4,7 +4,7 @@
   "default_agent": "build",
   "agents": {
     "build": { "mode": "all" },
-    "explore": { "model": "opencode-go/mimo-v2.6-flash#none" }
+    "explore": { "model": "opencode-go/space-bunny-free" }
   },
   "lsp": true,
   "compaction": { "auto": true, "buffer": 10000 },
@@ -26,6 +26,16 @@
     }
   },
   "mcp": {
+    // browser-use MCP (2026-09-24) — official stdio server for LLM-driven
+    // autonomous browser tasks. Pinned; needs an OpenAI-compatible key
+    // (constructs ChatOpenAI; OPENAI_BASE_URL may point at OpenRouter).
+    // Grants browser + filesystem access — prefer agent-browser for routine work.
+    "browser-use": {
+      "type": "local",
+      "command": ["uvx", "--from", "browser-use[cli]==0.13.10", "browser-use", "--mcp"],
+      "enabled": true,
+      "environment": { "OPENAI_API_KEY": "{env:OPENAI_API_KEY}" }
+    },
     "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },
     // icm is no longer an MCP server (2026-09-24): its tools are registered by
     // config/opencode/plugins/icm.ts under the `icm` namespace, backed by the
@@ -33,13 +43,14 @@
     // the `icm` CLI. Same exposed tool names (`icm_memory_*`, `icm_wake_up`, ...).
     // jev-mcp — TypeSafe Jev typed decision layer (diff review gate, change risk,
     // requirement check, coding-loop routing). Binary: `jev-mcp` (bun global,
-    // home/modules/upstream). Live judgments require TYPESAFE_API_KEY; without it
-    // the tools return an auth error instead of a judgment.
+    // home/modules/upstream). The key comes from ~/.config/typesafe/key (0600),
+    // written from .env.toml by the home/modules/env activation — no env
+    // indirection, so an empty TYPESAFE_API_KEY in the daemonized service env
+    // can no longer poison it. Without the file, tools return an auth error.
     "jev-mcp": {
       "type": "local",
       "command": ["jev-mcp"],
-      "enabled": true,
-      "environment": { "TYPESAFE_API_KEY": "{env:TYPESAFE_API_KEY}" }
+      "enabled": true
     }
   },
   "shell": "/usr/bin/zsh"

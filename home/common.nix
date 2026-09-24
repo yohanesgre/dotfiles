@@ -14,6 +14,7 @@
     ./modules/manual
     ./modules/shell/zsh.nix
     ./modules/terminal/ghostty.nix
+    ./modules/fastfetch
     ./modules/env
     ./modules/opencode
     ./modules/omp

@@ -23,6 +23,7 @@ let
     "npm"
     "go"
     "neovim"
+    "fastfetch"
     "zsh"
     "zsh-theme-powerlevel10k"
   ];

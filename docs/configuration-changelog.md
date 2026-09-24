@@ -4,11 +4,29 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-24 — fastfetch theme → adapted HyprFlux
+
+- Replaced the initial hand-rolled config with an adapted HyprFlux theme (910★, MIT, pinned `$schema` 2.68.1).
+- Added `config/fastfetch/logo.png` (Kitty-protocol image logo) and linked it via `home/modules/fastfetch/default.nix`.
+- Adapted named ANSI colors to Tokyo Night truecolor hexes, added the KDE `de` row, removed a duplicate `display` row, and fixed the palette footer and trailing commas.
+
+## 2026-09-24 — browser-use MCP added
+
+- Added pinned `browser-use[cli]==0.13.10` stdio MCP (`uvx --from browser-use[cli]==0.13.10 browser-use --mcp`) for user-requested LLM-driven autonomous browser tasks; the pin prevents silent `uvx` upgrades, while upstream CLI/API changes remain a degradation risk.
+- Requires `OPENAI_API_KEY` (constructs `ChatOpenAI`; `OPENAI_BASE_URL` may point at OpenRouter). Grants browser + filesystem access, so use for scoped autonomous tasks only.
+- Survey chose `browser-use/browser-use` (116k stars, active) as complement to `agent-browser`; rejected `ChromeDevTools/chrome-devtools-mcp` and `microsoft/playwright-mcp` as redundant with built-in browser tools, `BrowserMCP/mcp` as stale with one contributor, and `browserbase/mcp-server-browserbase` as archived. Repo: https://github.com/browser-use/browser-use.
+
 ## 2026-09-24 — opencode-subagents overflow popup table
 
 - Added a host dialog for hidden subagents with a deterministic two-line table: agent, title, status, elapsed time, tokens, and cost on line one; model on line two.
 - Session time now uses each session's own duration, with running work taking precedence over stale resume idle data.
 - Added scrollbar-reservation alignment handling, a render-based alignment guard, and stable running-before-done/error ordering.
+
+## 2026-09-24 — fastfetch configuration added
+
+- Added `config/fastfetch/config.jsonc` with the CachyOS built-in logo, Nerd Font icons, an inline truecolor `{##RRGGBB}` palette, custom bar characters, and grouped system/session/hardware/network modules ending in the terminal color palette.
+- Added `home/modules/fastfetch/default.nix` to deploy the config declaratively; imported it from `home/common.nix`.
+- Added `fastfetch` to the pacman package list in `home/modules/pacman/default.nix`.
 
 ## 2026-09-24 — icm extraction cadence tuned
 

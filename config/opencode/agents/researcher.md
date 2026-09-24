@@ -1,7 +1,7 @@
 ---
 description: Research specialist + fan-out lead. Codebase navigation ("where is X", find/pattern search), call/trace/flow ("who calls X", "how does X work", request path), and external docs/library research (official docs, GitHub examples, library internals). Fans out read-only `explore` subagents for parallel independent lookups. Read-only, evidence-based.
 mode: subagent
-model: opencode-go/mimo-v2.6-flash#medium
+model: opencode-go/space-bunny-free
 steps: 40
 permissions:
   - action: "*"
@@ -20,6 +20,9 @@ permissions:
     resource: "*"
     effect: allow
   - action: codegraph_*
+    resource: "*"
+    effect: allow
+  - action: jev-mcp_*
     resource: "*"
     effect: allow
   - action: execute
