@@ -4,6 +4,13 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-26 — `opencode.depth` live-shell tracking (PR #12)
+
+- `opencode.depth` now treats any live shell of a mapped session tree as `working`, so a pane no longer falls to `done`/`idle` when the execution goes terminal while a shell is still running. Tracking is incremental over SSE: `shell.created` adds (`data.info.metadata.sessionID` + `data.info.id` + `location.directory`), `shell.exited` removes (`data.id`), `shell.deleted` is ignored.
+- Backfill/reconcile uses the **location-scoped** shell endpoint — `GET /api/shell?location[directory]=<enc>`, one request per known directory (the session's `location.directory` plus every directory seen in a `shell.created` event), deduped and bounded at 16 with the remainder sliced. Gotcha: the unscoped listing is not a valid substitute, so a directory that fails to answer keeps its already-known shells while a successful empty response drops only that directory's shells. The merged result is guarded by a monotonic `shellVersion`, so an exit delivered over SSE mid-fetch can never be resurrected by a stale list.
+- Limits corrected: the earlier "a detached background shell is unobservable" claim is now wrong. The model-facing shell tool cannot request `background: true` at all — only harness-only shells run detached — and the public shell payload carries no background/foreground discriminator, so all live shells count as working. `unmappedRoots()` still ignores live shells, so a lane held only by a shell can be hidden from the dock after the 120 s terminal window. Reviewer NITs accepted (zero-directory fallback, >16-directory slicing).
+- Merged as PR #12 (squash `5fcfa8d`).
+
 ## 2026-09-26 — `opencode.depth` Luvus module (PR #11)
 
 - New Luvus module `config/luvus/modules/opencode-depth/` (Bun/TS) — watches OpenCode's public HTTP/SSE surface and publishes **authoritative** pane status through UHP `agent.report` (authority `integration_report`, source `opencode/depth`), plus per-child/headless-lane dock rows, Luvus Bar counts, and aggregate AGENTS titles. Pane status is now authoritative (`integration_report`) instead of Luvus's native screen scraping; the stock `luvus-v2` integration keeps reporting root-session identity only (ownership; luvus-managed, untouched).
