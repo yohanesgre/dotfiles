@@ -75,7 +75,7 @@ setup(context)                                            [tui.tsx]
 
 ## 4. Cardinality (§3)
 
-- `fetchUsage`: time-bounded pull → poll (default 60s) + **single-flight** + TTL cache (`fetchedAt`). Never refetch for countdown; derive countdown from `resetsAt` on a 1s tick.
+- `fetchUsage`: time-bounded pull → poll (default 5min) + **single-flight** + TTL cache (`fetchedAt`). Never refetch for countdown; derive countdown from `resetsAt` on a 1s tick.
 - UI: reactive signal (many values over time), not a stream.
 
 ## 5. Break points E (§4)

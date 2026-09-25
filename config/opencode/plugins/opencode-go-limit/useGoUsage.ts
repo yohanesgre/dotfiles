@@ -3,7 +3,7 @@ import type { DisplayState } from "./display";
 import { createUsageClient, resolveAuth, type GoUsage, type UsageError } from "./usage";
 
 const STORAGE_KEY = "opencode-go-limit";
-const DEFAULT_REFRESH_MS = 60_000;
+const DEFAULT_REFRESH_MS = 300_000;
 const TICK_MS = 1_000;
 const GUARD_MS = 12_000;
 

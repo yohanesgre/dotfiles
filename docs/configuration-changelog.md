@@ -4,6 +4,10 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-25 — opencode-go-limit poll cadence
+
+- `opencode-go-limit` footer poll cadence changed from 60s to 5min. `session.idle` refresh trigger retained.
+
 ## 2026-09-24 — wired upstream tracking: --report + hardened --wired
 
 - `scripts/skills-sync.sh --wired --report` (new): shallow-clones each wired upstream, compares against the committed copy (ignoring `.openskills.json`, normalizing the `hidden: true` strip) and prints a per-skill drift table (`same | behind | local-mods | missing-upstream`) with upstream sha/date. Read-only; never npx; exit 0. `--report` without `--wired` exits 2.
