@@ -382,6 +382,82 @@ test("a failing directory query preserves that directory's shells", async () => 
   expect(states.slice(states.indexOf("working"))).toEqual(["working"]);
 });
 
+test("an empty successful unscoped fallback does not wipe a directory-less shell", async () => {
+  const { states, publisher, ui, snapshotReader, env } = harness();
+  const discovery = {
+    discover: async () => ({ path: "", url: "http://svc", password: "p", version: "1" }) as ServiceState,
+  } as unknown as ServiceDiscovery;
+  // No session location and no `shell.created` location: the reconcile set is
+  // empty, so the unscoped endpoint is the fallback — and it returns no shells.
+  const noLocation: OpenCodeSession[] = [{ id: "ses_root", parentID: null }];
+  const directoryless = client({
+    listSessions: async () => noLocation,
+    listShells: async () => [],
+    openEventStream: async (signal: AbortSignal) =>
+      sseStream(signal, [
+        { at: 10, payload: { type: "shell.created", data: { info: { id: "sh_1", status: "running", metadata: { sessionID: "ses_root" } } } } },
+      ]),
+  });
+  const controller = new AbortController();
+  const done = runWatcher({
+    discovery,
+    clientFactory: () => directoryless,
+    snapshotReader,
+    publisher,
+    ui,
+    log: silent,
+    env,
+    pollMs: 20,
+    signal: controller.signal,
+  });
+  await until(() => states.includes("working"), 2000);
+  // Let several more fallback refreshes run: the shell must survive all of them.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  controller.abort();
+  await done;
+  expect(states.slice(states.indexOf("working"))).toEqual(["working"]);
+});
+
+test("an event directory is still queried when session directories exceed the cap", async () => {
+  const { publisher, ui, snapshotReader, env } = harness();
+  const many: OpenCodeSession[] = Array.from({ length: 20 }, (_, index) => ({
+    id: `ses_${index}`,
+    parentID: null,
+    location: { directory: `/sessions/${index}` },
+  }));
+  const discovery = {
+    discover: async () => ({ path: "", url: "http://svc", password: "p", version: "1" }) as ServiceState,
+  } as unknown as ServiceDiscovery;
+  const seen: string[] = [];
+  const capped = client({
+    listSessions: async () => many,
+    listShells: async (location?: { directory: string }) => {
+      seen.push(location?.directory ?? "");
+      return [];
+    },
+    openEventStream: async (signal: AbortSignal) =>
+      sseStream(signal, [
+        { at: 10, payload: { type: "shell.created", location: { directory: "/event/dir" }, data: { info: { id: "sh_e", status: "running", metadata: { sessionID: "ses_0" } } } } },
+      ]),
+  });
+  const controller = new AbortController();
+  const done = runWatcher({
+    discovery,
+    clientFactory: () => capped,
+    snapshotReader,
+    publisher,
+    ui,
+    log: silent,
+    env,
+    pollMs: 20,
+    signal: controller.signal,
+  });
+  await until(() => seen.includes("/event/dir"), 2000);
+  controller.abort();
+  await done;
+  expect(seen).toContain("/event/dir");
+});
+
 test("re-subscriptions do not accumulate abort listeners", async () => {
   const { publisher, ui, snapshotReader, env } = harness();
   const signals: AbortSignal[] = [];

@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test";
-import { WatcherCore, type Settings } from "../src/watcher.ts";
+import { DONE_WINDOW_MS, MAX_SHELL_DIRECTORIES, WatcherCore, shellDirectories, type Settings } from "../src/watcher.ts";
 import type { LuvusPane, MappedPane, ShellInfo } from "../src/types.ts";
 
 const settings: Settings = { source: "opencode/depth", ttlS: 900, maxRows: 16, bar: false, title: false };
@@ -190,4 +190,74 @@ test("reconcileShellsByDirectory is a no-op when the shell version changed durin
   instance.applyEvent(exited("sh_1"));
   instance.reconcileShellsByDirectory(new Map<string, ShellInfo[]>([["/projects/alpha", [{ id: "sh_1", status: "running", sessionID: "ses_root" }]]]), stale);
   expect(instance.signals().liveShells.get("ses_root")).toBeUndefined();
+});
+
+function lanesOf(instance: WatcherCore): Array<{ id: unknown; state: unknown }> {
+  return (instance.monitorState(true, null).lanes ?? []) as Array<{ id: unknown; state: unknown }>;
+}
+
+test("a terminal root with a live shell stays listed past the done window", () => {
+  let clock = 1_000_000;
+  const instance = new WatcherCore(settings, () => clock);
+  instance.setSessions([{ id: "ses_root", parentID: null }]);
+  instance.map();
+  instance.applyEvent({ type: "session.execution.succeeded", data: { sessionID: "ses_root" } });
+  clock += DONE_WINDOW_MS + 1;
+  // No shell and no activity: the lane is only recent-terminal, so it is gone.
+  expect(lanesOf(instance)).toEqual([]);
+  instance.applyEvent(created("sh_1", "ses_root"));
+  const lanes = lanesOf(instance);
+  expect(lanes.map((lane) => lane.id)).toEqual(["ses_root"]);
+  expect(lanes[0]?.state).toBe("working");
+});
+
+test("a root with a live shell in its child subtree stays listed past the done window", () => {
+  let clock = 1_000_000;
+  const instance = new WatcherCore(settings, () => clock);
+  instance.setSessions([
+    { id: "ses_root", parentID: null },
+    { id: "ses_child", parentID: "ses_root" },
+  ]);
+  instance.map();
+  instance.applyEvent({ type: "session.execution.succeeded", data: { sessionID: "ses_root" } });
+  clock += DONE_WINDOW_MS + 1;
+  // Root's own execution is long terminal and no pane maps it: without the
+  // child's shell the lane would be gone.
+  expect(lanesOf(instance)).toEqual([]);
+  // The live shell belongs to the child, not the root.
+  instance.applyEvent(created("sh_child", "ses_child"));
+  const lanes = lanesOf(instance);
+  expect(lanes.map((lane) => lane.id)).toEqual(["ses_root"]);
+  expect(lanes[0]?.state).toBe("working");
+});
+
+test("a root with an active child stays listed past the done window", () => {
+  let clock = 1_000_000;
+  const instance = new WatcherCore(settings, () => clock);
+  instance.setSessions([
+    { id: "ses_root", parentID: null },
+    { id: "ses_child", parentID: "ses_root" },
+  ]);
+  instance.map();
+  instance.applyEvent({ type: "session.execution.succeeded", data: { sessionID: "ses_root" } });
+  clock += DONE_WINDOW_MS + 1;
+  expect(lanesOf(instance)).toEqual([]);
+  instance.setActive(new Set(["ses_child"]));
+  const lanes = lanesOf(instance);
+  expect(lanes.map((lane) => lane.id)).toEqual(["ses_root"]);
+  expect(lanes[0]?.state).toBe("working");
+});
+
+test("shellDirectories queries an event directory before session-only ones", () => {
+  const sessions = Array.from({ length: 20 }, (_, index) => ({ id: `ses_${index}`, location: { directory: `/sessions/${index}` } }));
+  const directories = shellDirectories(sessions, new Set<string>(), new Set(["/event/dir"]));
+  expect(directories).toHaveLength(MAX_SHELL_DIRECTORIES);
+  expect(directories[0]).toBe("/event/dir");
+});
+
+test("shellDirectories keeps directories with tracked shells ahead of the rest", () => {
+  const sessions = Array.from({ length: 20 }, (_, index) => ({ id: `ses_${index}`, location: { directory: `/sessions/${index}` } }));
+  const directories = shellDirectories(sessions, new Set(["/tracked/dir", "/event/dir"]), new Set(["/event/dir"]));
+  expect(directories.slice(0, 2)).toEqual(["/tracked/dir", "/event/dir"]);
+  expect(new Set(directories).size).toBe(directories.length);
 });

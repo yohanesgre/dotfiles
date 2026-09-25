@@ -217,6 +217,19 @@ export class WatcherCore {
     return this.shellVersionCounter;
   }
 
+  /** Directories that currently hold tracked shells (query-priority order source). */
+  get trackedShellDirectories(): ReadonlySet<string> {
+    return new Set(this.shellDirectory.values());
+  }
+
+  /** True when a tracked shell has no known `location.directory` (fallback-tracked). */
+  hasDirectorylessShells(): boolean {
+    for (const shellID of this.shellOwner.keys()) {
+      if (!this.shellDirectory.has(shellID)) return true;
+    }
+    return false;
+  }
+
   /**
    * Replaces the shell map with `GET /api/shell`'s running set: backfills shells
    * created before attach/restart and drops phantoms left by a crash or a missed
@@ -348,7 +361,13 @@ export class WatcherCore {
     const used = new Set(this.lastMap.mapped.map((pane) => pane.root.id));
     return index.roots.filter((root) => {
       if (used.has(root.id)) return false;
-      if (this.activeIds.has(root.id)) return true;
+      // An active or shell-holding descendant keeps the whole lane working, so
+      // both presence tests range over the root's subtree, not just the root: a
+      // headless root whose own execution ended must still be listed while a
+      // child session runs.
+      const tree = subtree(index, root);
+      if (tree.some((session) => this.activeIds.has(session.id))) return true;
+      if (tree.some((session) => (this.liveShells.get(session.id)?.size ?? 0) > 0)) return true;
       const at = this.terminalAt.get(root.id);
       if (at !== undefined && now - at <= DONE_WINDOW_MS) return true;
       return false;
@@ -490,20 +509,24 @@ function stateRank(state: AgentState): number {
 export const MAX_SHELL_DIRECTORIES = 16;
 
 /**
- * The bounded, deduped set of directories whose shells matter this cycle: the
- * session list's locations plus directories seen on `shell.created` events
- * (a detached shell can outlive the session that is no longer listed).
+ * The bounded, deduped set of directories whose shells matter this cycle, in
+ * query-priority order: directories that already hold tracked shells first,
+ * then directories seen on `shell.created` events (a detached shell can outlive
+ * the session that is no longer listed), then the remaining session locations.
+ * The slice keeps the highest-priority directories when there are too many.
  */
 export function shellDirectories(
   sessions: OpenCodeSession[],
+  trackedDirectories: ReadonlySet<string>,
   eventDirectories: ReadonlySet<string>,
 ): string[] {
   const directories = new Set<string>();
+  for (const directory of trackedDirectories) directories.add(directory);
+  for (const directory of eventDirectories) directories.add(directory);
   for (const session of sessions) {
     const directory = session.location?.directory;
     if (directory) directories.add(directory);
   }
-  for (const directory of eventDirectories) directories.add(directory);
   return [...directories].slice(0, MAX_SHELL_DIRECTORIES);
 }
 
@@ -773,16 +796,20 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<number> {
       snapshotReader.read(),
     ]);
     if (abort.signal.aborted) return;
-    const directories = shellDirectories(sessions, core.shellEventDirectories);
+    const directories = shellDirectories(sessions, core.trackedShellDirectories, core.shellEventDirectories);
     // No known location yet: fall back to the unscoped endpoint (old behavior)
-    // and only replace state when it succeeds.
+    // and only replace state when it succeeds. Skip it while a directory-less
+    // shell is tracked: the unscoped response cannot account for a shell with no
+    // known directory, so a successful-but-empty result would wipe it.
     let fallbackShells: ShellInfo[] | null = null;
     let shellsByDirectory: Map<string, ShellInfo[] | null> | null = null;
     if (directories.length === 0) {
-      try {
-        fallbackShells = await client.listShells();
-      } catch (error) {
-        log.warn(`GET /api/shell failed; keeping current shell state: ${String(error)}`);
+      if (!core.hasDirectorylessShells()) {
+        try {
+          fallbackShells = await client.listShells();
+        } catch (error) {
+          log.warn(`GET /api/shell failed; keeping current shell state: ${String(error)}`);
+        }
       }
     } else {
       shellsByDirectory = await queryShellDirectories(client, directories, log);
