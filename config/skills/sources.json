@@ -75,7 +75,9 @@
         "writing-plans",
         "writing-skills"
       ],
-      "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
+      "notes": "committed exception; routed by repo-authored skills / AGENTS.md",
+      "upstream_sha": "5bf4e78",
+      "upstream_imported": "2026-09-25"
     },
     {
       "id": "anthropics-skills-wired",
