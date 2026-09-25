@@ -4,6 +4,14 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-26 — `opencode.depth` hardening (PR #13)
+
+- `unmappedRoots()` is now subtree-scoped for live-work presence: a headless root stays in the dock/monitor while any descendant holds a live shell or is active, past the 120 s done window. The done window itself stays root-only, so an idle long-terminal root still disappears as before. This retires the PR #12 limit "`unmappedRoots()` still ignores live shells".
+- The zero-directory unscoped `GET /api/shell` fallback reconcile is now skipped while any tracked shell has no known directory. Without that guard, a successful empty response to the unscoped listing could wipe a live shell that simply had no directory known yet.
+- `shellDirectories()` ordering made explicit: tracked-shell directories first, then event directories, then session directories, deduped and sliced at 16 — so a shell's own directory survives the cap when the shell is live.
+- Each fix has a regression test, verified failing before the fix and passing after.
+- Merged as PR #13 (squash `b18c44a`).
+
 ## 2026-09-26 — `opencode.depth` live-shell tracking (PR #12)
 
 - `opencode.depth` now treats any live shell of a mapped session tree as `working`, so a pane no longer falls to `done`/`idle` when the execution goes terminal while a shell is still running. Tracking is incremental over SSE: `shell.created` adds (`data.info.metadata.sessionID` + `data.info.id` + `location.directory`), `shell.exited` removes (`data.id`), `shell.deleted` is ignored.
