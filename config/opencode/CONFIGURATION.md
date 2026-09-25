@@ -182,3 +182,13 @@ Archived under `~/.config/opencode-archive-v1-20260906/`:
 - npm plugins dropped from config: `@tarquinen/opencode-dcp`, `oh-my-opencode-slim`
 - runtime manifests: package.json, package-lock.json, bun.lock (live `node_modules/` 87M deleted — regenerable via `bun install`)
 
+## Luvus: `opencode.depth` module (2026-09-26)
+
+Successor to the reverted `luvus-state` overlay (revert entry above): Luvus module (Bun/TS) at `config/luvus/modules/opencode-depth/` that watches OpenCode's public HTTP/SSE surface and publishes **authoritative** pane status via UHP `agent.report` (authority `integration_report`, source `opencode/depth`), plus per-child/headless-lane dock rows, bar counts, and aggregate AGENTS titles. The shipped `luvus-v2` integration still reports root-session identity only (ownership) — it is luvus-managed and untouched.
+
+- **Activation:** `home.activation.luvusOpencodeDepthModule` (`home/modules/luvus/default.nix`) runs `luvus module link` on every switch when the module is unregistered or points elsewhere; warn-only, never fails the switch. `link` runs the `[[startup]]` launcher, which starts one detached watcher and exits (single-instance via atomic pidfile under `LUVUS_MODULE_STATE_DIR`; `pane.created`/`pane.closed` hooks revive it).
+- **Commands:** `luvus module run opencode.depth start|stop` (idempotent start; stop signals the pid and clears a stale pidfile). Monitor pane is manual — `luvus module pane open opencode.depth monitor --placement overlay` (`[[panes]]` are not auto-started by `link`). Watcher log: `opencode-depth.watcher.log` in the module state dir; never contains the module token or the OpenCode password. `SIGTERM`/`SIGINT` releases every lease and clears dock/bar/titles so Luvus falls back to native detection.
+- **Settings:** `source` (`opencode/depth`), `ttl_s` (900; renewed at TTL/3, floor 60), `max_rows` (16), `bar` (true), `title` (true).
+- **Status model:** over each mapped pane's session tree (root + descendants by `parentID`) — pending permission → `blocked`, active execution → `working`, terminal execution within 120 s → `done`, else `idle`. Exact `agent_session` mapping wins; otherwise pane matched to a root by `cwd` (newest active drain first), ambiguous `cwd` skipped and logged, never guessed.
+- **Limits:** a detached background shell (`bash` with `background: true`) has no public OpenCode session contract and is unobservable (background *subagent* sessions are mapped, via `parentID`); durable-log replay is resync-via-poll, not replay; live `blocked` is not reproducible under the global `permission: allow` in `opencode.jsonc`. Requirements: Luvus ≥ 0.14.2, a running OpenCode shared service, and `bun` on the **Luvus server** process path.
+

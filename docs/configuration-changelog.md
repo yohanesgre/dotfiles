@@ -4,6 +4,13 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-26 — `opencode.depth` Luvus module (PR #11)
+
+- New Luvus module `config/luvus/modules/opencode-depth/` (Bun/TS) — watches OpenCode's public HTTP/SSE surface and publishes **authoritative** pane status through UHP `agent.report` (authority `integration_report`, source `opencode/depth`), plus per-child/headless-lane dock rows, Luvus Bar counts, and aggregate AGENTS titles. Pane status is now authoritative (`integration_report`) instead of Luvus's native screen scraping; the stock `luvus-v2` integration keeps reporting root-session identity only (ownership; luvus-managed, untouched).
+- Activation: `home.activation.luvusOpencodeDepthModule` in `home/modules/luvus/default.nix` links the module when unregistered or linked elsewhere — warn-only, never fails the switch. Watcher starts detached via the `[[startup]]` launcher (atomic pidfile, single-instance, revived by the `pane.created`/`pane.closed` hooks). Commands: `luvus module run opencode.depth start|stop`; monitor pane opens manually (`luvus module pane open opencode.depth monitor --placement overlay`). Settings: `source`/`ttl_s` (≥60s, default 900)/`max_rows`/`bar`/`title`.
+- Known limits: a detached background shell (`bash` with `background: true`) is unobservable (background *subagent* sessions are mapped via `parentID`); durable-log replay is resync-via-poll; live `blocked` is not reproducible under the global `permission: allow`.
+- Merged as PR #11 (squash `f3ffcbe`).
+
 ## 2026-09-25 — reviewer low-confidence escalation cap + eval-7-standard
 
 - Skill revision `248862f4` (live) changed the Depth routing rule: confidence below 0.6 escalates one tier, **capped at `standard`** unless a risk area is present — uncertainty alone is not a reason for a deep hunt. Rationale: the previous free escalation burned deep-hunt budget on ambiguous-but-benign changes.
