@@ -71,6 +71,44 @@ test("replayed durable-log item is applied by the event parser", () => {
   expect(event?.type).toBe("session.execution.succeeded");
 });
 
+test("listShells parses the /api/shell envelope and keeps only usable rows", async () => {
+  const payload = {
+    location: {},
+    data: [
+      { id: "sh_1", status: "running", command: "sleep 30", cwd: "/repo", shell: "/bin/zsh", file: "/f", pid: 10, metadata: { sessionID: "ses_a" }, time: { started: 1 } },
+      { id: "sh_2", status: "exited", exit: 0, metadata: { sessionID: "ses_b" }, time: { started: 1 } },
+      { id: "sh_3", status: "running", metadata: {}, time: { started: 1 } },
+      { id: "", status: "running", metadata: { sessionID: "ses_c" } },
+      "not an object",
+    ],
+  };
+  let seen = "";
+  const fetchImpl = (async (input: string) => {
+    seen = input;
+    return new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } });
+  }) as unknown as typeof fetch;
+  const client = new OpenCodeClient({ url: "http://x", password: "p", fetchImpl });
+  expect(await client.listShells()).toEqual([
+    { id: "sh_1", status: "running", sessionID: "ses_a" },
+    { id: "sh_2", status: "exited", sessionID: "ses_b" },
+    { id: "sh_3", status: "running" },
+  ]);
+  expect(seen).toContain("/api/shell");
+  expect(seen).toBe("http://x/api/shell");
+});
+
+test("listShells scopes the request to a directory with deepObject encoding", async () => {
+  const payload = { location: { directory: "/project/a" }, data: [] };
+  const inputs: string[] = [];
+  const fetchImpl = (async (input: string) => {
+    inputs.push(input);
+    return new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } });
+  }) as unknown as typeof fetch;
+  const client = new OpenCodeClient({ url: "http://x", password: "p", fetchImpl });
+  await client.listShells({ directory: "/project/a b&c" });
+  expect(inputs[0]).toBe("http://x/api/shell?location[directory]=%2Fproject%2Fa%20b%26c");
+});
+
 test("listSessions follows cursor.next across pages and stops when bounded", async () => {
   const pages = [
     { data: [{ id: "ses_1" }], cursor: { next: "c2" } },

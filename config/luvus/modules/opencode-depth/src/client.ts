@@ -1,5 +1,5 @@
 import { basicAuthHeader, type FetchLike } from "./discover.ts";
-import type { OpenCodeEvent, OpenCodeSession, PendingPermission } from "./types.ts";
+import type { OpenCodeEvent, OpenCodeSession, PendingPermission, ShellInfo, ShellStatus } from "./types.ts";
 
 export interface ClientOptions {
   url: string;
@@ -131,6 +131,21 @@ export class OpenCodeClient {
     return new Set(Object.keys(body?.data ?? {}));
   }
 
+  /**
+   * Lists running shell commands (the `/api/shell` shape: `{location, data: Shell.Info[]}`).
+   * The endpoint is location-scoped: without a directory it reports only the
+   * server's default location, so callers must pass the directory they track
+   * (deepObject style). The no-argument form is the explicit fallback for when
+   * no location is known yet.
+   */
+  async listShells(location?: { directory: string }): Promise<ShellInfo[]> {
+    const query = location ? `?location[directory]=${encodeURIComponent(location.directory)}` : "";
+    const res = await this.request(`/api/shell${query}`);
+    if (!res.ok) throw new Error(`GET /api/shell -> ${res.status}`);
+    const body = res.json as { data?: unknown[] } | null;
+    return normalizeShells(body?.data ?? []);
+  }
+
   async pendingPermissions(): Promise<PendingPermission[]> {
     const res = await this.request("/api/permission/request");
     if (!res.ok) throw new Error(`GET /api/permission/request -> ${res.status}`);
@@ -170,6 +185,27 @@ export class OpenCodeClient {
     if (!res.ok || !res.body) throw new Error(`GET session log -> ${res.status}`);
     return res.body;
   }
+}
+
+const SHELL_STATUSES: ReadonlySet<ShellStatus> = new Set(["running", "exited", "timeout", "killed"]);
+
+function parseShellStatus(value: unknown): ShellStatus | null {
+  return typeof value === "string" && SHELL_STATUSES.has(value as ShellStatus) ? (value as ShellStatus) : null;
+}
+
+function normalizeShells(raw: unknown[]): ShellInfo[] {
+  const out: ShellInfo[] = [];
+  for (const item of raw) {
+    if (typeof item !== "object" || item === null) continue;
+    const obj = item as Record<string, unknown>;
+    const id = typeof obj.id === "string" ? obj.id : "";
+    const status = parseShellStatus(obj.status);
+    if (!id || !status) continue;
+    const metadata = typeof obj.metadata === "object" && obj.metadata !== null ? (obj.metadata as Record<string, unknown>) : {};
+    const sessionID = typeof metadata.sessionID === "string" ? metadata.sessionID : "";
+    out.push(sessionID.length > 0 ? { id, status, sessionID } : { id, status });
+  }
+  return out;
 }
 
 function normalizePermissions(raw: unknown[]): PendingPermission[] {

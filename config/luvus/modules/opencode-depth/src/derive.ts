@@ -7,6 +7,8 @@ export interface Signals {
   execState: Map<string, "working" | "terminal">;
   /** When a terminal execution event was observed, ms epoch. */
   terminalAt: Map<string, number>;
+  /** Live shell commands (`bash` tool) per session; a detached shell outlives its tool call. */
+  liveShells: ReadonlyMap<string, ReadonlySet<string>>;
   permissions: PendingPermission[];
   now: number;
   doneWindowMs: number;
@@ -50,6 +52,9 @@ export function subtreeOf(tree: OpenCodeSession[], id: string): OpenCodeSession[
 }
 
 function isWorking(session: OpenCodeSession, signals: Signals): boolean {
+  // A live shell can outlive the terminal execution event that spawned it, so it
+  // wins over the terminal short-circuit below.
+  if ((signals.liveShells.get(session.id)?.size ?? 0) > 0) return true;
   const exec = signals.execState.get(session.id);
   if (exec === "terminal") return false;
   if (exec === "working") return true;

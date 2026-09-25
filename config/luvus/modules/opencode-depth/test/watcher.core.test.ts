@@ -35,11 +35,32 @@ function idleStream(signal: AbortSignal): ReadableStream<Uint8Array> {
   });
 }
 
+/** An SSE stream that emits each payload as a `data:` frame after its delay. */
+function sseStream(signal: AbortSignal, frames: Array<{ at: number; payload: unknown }>): ReadableStream<Uint8Array> {
+  return new ReadableStream({
+    start(controller) {
+      const encoder = new TextEncoder();
+      const timers = frames.map((frame) =>
+        setTimeout(() => controller.enqueue(encoder.encode(`data: ${JSON.stringify(frame.payload)}\n\n`)), frame.at),
+      );
+      signal.addEventListener(
+        "abort",
+        () => {
+          for (const timer of timers) clearTimeout(timer);
+          controller.close();
+        },
+        { once: true },
+      );
+    },
+  });
+}
+
 function client(overrides: Partial<OpenCodeClient>): OpenCodeClient {
   const base = {
     listSessions: async () => sessions,
     activeSessions: async () => new Set<string>(),
     pendingPermissions: async () => [],
+    listShells: async () => [],
     openEventStream: async (signal: AbortSignal) => idleStream(signal),
     sessionPermissions: async () => [],
     replyPermission: async () => {},
@@ -51,9 +72,11 @@ function client(overrides: Partial<OpenCodeClient>): OpenCodeClient {
 function harness() {
   const stateDir = mkdtempSync(join(tmpdir(), "depth-core-"));
   const reports: string[] = [];
+  const states: string[] = [];
   const publisher = {
-    reportWithRecovery: (paneId: string) => {
+    reportWithRecovery: (paneId: string, state: string) => {
       reports.push(paneId);
+      states.push(state);
       return "ok" as const;
     },
     release: () => true,
@@ -69,7 +92,7 @@ function harness() {
   } as unknown as UiPublisher;
   const snapshotReader = { read: async () => [pane] } as unknown as SnapshotReader;
   const env = { LUVUS_MODULE_STATE_DIR: stateDir, LUVUS_SETTING_BAR: "false", LUVUS_SETTING_TITLE: "false" } as NodeJS.ProcessEnv;
-  return { reports, publisher, ui, snapshotReader, env, stateDir };
+  return { reports, states, publisher, ui, snapshotReader, env, stateDir };
 }
 
 async function until(predicate: () => boolean, timeoutMs = 3000): Promise<void> {
@@ -173,6 +196,190 @@ test("an abort during discovery prevents client creation", async () => {
   await new Promise((resolve) => setTimeout(resolve, 80));
   expect(factories).toBe(0);
   expect(reports).toEqual([]);
+});
+
+test("refresh backfills a running shell and reports working", async () => {
+  const { reports, states, publisher, ui, snapshotReader, env } = harness();
+  const discovery = {
+    discover: async () => ({ path: "", url: "http://svc", password: "p", version: "1" }) as ServiceState,
+  } as unknown as ServiceDiscovery;
+  const controller = new AbortController();
+  const done = runWatcher({
+    discovery,
+    clientFactory: () => client({ listShells: async () => [{ id: "sh_1", status: "running", sessionID: "ses_root" }] }),
+    snapshotReader,
+    publisher,
+    ui,
+    log: silent,
+    env,
+    pollMs: 20,
+    signal: controller.signal,
+  });
+  await until(() => reports.includes("30"));
+  controller.abort();
+  await done;
+  expect(states).toContain("working");
+});
+
+test("a failing /api/shell keeps the tracked shells instead of degrading to idle", async () => {
+  const { reports, states, publisher, ui, snapshotReader, env } = harness();
+  const discovery = {
+    discover: async () => ({ path: "", url: "http://svc", password: "p", version: "1" }) as ServiceState,
+  } as unknown as ServiceDiscovery;
+  let calls = 0;
+  const flaky = client({
+    listShells: async () => {
+      calls += 1;
+      if (calls === 1) return [{ id: "sh_1", status: "running", sessionID: "ses_root" }];
+      throw new Error("shell endpoint down");
+    },
+  });
+  const controller = new AbortController();
+  const done = runWatcher({
+    discovery,
+    clientFactory: () => flaky,
+    snapshotReader,
+    publisher,
+    ui,
+    log: silent,
+    env,
+    pollMs: 20,
+    signal: controller.signal,
+  });
+  await until(() => calls >= 3);
+  controller.abort();
+  await done;
+  expect(states).toContain("working");
+  expect(states).not.toContain("idle");
+});
+
+test("an SSE shell.exited landing during an in-flight listShells is not resurrected", async () => {
+  const { states, publisher, ui, snapshotReader, env } = harness();
+  const discovery = {
+    discover: async () => ({ path: "", url: "http://svc", password: "p", version: "1" }) as ServiceState,
+  } as unknown as ServiceDiscovery;
+  let shellCalls = 0;
+  const racing = client({
+    // The first fetch is the one in flight when the SSE exit lands: 150 ms later
+    // it still reports the shell as running (a stale snapshot). Later fetches are
+    // accurate, so the test cannot pass merely via a later refresh.
+    listShells: async () => {
+      shellCalls += 1;
+      if (shellCalls === 1) {
+        await new Promise((resolve) => setTimeout(resolve, 150));
+        return [{ id: "sh_1", status: "running", sessionID: "ses_root" }];
+      }
+      return [];
+    },
+    openEventStream: async (signal: AbortSignal) =>
+      sseStream(signal, [
+        { at: 20, payload: { type: "shell.created", data: { info: { id: "sh_1", status: "running", metadata: { sessionID: "ses_root" } } } } },
+        { at: 40, payload: { type: "shell.exited", data: { id: "sh_1", exit: 0, status: "exited" } } },
+      ]),
+  });
+  const controller = new AbortController();
+  const done = runWatcher({
+    discovery,
+    clientFactory: () => racing,
+    snapshotReader,
+    publisher,
+    ui,
+    log: silent,
+    env,
+    pollMs: 60_000,
+    signal: controller.signal,
+  });
+  await until(() => shellCalls >= 2, 2000);
+  controller.abort();
+  await done;
+  expect(states).not.toContain("working");
+});
+
+test("refresh queries each known directory and merges its shells", async () => {
+  const { reports, states, publisher, ui, env } = harness();
+  const sessionsTwo: OpenCodeSession[] = [
+    { id: "ses_a", parentID: null, location: { directory: "/alpha" } },
+    { id: "ses_b", parentID: null, location: { directory: "/beta" } },
+  ];
+  const panes: LuvusPane[] = [
+    { ...pane, pane_id: "30", agent_session: "ses_a", cwd: "/alpha" },
+    { ...pane, pane_id: "31", agent_session: "ses_b", cwd: "/beta" },
+  ];
+  const snapshotReader = { read: async () => panes } as unknown as SnapshotReader;
+  const discovery = {
+    discover: async () => ({ path: "", url: "http://svc", password: "p", version: "1" }) as ServiceState,
+  } as unknown as ServiceDiscovery;
+  const seen: string[] = [];
+  const multi = client({
+    listSessions: async () => sessionsTwo,
+    listShells: async (location?: { directory: string }) => {
+      seen.push(location?.directory ?? "");
+      if (location?.directory === "/alpha") return [{ id: "sh_a", status: "running", sessionID: "ses_a" }];
+      if (location?.directory === "/beta") return [{ id: "sh_b", status: "running", sessionID: "ses_b" }];
+      return [];
+    },
+  });
+  const controller = new AbortController();
+  const done = runWatcher({
+    discovery,
+    clientFactory: () => multi,
+    snapshotReader,
+    publisher,
+    ui,
+    log: silent,
+    env,
+    pollMs: 20,
+    signal: controller.signal,
+  });
+  await until(() => reports.includes("30") && reports.includes("31") && states.filter((state) => state === "working").length >= 2);
+  controller.abort();
+  await done;
+  expect(new Set(seen)).toEqual(new Set(["/alpha", "/beta"]));
+});
+
+test("a failing directory query preserves that directory's shells", async () => {
+  const { states, publisher, ui, env } = harness();
+  const sessionsOne: OpenCodeSession[] = [{ id: "ses_a", parentID: null, location: { directory: "/alpha" } }];
+  const panes: LuvusPane[] = [{ ...pane, pane_id: "30", agent_session: "ses_a", cwd: "/alpha" }];
+  const snapshotReader = { read: async () => panes } as unknown as SnapshotReader;
+  const discovery = {
+    discover: async () => ({ path: "", url: "http://svc", password: "p", version: "1" }) as ServiceState,
+  } as unknown as ServiceDiscovery;
+  const seen: string[] = [];
+  const failing = client({
+    listSessions: async () => sessionsOne,
+    listShells: async (location?: { directory: string }) => {
+      seen.push(location?.directory ?? "");
+      throw new Error("alpha shell endpoint down");
+    },
+    openEventStream: async (signal: AbortSignal) =>
+      sseStream(signal, [
+        {
+          at: 20,
+          payload: { type: "shell.created", location: { directory: "/alpha" }, data: { info: { id: "sh_a", status: "running", metadata: { sessionID: "ses_a" } } } },
+        },
+      ]),
+  });
+  const controller = new AbortController();
+  const done = runWatcher({
+    discovery,
+    clientFactory: () => failing,
+    snapshotReader,
+    publisher,
+    ui,
+    log: silent,
+    env,
+    pollMs: 30,
+    signal: controller.signal,
+  });
+  await until(() => states.includes("working"), 2000);
+  // Let several more refreshes run: every one fails for /alpha, so the shell
+  // must survive and the pane must not fall back to idle.
+  await new Promise((resolve) => setTimeout(resolve, 200));
+  controller.abort();
+  await done;
+  expect(seen).toContain("/alpha");
+  expect(states.slice(states.indexOf("working"))).toEqual(["working"]);
 });
 
 test("re-subscriptions do not accumulate abort listeners", async () => {

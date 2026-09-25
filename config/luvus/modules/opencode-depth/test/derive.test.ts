@@ -8,6 +8,7 @@ function signals(overrides: Partial<Signals> = {}): Signals {
     active: new Set<string>(),
     execState: new Map(),
     terminalAt: new Map(),
+    liveShells: new Map(),
     permissions: [],
     now: 10_000,
     doneWindowMs: 120_000,
@@ -43,6 +44,23 @@ test("a terminal execution event overrides a lingering active entry", () => {
     }),
   );
   expect(result.state).toBe("done");
+});
+
+test("a live shell keeps the tree working after the execution went terminal", () => {
+  const result = derivePaneSignals(
+    tree,
+    signals({
+      execState: new Map([["ses_child", "terminal"]]),
+      terminalAt: new Map([["ses_child", 9_500]]),
+      liveShells: new Map([["ses_child", new Set(["sh_1"])]]),
+    }),
+  );
+  expect(result.state).toBe("working");
+});
+
+test("a live shell in another session does not affect this pane", () => {
+  const result = derivePaneSignals(tree, signals({ liveShells: new Map([["ses_other", new Set(["sh_1"])]]) }));
+  expect(result.state).toBe("idle");
 });
 
 test("a pane with no signals is idle", () => {

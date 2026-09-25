@@ -103,19 +103,26 @@ Per mapped pane, over the pane's session tree (root + descendants via
 
 1. any pending permission request in the tree → `blocked` (message carries the
    request id and action);
-2. any execution active → `working`;
+2. any execution active, or any live shell command in the tree → `working`;
 3. a terminal execution (`succeeded|failed|interrupted`) within 120 s → `done`;
 4. otherwise `idle`.
+
+Live shells are tracked from `shell.created`/`shell.exited` and reconciled each
+refresh against `GET /api/shell` (running only), so a detached `bash` shell keeps
+its session `working` after the spawning execution has already gone terminal —
+including across a watcher restart. OpenCode exposes no foreground/background
+discriminator, so a slow foreground shell also counts as `working`.
 
 Exact `agent_session` mapping wins. A pane with no session is matched to a root
 session by `cwd` (newest active drain first); ambiguous `cwd` is skipped and
 logged, never guessed.
 
-## Known blind spot
+## Known limits
 
-A detached background shell (`bash` tool with `background: true`) has no public
-OpenCode session contract, so it is not observable. Background *subagent*
-sessions are (they carry `parentID`).
+Shells are tracked per session (not per execution), so every live shell of a
+mapped session tree keeps that tree `working`; there is no way to tell a
+background shell from a foreground one. Background *subagent* sessions are
+tracked separately through their `parentID`.
 
 ## Tests
 

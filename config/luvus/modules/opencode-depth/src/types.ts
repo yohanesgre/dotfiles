@@ -50,3 +50,12 @@ export interface OpenCodeEvent {
   location?: { directory?: string };
   data?: Record<string, unknown>;
 }
+
+export type ShellStatus = "running" | "exited" | "timeout" | "killed";
+
+/** `Shell.Info` as returned by `GET /api/shell`, narrowed to what the watcher tracks. */
+export interface ShellInfo {
+  id: string;
+  status: ShellStatus;
+  sessionID?: string;
+}
