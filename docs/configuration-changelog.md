@@ -4,6 +4,12 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-26 — Luvus `opencode.depth` module extracted to standalone repo, renamed `opencode.pulse`
+
+- The Luvus module formerly vendored at `config/luvus/modules/opencode-depth/` is now a standalone publishable project at `~/projects/luvus-opencode-pulse` (the repo root is the module root); the vendored copy was deleted from dotfiles.
+- Module id renamed `opencode.depth` → `opencode.pulse`, display name "OpenCode Pulse", default `source` setting `opencode/pulse`; state dir `opencode.pulse`, dock row id `pulse`, watcher log `opencode-pulse.watcher.log`.
+- Dotfiles home-manager activation `home.activation.luvusOpencodePulseModule` (`home/modules/luvus/default.nix`) now links `$HOME/projects/luvus-opencode-pulse` and probes `luvus module info opencode.pulse`. Unchanged semantics: warn-only, `$DRY_RUN_CMD`-gated, no-op when already linked to that path.
+
 ## 2026-09-26 — `opencode.depth` fallback location tagging (PR #14)
 
 - `client.listShellsWithLocation()` returns the `/api/shell` envelope's `location.directory` alongside the shells; the existing `listShells()` delegates to it with an unchanged return shape.
