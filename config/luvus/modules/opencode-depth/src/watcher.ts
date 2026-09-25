@@ -801,12 +801,12 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<number> {
     // and only replace state when it succeeds. Skip it while a directory-less
     // shell is tracked: the unscoped response cannot account for a shell with no
     // known directory, so a successful-but-empty result would wipe it.
-    let fallbackShells: ShellInfo[] | null = null;
+    let fallback: { location: string | null; shells: ShellInfo[] } | null = null;
     let shellsByDirectory: Map<string, ShellInfo[] | null> | null = null;
     if (directories.length === 0) {
       if (!core.hasDirectorylessShells()) {
         try {
-          fallbackShells = await client.listShells();
+          fallback = await client.listShellsWithLocation();
         } catch (error) {
           log.warn(`GET /api/shell failed; keeping current shell state: ${String(error)}`);
         }
@@ -821,8 +821,16 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<number> {
     core.setActive(active);
     core.setPermissions(permissions);
     core.setPanes(panes);
-    if (shellsByDirectory) core.reconcileShellsByDirectory(shellsByDirectory, shellVersion);
-    else if (fallbackShells) core.reconcileShells(fallbackShells, shellVersion);
+    if (shellsByDirectory) {
+      core.reconcileShellsByDirectory(shellsByDirectory, shellVersion);
+    } else if (fallback && fallback.location !== null) {
+      // The envelope named the directory: tag its shells so `shellDirectory`
+      // records them and the next successful scoped reconcile can drop them.
+      core.reconcileShellsByDirectory(new Map([[fallback.location, fallback.shells]]), shellVersion);
+    } else if (fallback) {
+      // No envelope location: keep the whole-map reconcile for untouched shells.
+      core.reconcileShells(fallback.shells, shellVersion);
+    }
     core.map();
     core.clearResolvedConflicts(panes);
     publishNow();

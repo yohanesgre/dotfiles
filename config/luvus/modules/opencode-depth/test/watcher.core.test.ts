@@ -61,6 +61,7 @@ function client(overrides: Partial<OpenCodeClient>): OpenCodeClient {
     activeSessions: async () => new Set<string>(),
     pendingPermissions: async () => [],
     listShells: async () => [],
+    listShellsWithLocation: async () => ({ location: null, shells: [] }),
     openEventStream: async (signal: AbortSignal) => idleStream(signal),
     sessionPermissions: async () => [],
     replyPermission: async () => {},
@@ -380,6 +381,51 @@ test("a failing directory query preserves that directory's shells", async () => 
   await done;
   expect(seen).toContain("/alpha");
   expect(states.slice(states.indexOf("working"))).toEqual(["working"]);
+});
+
+test("an unscoped fallback tags its shells with the envelope location so a later empty response drops them", async () => {
+  const { states, publisher, ui, snapshotReader, env } = harness();
+  const discovery = {
+    discover: async () => ({ path: "", url: "http://svc", password: "p", version: "1" }) as ServiceState,
+  } as unknown as ServiceDiscovery;
+  // No session location and no `shell.created`: the reconcile set is empty, so
+  // the unscoped endpoint is the fallback. It reports a location, so the shells
+  // must be tagged with it; once `/repo` is tracked, the next refresh queries it
+  // scoped and an empty result drops the shell (a missed exit self-heals).
+  const noLocation: OpenCodeSession[] = [{ id: "ses_root", parentID: null }];
+  const seen: string[] = [];
+  const tagged = client({
+    listSessions: async () => noLocation,
+    listShells: async (location?: { directory: string }) => {
+      seen.push(location?.directory ?? "");
+      return location ? [] : [{ id: "sh_1", status: "running", sessionID: "ses_root" }];
+    },
+    listShellsWithLocation: async () => ({
+      location: "/repo",
+      shells: [{ id: "sh_1", status: "running", sessionID: "ses_root" }],
+    }),
+  });
+  const controller = new AbortController();
+  const done = runWatcher({
+    discovery,
+    clientFactory: () => tagged,
+    snapshotReader,
+    publisher,
+    ui,
+    log: silent,
+    env,
+    pollMs: 20,
+    signal: controller.signal,
+  });
+  await until(() => states.includes("working"), 2000);
+  // The tagged shell must not linger once the scoped fetch for `/repo` is empty.
+  await until(() => states.includes("idle"), 2000);
+  controller.abort();
+  await done;
+  expect(states).toContain("working");
+  expect(states).toContain("idle");
+  expect(states.indexOf("idle")).toBeGreaterThan(states.indexOf("working"));
+  expect(seen).toContain("/repo");
 });
 
 test("an empty successful unscoped fallback does not wipe a directory-less shell", async () => {
