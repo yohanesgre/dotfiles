@@ -82,6 +82,16 @@ _skill_dir_exists() {
 
 _cmd_exists() { check_cmd "$1"; }
 
+# Helper: run scoped OpenCode plugin test suites
+_plugin_bun_tests() {
+    bun test "$REPO_ROOT/config/opencode/plugins/gh.test.ts" &&
+    bun --cwd "$REPO_ROOT/config/opencode/plugins/opencode-go-limit" test &&
+    bun test \
+        "$REPO_ROOT/config/opencode/plugins/opencode-subagents/MoreDialog.test.tsx" \
+        "$REPO_ROOT/config/opencode/plugins/opencode-subagents/variants.test.ts" \
+        "$REPO_ROOT/config/opencode/plugins/opencode-subagents/useSubagents.test.ts"
+}
+
 # Helper: check if a string contains a line exactly matching the given value
 _in_lines() {
     local value="$1" lines="$2"
@@ -257,6 +267,16 @@ else
         check "config/skills conform to Agent Skills spec" \
             bash "$SCRIPT_DIR/validate-skills.sh" --dir "$REPO_ROOT/config/skills"
     fi
+fi
+echo ""
+
+# ── Check 7b: OpenCode Plugin Tests ─────────────────────────────────────────
+echo -e "${BOLD}Check 7b: OpenCode Plugin Tests${NC}"
+
+if ! command -v bun >/dev/null 2>&1; then
+    skip "bun not in PATH"
+else
+    check "OpenCode plugin bun tests" _plugin_bun_tests
 fi
 echo ""
 

@@ -4,6 +4,10 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-25 — plugin bun tests wired into validation
+
+- `scripts/validate.sh` now runs the scoped `gh`, `opencode-go-limit`, and `opencode-subagents` bun suites as one check. Missing bun SKIPs; test failures FAIL. Closes researcher-speedup follow-up left open after PR #10.
+
 ## 2026-09-25 — opencode-go-limit poll cadence
 
 - `opencode-go-limit` footer poll cadence changed from 60s to 5min. `session.idle` refresh trigger retained.
