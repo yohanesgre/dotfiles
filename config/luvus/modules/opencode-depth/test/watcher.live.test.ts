@@ -83,6 +83,7 @@ test(
         }
         if (path === "/api/session/active") return json({ data: {} });
         if (path === "/api/permission/request") return json({ location: {}, data: [] });
+        if (path === "/api/shell") return json({ location: {}, data: [] });
         if (path === "/api/event") {
           return new Response(
             new ReadableStream({

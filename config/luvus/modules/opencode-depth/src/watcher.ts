@@ -8,7 +8,7 @@ import { buildIndex, mapPanesToSessions, subtree } from "./map.ts";
 import { derivePaneSignals, deriveSessionState, worstState, type Signals } from "./derive.ts";
 import { defaultRunner, Publisher, UiPublisher, type BarSegment, type DockRow, type ReportOutcome } from "./publish.ts";
 import { SeqStore, PidFile, resolveStateDir, writeJsonAtomicSync } from "./state.ts";
-import type { AgentState, LuvusPane, MapResult, MappedPane, OpenCodeEvent, OpenCodeSession, PendingPermission } from "./types.ts";
+import type { AgentState, LuvusPane, MapResult, MappedPane, OpenCodeEvent, OpenCodeSession, PendingPermission, ShellInfo } from "./types.ts";
 
 export const DONE_WINDOW_MS = 120_000;
 const DEBOUNCE_MS = 250;
@@ -63,6 +63,21 @@ export class WatcherCore {
   private readonly activeIds = new Set<string>();
   private readonly execState = new Map<string, "working" | "terminal">();
   private readonly terminalAt = new Map<string, number>();
+  /** sessionID -> live shell ids (a detached shell outlives its tool call). */
+  private readonly liveShells = new Map<string, Set<string>>();
+  /** shell id -> sessionID, so `shell.exited` (which carries no session) can be correlated. */
+  private readonly shellOwner = new Map<string, string>();
+  /** shell id -> its `location.directory`, so a directory-scoped refresh only touches that directory. */
+  private readonly shellDirectory = new Map<string, string>();
+  /** Directories seen on `shell.created` events; the union with session dirs is what `refresh` queries. */
+  private readonly eventDirectories = new Set<string>();
+  /**
+   * Monotonic counter bumped by every shell add/remove. `refresh` captures it
+   * before awaiting `listShells()`; a changed value means an SSE event landed
+   * while the fetch was in flight, so the snapshot is stale and must not
+   * clobber it (the next refresh backfills instead).
+   */
+  private shellVersionCounter = 0;
   private readonly permissionMap = new Map<string, PendingPermission>();
   private readonly reported = new Map<string, ReportState>();
   private readonly conflicts = new Map<string, ConflictState>();
@@ -94,6 +109,8 @@ export class WatcherCore {
       case "session.created": {
         if (!sessionId) return;
         const session: OpenCodeSession = { id: sessionId };
+        // The real payload carries no `parentID`; parent links come from the
+        // session-list API. Absent is expected and leaves the root unflagged.
         const parent = text(data.parentID);
         session.parentID = parent.length > 0 ? parent : null;
         const agent = text(data.agent);
@@ -130,6 +147,19 @@ export class WatcherCore {
         for (const key of permissionKeys(data)) this.permissionMap.delete(key);
         return;
       }
+      case "shell.created": {
+        const directory = text(event.location?.directory);
+        if (directory) this.eventDirectories.add(directory);
+        const shell = readShellCreated(data);
+        if (shell) this.addShell(shell.sessionID, shell.id, directory.length > 0 ? directory : undefined);
+        return;
+      }
+      case "shell.exited": {
+        const shellId = text(data.id);
+        if (shellId) this.removeShell(shellId);
+        return;
+      }
+      // `shell.deleted` carries stale ids and is intentionally ignored.
       default:
         return;
     }
@@ -152,6 +182,89 @@ export class WatcherCore {
     for (const permission of permissions) this.permissionMap.set(permission.id, permission);
   }
 
+  private addShell(sessionID: string, shellID: string, directory?: string): void {
+    let shells = this.liveShells.get(sessionID);
+    if (!shells) {
+      shells = new Set();
+      this.liveShells.set(sessionID, shells);
+    }
+    shells.add(shellID);
+    this.shellOwner.set(shellID, sessionID);
+    if (directory !== undefined) this.shellDirectory.set(shellID, directory);
+    this.shellVersionCounter += 1;
+  }
+
+  private removeShell(shellID: string): void {
+    const sessionID = this.shellOwner.get(shellID);
+    if (sessionID === undefined) return;
+    const shells = this.liveShells.get(sessionID);
+    if (shells) {
+      shells.delete(shellID);
+      if (shells.size === 0) this.liveShells.delete(sessionID);
+    }
+    this.shellOwner.delete(shellID);
+    this.shellDirectory.delete(shellID);
+    this.shellVersionCounter += 1;
+  }
+
+  /** Directories observed on `shell.created` events (in addition to session locations). */
+  get shellEventDirectories(): ReadonlySet<string> {
+    return this.eventDirectories;
+  }
+
+  /** Snapshot of the shell-state version; pass it to `reconcileShells`. */
+  get shellVersion(): number {
+    return this.shellVersionCounter;
+  }
+
+  /**
+   * Replaces the shell map with `GET /api/shell`'s running set: backfills shells
+   * created before attach/restart and drops phantoms left by a crash or a missed
+   * `shell.exited`. Never call with a failed fetch — the caller keeps state.
+   * `version` must be the counter captured *before* the fetch: if it changed, an
+   * SSE event (e.g. `shell.exited`) arrived mid-flight and the snapshot is stale,
+   * so this is a no-op and the next refresh backfills.
+   */
+  reconcileShells(shells: ShellInfo[], version: number): void {
+    if (this.shellVersionCounter !== version) return;
+    this.liveShells.clear();
+    this.shellOwner.clear();
+    this.shellDirectory.clear();
+    for (const shell of shells) {
+      if (shell.status !== "running") continue;
+      const sessionID = shell.sessionID;
+      if (!sessionID) continue;
+      this.addShell(sessionID, shell.id);
+    }
+  }
+
+  /**
+   * Merges per-directory `GET /api/shell` results. A directory mapped to
+   * `null` failed to fetch, so its tracked shells are preserved; a successful
+   * result (including empty) replaces just that directory's shells. Directories
+   * absent from `results` and shells with no known directory are untouched.
+   * The `version` guard matches `reconcileShells`: a changed counter means an
+   * SSE shell event landed mid-flight, so the whole merge is abandoned.
+   */
+  reconcileShellsByDirectory(results: ReadonlyMap<string, ShellInfo[] | null>, version: number): void {
+    if (this.shellVersionCounter !== version) return;
+    for (const [directory, shells] of results) {
+      if (shells === null) continue;
+      this.dropDirectory(directory);
+      for (const shell of shells) {
+        if (shell.status !== "running") continue;
+        if (!shell.sessionID) continue;
+        this.addShell(shell.sessionID, shell.id, directory);
+      }
+    }
+  }
+
+  private dropDirectory(directory: string): void {
+    for (const [shellID, owner] of [...this.shellDirectory]) {
+      if (owner === directory) this.removeShell(shellID);
+    }
+  }
+
   setPanes(panes: LuvusPane[]): void {
     this.panes = panes;
   }
@@ -166,6 +279,7 @@ export class WatcherCore {
       active: this.activeIds,
       execState: this.execState,
       terminalAt: this.terminalAt,
+      liveShells: this.liveShells,
       permissions: [...this.permissionMap.values()],
       now: this.now(),
       doneWindowMs: DONE_WINDOW_MS,
@@ -372,6 +486,51 @@ function stateRank(state: AgentState): number {
   return state === "blocked" ? 3 : state === "working" ? 2 : state === "done" ? 1 : 0;
 }
 
+/** Upper bound on per-refresh shell queries; extra directories are preserved, not dropped. */
+export const MAX_SHELL_DIRECTORIES = 16;
+
+/**
+ * The bounded, deduped set of directories whose shells matter this cycle: the
+ * session list's locations plus directories seen on `shell.created` events
+ * (a detached shell can outlive the session that is no longer listed).
+ */
+export function shellDirectories(
+  sessions: OpenCodeSession[],
+  eventDirectories: ReadonlySet<string>,
+): string[] {
+  const directories = new Set<string>();
+  for (const session of sessions) {
+    const directory = session.location?.directory;
+    if (directory) directories.add(directory);
+  }
+  for (const directory of eventDirectories) directories.add(directory);
+  return [...directories].slice(0, MAX_SHELL_DIRECTORIES);
+}
+
+/**
+ * Queries `/api/shell` once per directory. A failed directory maps to `null`
+ * (its tracked shells are preserved); a successful one maps to its shells
+ * (empty means that directory has none).
+ */
+async function queryShellDirectories(
+  client: OpenCodeClient,
+  directories: string[],
+  log: Log,
+): Promise<Map<string, ShellInfo[] | null>> {
+  const results = new Map<string, ShellInfo[] | null>();
+  await Promise.all(
+    directories.map(async (directory) => {
+      try {
+        results.set(directory, await client.listShells({ directory }));
+      } catch (error) {
+        log.warn(`GET /api/shell failed for ${directory}; keeping its shell state: ${String(error)}`);
+        results.set(directory, null);
+      }
+    }),
+  );
+  return results;
+}
+
 /**
  * A cycle counts as a renewal only when no due report failed. `conflict` is
  * another integration's intentional backoff, not our failure.
@@ -393,6 +552,18 @@ function readPermission(data: Record<string, unknown>): PendingPermission | null
 
 function permissionKeys(data: Record<string, unknown>): string[] {
   return [text(data.requestID), text(data.id), text(data.permissionID)].filter((key) => key.length > 0);
+}
+
+/** `shell.created` nests the id and session under `data.info` / `data.info.metadata`. */
+function readShellCreated(data: Record<string, unknown>): { id: string; sessionID: string } | null {
+  const info = data.info;
+  if (typeof info !== "object" || info === null) return null;
+  const obj = info as Record<string, unknown>;
+  const id = text(obj.id);
+  const metadata = typeof obj.metadata === "object" && obj.metadata !== null ? (obj.metadata as Record<string, unknown>) : {};
+  const sessionID = text(metadata.sessionID);
+  if (!id || !sessionID) return null;
+  return { id, sessionID };
 }
 
 export interface WatcherDeps {
@@ -588,12 +759,34 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<number> {
   async function refresh(client: OpenCodeClient): Promise<void> {
     if (abort.signal.aborted) return;
     activeClient = client;
+    // Capture the shell version before awaiting: `shell.exited` can land while
+    // `listShells()` is in flight, and its SSE update must not be clobbered by
+    // the stale snapshot. A changed counter makes `reconcileShells` a no-op.
+    const shellVersion = core.shellVersion;
+    // Shell backfill is location-scoped, so query the union of directories that
+    // matter this cycle. A per-directory failure must not degrade the watcher or
+    // clear shells already tracked for that directory.
     const [sessions, active, permissions, panes] = await Promise.all([
       client.listSessions(),
       client.activeSessions(),
       client.pendingPermissions(),
       snapshotReader.read(),
     ]);
+    if (abort.signal.aborted) return;
+    const directories = shellDirectories(sessions, core.shellEventDirectories);
+    // No known location yet: fall back to the unscoped endpoint (old behavior)
+    // and only replace state when it succeeds.
+    let fallbackShells: ShellInfo[] | null = null;
+    let shellsByDirectory: Map<string, ShellInfo[] | null> | null = null;
+    if (directories.length === 0) {
+      try {
+        fallbackShells = await client.listShells();
+      } catch (error) {
+        log.warn(`GET /api/shell failed; keeping current shell state: ${String(error)}`);
+      }
+    } else {
+      shellsByDirectory = await queryShellDirectories(client, directories, log);
+    }
     // A shutdown may have landed while these were in flight; never re-acquire a
     // lease that shutdown already released.
     if (abort.signal.aborted) return;
@@ -601,6 +794,8 @@ export async function runWatcher(deps: WatcherDeps = {}): Promise<number> {
     core.setActive(active);
     core.setPermissions(permissions);
     core.setPanes(panes);
+    if (shellsByDirectory) core.reconcileShellsByDirectory(shellsByDirectory, shellVersion);
+    else if (fallbackShells) core.reconcileShells(fallbackShells, shellVersion);
     core.map();
     core.clearResolvedConflicts(panes);
     publishNow();
