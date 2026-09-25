@@ -104,7 +104,7 @@
       "expected_output": "A moderate, no-risk refactor: depth routing picks `standard` (whole changed files + full checks, not deep). MED findings on the negative-stock allocation edge case and/or the unvalidated bucket/reorder helpers; at least one test-coverage gap flagged (rewritten branch/caller untested, or the new test file untracked); no SEV; verdict APPROVE or APPROVE WITH NITS.",
       "files": [],
       "assertions": [
-        "Flags the negative-stock allocation behavior in `allocate` (negative stock yields a negative allocation) at MED or higher.",
+        "Flags the negative-stock allocation behavior in `allocate` (negative stock yields a negative allocation) at MED, not SEV — a caller-contract edge case, not a blocker.",
         "Flags at least one test-coverage gap: the rewritten branch/caller untested, or the new test file untracked.",
         "Reports no SEV findings and the verdict is APPROVE or APPROVE WITH NITS, not REQUEST CHANGES.",
         "Tags every issue with a severity (SEV/MED/NIT or the project vocabulary)."
