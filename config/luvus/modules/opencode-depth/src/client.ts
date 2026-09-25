@@ -139,11 +139,25 @@ export class OpenCodeClient {
    * no location is known yet.
    */
   async listShells(location?: { directory: string }): Promise<ShellInfo[]> {
+    return (await this.listShellsWithLocation(location)).shells;
+  }
+
+  /**
+   * Like `listShells`, but also returns the envelope's `location.directory`
+   * (or `null` when the server reports none). The unscoped fallback uses this
+   * to tag its shells with the directory they actually belong to, so a later
+   * scoped reconcile can account for them.
+   */
+  async listShellsWithLocation(location?: { directory: string }): Promise<{ location: string | null; shells: ShellInfo[] }> {
     const query = location ? `?location[directory]=${encodeURIComponent(location.directory)}` : "";
     const res = await this.request(`/api/shell${query}`);
     if (!res.ok) throw new Error(`GET /api/shell -> ${res.status}`);
-    const body = res.json as { data?: unknown[] } | null;
-    return normalizeShells(body?.data ?? []);
+    const body = res.json as { location?: { directory?: string }; data?: unknown[] } | null;
+    const directory = body?.location?.directory;
+    return {
+      location: typeof directory === "string" && directory.length > 0 ? directory : null,
+      shells: normalizeShells(body?.data ?? []),
+    };
   }
 
   async pendingPermissions(): Promise<PendingPermission[]> {

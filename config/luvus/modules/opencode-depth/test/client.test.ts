@@ -109,6 +109,32 @@ test("listShells scopes the request to a directory with deepObject encoding", as
   expect(inputs[0]).toBe("http://x/api/shell?location[directory]=%2Fproject%2Fa%20b%26c");
 });
 
+test("listShellsWithLocation keeps the envelope's location alongside its shells", async () => {
+  const payload = {
+    location: { directory: "/project/a" },
+    data: [{ id: "sh_1", status: "running", metadata: { sessionID: "ses_a" } }],
+  };
+  let seen = "";
+  const fetchImpl = (async (input: string) => {
+    seen = input;
+    return new Response(JSON.stringify(payload), { status: 200, headers: { "content-type": "application/json" } });
+  }) as unknown as typeof fetch;
+  const client = new OpenCodeClient({ url: "http://x", password: "p", fetchImpl });
+  expect(await client.listShellsWithLocation()).toEqual({
+    location: "/project/a",
+    shells: [{ id: "sh_1", status: "running", sessionID: "ses_a" }],
+  });
+  expect(seen).toBe("http://x/api/shell");
+});
+
+test("listShellsWithLocation reports a null location when the envelope has none", async () => {
+  const fetchImpl = (async () =>
+    new Response(JSON.stringify({ location: {}, data: [] }), { status: 200 })) as unknown as typeof fetch;
+  const client = new OpenCodeClient({ url: "http://x", password: "p", fetchImpl });
+  expect(await client.listShellsWithLocation()).toEqual({ location: null, shells: [] });
+  expect(await client.listShells()).toEqual([]);
+});
+
 test("listSessions follows cursor.next across pages and stops when bounded", async () => {
   const pages = [
     { data: [{ id: "ses_1" }], cursor: { next: "c2" } },
