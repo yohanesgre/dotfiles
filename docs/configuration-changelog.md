@@ -4,6 +4,14 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-26 — `opencode.depth` fallback location tagging (PR #14)
+
+- `client.listShellsWithLocation()` returns the `/api/shell` envelope's `location.directory` alongside the shells; the existing `listShells()` delegates to it with an unchanged return shape.
+- The zero-directory unscoped fallback now tags the shells it returns with that envelope location via `reconcileShellsByDirectory`, so the directory enters `trackedShellDirectories` and a later scoped empty response drops them normally. Fixes the phantom-`working` case: a missed `shell.exited` on a fallback-tracked shell no longer retained a stale live shell, because the directory was known but untracked.
+- A `null` envelope location keeps the previous behavior — the `hasDirectorylessShells()` skip still protects a truly location-less fallback.
+- Proofs: test-toggle runs over `config/luvus/modules/opencode-depth/` — the new fallback-tagging cases fail with tagging disabled and pass with it enabled; the existing `hasDirectorylessShells()`-skip case still fails when the skip is removed and passes when restored.
+- Merged as PR #14 (squash `c1e65b2`).
+
 ## 2026-09-26 — `opencode.depth` hardening (PR #13)
 
 - `unmappedRoots()` is now subtree-scoped for live-work presence: a headless root stays in the dock/monitor while any descendant holds a live shell or is active, past the 120 s done window. The done window itself stays root-only, so an idle long-terminal root still disappears as before. This retires the PR #12 limit "`unmappedRoots()` still ignores live shells".
