@@ -1,0 +1,91 @@
+id = "opencode.depth"
+name = "OpenCode Depth"
+version = "0.1.0"
+min_luvus_version = "0.14.2"
+description = "Authoritative OpenCode session and child status for Luvus panes."
+platforms = ["linux", "macos"]
+
+# Publisher defaults. Commands receive these as LUVUS_SETTING_* (e.g.
+# LUVUS_SETTING_TTL_S) and as LUVUS_MODULE_SETTINGS_JSON.
+[[settings]]
+key = "source"
+title = "Integration source id"
+type = "string"
+default = "opencode/depth"
+
+[[settings]]
+key = "ttl_s"
+title = "Lease TTL (seconds)"
+type = "number"
+default = 900
+min = 60
+max = 86400
+step = 60
+
+[[settings]]
+key = "max_rows"
+title = "Maximum dock rows"
+type = "number"
+default = 16
+min = 1
+max = 64
+
+[[settings]]
+key = "bar"
+title = "Publish the Luvus Bar widget"
+type = "bool"
+default = true
+
+[[settings]]
+key = "title"
+title = "Publish AGENTS sidebar titles"
+type = "bool"
+default = true
+
+[[docks]]
+id = "depth"
+title = "OPENCODE"
+placement = "sidebar.right"
+
+[[bars]]
+id = "status"
+title = "OpenCode"
+region = "top-right"
+priority = 60
+
+[[panes]]
+id = "monitor"
+title = "OpenCode Depth"
+placement = "overlay"
+command = ["bun", "run", "src/monitor.ts"]
+
+# One-shot launcher. Ensures a single detached watcher is running and repaints
+# the dock when Luvus restarted but the watcher survived.
+[[startup]]
+command = ["bun", "run", "src/startup.ts"]
+
+# Manual (re)start from the CLI or a dock row.
+[[actions]]
+id = "start"
+title = "Start OpenCode Depth watcher"
+command = ["bun", "run", "src/startup.ts"]
+
+[[actions]]
+id = "stop"
+title = "Stop OpenCode Depth watcher"
+command = ["bun", "run", "src/startup.ts", "stop"]
+
+# Invoked by clicking a dock row; LUVUS_MODULE_ROW_VALUE carries the pane id.
+[[actions]]
+id = "focus-pane"
+title = "Focus the row's pane"
+command = ["bun", "run", "src/focus-pane.ts"]
+
+# Prompt the watcher to resync when the pane set changes; relaunch if it died.
+[[events]]
+on = "pane.created"
+command = ["sh", "scripts/nudge.sh"]
+
+[[events]]
+on = "pane.closed"
+command = ["sh", "scripts/nudge.sh"]

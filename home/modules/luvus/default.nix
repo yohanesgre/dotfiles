@@ -77,4 +77,38 @@
       warn "luvus binary missing — skipping integrations/skill"
     fi
   '';
+
+  # opencode.depth: a local Luvus module that publishes authoritative OpenCode
+  # pane/child status. Link it once from the control checkout; never re-link or
+  # fail activation when the binary, the server, or the module dir is missing.
+  home.activation.luvusOpencodeDepthModule =
+    lib.hm.dag.entryAfter [ "writeBoundary" "upstreamInstall" ]
+      ''
+        MOD="$HOME/projects/dotfiles/config/luvus/modules/opencode-depth"
+        LUVUS="$HOME/.local/bin/luvus"
+        JQ="${pkgs.jq}/bin/jq"
+        warn() { echo "luvus: $*" >&2; }
+        if [ ! -x "$LUVUS" ]; then
+          warn "binary missing — opencode.depth module not linked (continuing)"
+        elif [ ! -f "$MOD/luvus-module.toml" ]; then
+          warn "opencode.depth module dir missing — not linked (continuing)"
+        elif "$LUVUS" module info opencode.depth >/dev/null 2>&1; then
+          REGISTERED="$("$LUVUS" module info opencode.depth 2>/dev/null | "$JQ" -r '.result.root // ""' 2>/dev/null || true)"
+          if [ "$REGISTERED" = "$MOD" ]; then
+            : # already linked to the control checkout
+          else
+            warn "opencode.depth linked to $REGISTERED; re-linking to $MOD"
+            $DRY_RUN_CMD "$LUVUS" module unlink opencode.depth >/dev/null 2>&1 || warn "module unlink failed (continuing)"
+            if $DRY_RUN_CMD "$LUVUS" module link "$MOD" >/dev/null 2>&1; then
+              echo "luvus: re-linked module opencode.depth"
+            else
+              warn "opencode.depth module link failed (continuing)"
+            fi
+          fi
+        elif $DRY_RUN_CMD "$LUVUS" module link "$MOD" >/dev/null 2>&1; then
+          echo "luvus: linked module opencode.depth"
+        else
+          warn "opencode.depth module link failed (continuing)"
+        fi
+      '';
 }
