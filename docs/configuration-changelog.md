@@ -4,6 +4,22 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-25 — reviewer low-confidence escalation cap + eval-7-standard
+
+- Skill revision `248862f4` (live) changed the Depth routing rule: confidence below 0.6 escalates one tier, **capped at `standard`** unless a risk area is present — uncertainty alone is not a reason for a deep hunt. Rationale: the previous free escalation burned deep-hunt budget on ambiguous-but-benign changes.
+- Eval suite grew 7 → 8 cases. `eval-7-standard` added: moderate no-risk warehouse refactor; asserts MED edge findings, a test gap, no SEV, and APPROVE / APPROVE WITH NITS.
+- Eval files touched: `config/skills/reviewer/evals/setup_fixtures.sh` (+ eval-7 fixture block), `config/skills/reviewer/evals/evals.json` (+ case 7), `config/skills/reviewer/evals/README.md` (+ fixture row, routing-verification section).
+- Validation after `opencode reload`: clean 8-case run, 36/36 assertions pass. Routing observed — deep: eval-0, eval-1; standard: eval-2, eval-3, eval-6, eval-7; quick: eval-5; none: eval-4. All three tiers now exercised.
+- Files: `config/opencode/CONFIGURATION.md` (reviewer depth-routing entry: escalation cap + 8-case/36-assertion suite), `docs/configuration-changelog.md`. No commit, no push.
+
+## 2026-09-25 — reviewer skill depth routing and Jev cross-checks
+
+- Reviewer skill revision `f93f1a18` added diff-size/risk depth calibration, tool-call hygiene, and clean-review output budget; revision `cbe5f8e6` is final and live.
+- Final behavior: one `jev_classify` over the change summary routes `quick` / `standard` / `deep`; risk overrides routing, with security, money, or data-integrity hunks forced to `deep`; escalation is allowed, de-escalation is not. Advisory Jev cross-checks use one findings `jev_ask` for SEV/MED reports or standard/deep reports with findings; quick + NIT-only skips it. Jev unreachable means manual routing.
+- OpenCode caches skills server-side. After any skill edit, run `opencode reload` or new sessions may execute the stale cached copy; this silently invalidated two eval iterations.
+- Validation: reviewer 7-case eval suite passed 32/32 on final revision.
+- Files: `config/opencode/CONFIGURATION.md`, `docs/configuration-changelog.md`.
+
 ## 2026-09-25 — plugin bun tests wired into validation
 
 - `scripts/validate.sh` now runs the scoped `gh`, `opencode-go-limit`, and `opencode-subagents` bun suites as one check. Missing bun SKIPs; test failures FAIL. Closes researcher-speedup follow-up left open after PR #10.

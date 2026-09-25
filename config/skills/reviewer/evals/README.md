@@ -24,6 +24,7 @@ Expected diff stats (printed by the script):
 | eval-4-nodiff | clean tree | nothing to review |
 | eval-5-nitonly | app.py 6+/1- | O(n^2) dedupe (MED/NIT), unused import (NIT), no SEV |
 | eval-6-projectrules | app.py 4+/1- | nothing — project declares review conventions (`.agents/skills/project-review`, `docs/STYLE.md`); the change adds a bare `except:` that violates the style rule |
+| eval-7-standard | usage.py + warehouse.py 22+/12-, test_warehouse.py untracked | depth-routing tier case: moderate refactor with no risk areas; negative-stock allocation edge, unvalidated `size_days`, untested branch/caller |
 
 ## Running
 
@@ -60,6 +61,18 @@ python eval-viewer/generate_review.py <workspace>/iteration-N \
 - `eval-5` — severity calibration: no SEV for a merely quadratic helper.
 - `eval-6` — project authority: project-declared review conventions must be
   discovered and win over the skill defaults (format + severity vocabulary).
+- `eval-7` — depth routing: a moderate, no-risk refactor must route `standard`
+  (whole changed files + full checks), flag the allocation edge and a test gap,
+  and stay below SEV.
+
+## Routing verification (jev)
+
+The suite covers all three depth tiers. After a run, read each session's
+`jev_classify` choice from `session.json` and expect: `deep` for eval-0/1,
+`standard` for eval-2/3/6/7, `quick` for eval-5, and no classify call for
+eval-4 (no diff). Landing elsewhere is not automatically a failure — low
+confidence may move one tier up (capped at `standard` when no risk area is
+present) — but the tier should stay plausible for the change.
 
 Known assertion caveat: in the original run, `eval-5` demanded the O(n^2) be
 graded MED; both configurations said NIT. The assertion above now accepts

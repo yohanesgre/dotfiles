@@ -421,6 +421,90 @@ def load_config(client):
         return {}
 PY
 
+# ===================== eval-7-standard =====================
+# Moderate refactor, no risk areas: jev depth routing should pick `standard`
+# (whole files + full checks), not `quick` or `deep`. Edge cases: negative
+# stock yields a negative allocation; size_days is unvalidated; the rewritten
+# branch and its only caller are untested, and the new test file is untracked.
+f="$root/eval-7-standard"; mkdir -p "$f"
+cat > "$f/warehouse.py" <<'PY'
+"""Warehouse allocation helpers."""
+from datetime import date
+
+
+def allocate(stock, demand):
+    """Allocate demand from stock. All-or-nothing."""
+    if demand > stock:
+        return 0
+    return demand
+
+
+def shipment_day(day):
+    """Return the day the next shipment leaves."""
+    return day
+PY
+cat > "$f/usage.py" <<'PY'
+from warehouse import allocate, shipment_day
+
+
+def ship(order_qty, stock, day):
+    allocated = allocate(stock, order_qty)
+    return allocated, shipment_day(day)
+PY
+git -C "$f" init -q
+commit "$f"
+cat > "$f/warehouse.py" <<'PY'
+"""Warehouse allocation helpers."""
+from datetime import date, timedelta
+
+EPOCH = date(2024, 1, 1)
+
+
+def allocate(stock, demand):
+    """Allocate demand from stock; supports partial allocation."""
+    if demand <= 0:
+        return 0, max(stock, 0)
+    allocated = min(stock, demand)
+    return allocated, stock - allocated
+
+
+def date_bucket(day, size_days):
+    """Return the start of the bucket containing day."""
+    offset = (day - EPOCH).days // size_days
+    return EPOCH + timedelta(days=offset * size_days)
+
+
+def reorder_point(avg_daily, lead_time_days, safety_days=2):
+    """Units to keep on hand before reordering."""
+    return round(avg_daily * (lead_time_days + safety_days))
+PY
+cat > "$f/usage.py" <<'PY'
+from warehouse import allocate, date_bucket, reorder_point
+
+
+def ship(order_qty, stock, day, avg_daily, lead_time_days):
+    allocated, remaining = allocate(stock, order_qty)
+    bucket = date_bucket(day, 7)
+    return allocated, remaining, bucket, reorder_point(avg_daily, lead_time_days)
+PY
+cat > "$f/test_warehouse.py" <<'PY'
+from datetime import date
+
+from warehouse import allocate, date_bucket, reorder_point
+
+
+def test_partial_allocation():
+    assert allocate(3, 10) == (3, 0)
+
+
+def test_bucket_start_of_week():
+    assert date_bucket(date(2024, 1, 10), 7) == date(2024, 1, 8)
+
+
+def test_reorder_point():
+    assert reorder_point(5, 3) == 25
+PY
+
 echo "fixtures written to $root"
 for d in "$root"/*/; do
   echo "== $(basename "$d")"
