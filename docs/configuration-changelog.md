@@ -37,8 +37,9 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 - New Luvus module `config/luvus/modules/opencode-depth/` (Bun/TS) — watches OpenCode's public HTTP/SSE surface and publishes **authoritative** pane status through UHP `agent.report` (authority `integration_report`, source `opencode/depth`), plus per-child/headless-lane dock rows, Luvus Bar counts, and aggregate AGENTS titles. Pane status is now authoritative (`integration_report`) instead of Luvus's native screen scraping; the stock `luvus-v2` integration keeps reporting root-session identity only (ownership; luvus-managed, untouched).
 - Activation: `home.activation.luvusOpencodeDepthModule` in `home/modules/luvus/default.nix` links the module when unregistered or linked elsewhere — warn-only, never fails the switch. Watcher starts detached via the `[[startup]]` launcher (atomic pidfile, single-instance, revived by the `pane.created`/`pane.closed` hooks). Commands: `luvus module run opencode.depth start|stop`; monitor pane opens manually (`luvus module pane open opencode.depth monitor --placement overlay`). Settings: `source`/`ttl_s` (≥60s, default 900)/`max_rows`/`bar`/`title`.
-- Known limits: a detached background shell (`bash` with `background: true`) is unobservable (background *subagent* sessions are mapped via `parentID`); durable-log replay is resync-via-poll; live `blocked` is not reproducible under the global `permission: allow`.
+- Known limits: a detached background shell (`bash` with `background: true`) is unobservable (background *subagent* sessions are mapped via `parentID`); durable-log replay is resync-via-poll; `blocked` from permission requests is not reproducible under the global `permission: allow`.
 - Merged as PR #11 (squash `f3ffcbe`).
+- Later superseded: the module now also reports `blocked` for a pending server-visible `question` form (`metadata.kind = "question"`), which still fires under the global `permission: allow`.
 
 ## 2026-09-25 — reviewer low-confidence escalation cap + eval-7-standard
 
