@@ -4,6 +4,29 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-28 — Harden `architecture-viz` verify loop; skill committed
+
+The skill's mandatory verify loop was only as trustworthy as its checkers, and review found both could bless a broken map. `render-check.sh` happily reused a stale PNG from a previous edit, so a changed template could be "verified" against the old render; it now fails when the screenshot is older than its input. `check-svg-overlaps.py` was hardened to parse what it actually documents — compact path syntax (`M x y L x y …`), a count guard against a truncated element list, segment-through-node-box intersection, and exit codes `0` clean / `1` overlaps found / `2` checker error, with no raw tracebacks leaking to the caller. The false-clean routes those two gaps opened are closed. The checker's required DOM contract is now documented, and the eval suite follows the repo convention (notes + assertions + generated fixtures + README, 5 evals including a non-trigger and a scale case) instead of a bare spec list. This commit lands the previously-untracked `config/skills/architecture-viz` dir, so the `skillsLinks` activation owns the symlink rather than a manual one.
+
+- `config/skills/architecture-viz/scripts/render-check.sh` — freshness guard; a PNG older than the template aborts the verify loop.
+- `config/skills/architecture-viz/scripts/check-svg-overlaps.py` — compact-path parsing, count guard, segment-through-node-box, rc 0/1/2, no tracebacks.
+- `config/skills/architecture-viz/references/layout-rules.md` — documents the DOM contract the checker parses.
+- `config/skills/architecture-viz/evals/{evals.json,setup_fixtures.sh,README.md}` — 5 evals (non-trigger + scale included) with notes, assertions, generated fixtures.
+- `config/opencode/CONFIGURATION.md` — local-authored viz entry notes the hardened checker + committed dir.
+
+Gates: `validate-skills.sh --manifest config/skills/sources.json` exit 0 (38 skills, 5 pre-existing warnings), `--dir config/skills/architecture-viz --strict --verbose` 0 warnings, `check-svg-overlaps.py assets/template.html` rc 0, `python3 -m json.tool evals/evals.json` OK. Committed, not pushed.
+
+## 2026-09-28 — Add `architecture-viz` skill; sync vision model docs to `mimo-v2.5`
+
+New local-authored skill `config/skills/architecture-viz` (34th committed dir; 22 local): turns a codebase into a self-contained HTML architecture map — hand-authored SVG dependency graph, boot timeline, subsystem panels, watch items — with the layout discipline learned from the CookingGame viz iteration (wide corridors, orthogonal elbows, labels attached to their own segment) plus a mandatory verify loop. Bundles `scripts/check-svg-overlaps.py` (deterministic label/line/box/arrowhead lint), `scripts/render-check.sh` (headless chromium screenshot), `references/layout-rules.md`, `assets/template.html`, `evals/evals.json`. Wired as `~/.agents/skills/architecture-viz` → repo path via a manual symlink matching the `skillsLinks` activation; `validate-skills.sh --manifest` green (38 skills), the new skill strict-clean.
+
+- `config/opencode/agents/vision.md` — no change: already pins `opencode-go/mimo-v2.5` (dotfiles == live, confirmed by diff; the stale CONFIGURATION text was the drift, not the config).
+- `config/opencode/CONFIGURATION.md` — vision model references (agent-list prose + agent-table row) corrected `mimo-v2.6-flash` → `mimo-v2.5`; committed-skills counts 33→34 dirs / 21→22 local; local-authored list gains the viz skill.
+- `config/opencode/AGENTS.md` — Vision Delegation names the pinned model instead of "model-agnostic — inherits the session model".
+- `config/opencode/opencode.jsonc`, `config/skills/sources.json` — untouched.
+
+No commit, no push, no nix rebuild — `~/.config/opencode/{AGENTS,CONFIGURATION}.md` stay on the current store build until the next hm-switch (the vision pin itself was already live). The user preference is also encoded in the skill: vision delegation names `opencode-go/mimo-v2.5`.
+
 ## 2026-09-28 — Grant `codegraph` to `designer`; annotate `steward` as codegraph-free
 
 Resolves the doc-vs-enforcement gap left by the jg expansion: the universal fallback order (`jg → codegraph → grep/glob`) claims a codegraph rung that the `steward` and `designer` permission envelopes did not actually have (neither holds `execute` nor `codegraph_*`). Jev judgment `add_designer_only` 0.73 — designer benefit 0.77, steward benefit 0.27 (no). `steward` keeps no codegraph and its matrix row now says so instead of claiming the rung.

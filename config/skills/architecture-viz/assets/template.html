@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<!--
+  Architecture Viz template (the architecture-viz skill).
+  Copy to <project>/docs/architecture.html and fill in:
+  - header title/subtitle/chips
+  - the SVG graph (see the skill's references/layout-rules.md; keep coordinates on the 1440 grid)
+  - the boot sequence, subsystem panels, tooling/tests, watch items
+  - the footer evidence paths and snapshot date
+  Verify with the skill's scripts/check-svg-overlaps.py + scripts/render-check.sh before delivering.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>PROJECT — Architecture Map</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#101826; --panel2:#0c121c; --line:#1e2a3a;
+    --text:#e8eef6; --muted:#8fa0b5; --faint:#5b6b80;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --a:#f2b344; --b:#a78bfa; --c:#38bdf8; --d:#2dd4bf; --e:#4ade80; --f:#f472b6;
+    --g:#94a3b8; --h:#60a5fa; --danger:#f87171;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1100px 480px at 12% -8%, rgba(56,189,248,.10), transparent 60%),
+               radial-gradient(900px 460px at 92% -4%, rgba(167,139,250,.10), transparent 60%), var(--bg);}
+  .wrap{max-width:1340px;margin:0 auto;padding:44px 28px 90px}
+  code,.mono{font-family:var(--mono);font-size:.86em;color:#cfe0f2}
+  h1{font-size:34px;letter-spacing:-.02em;margin:6px 0}
+  h2{font-size:19px;margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  h2 .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+  .kicker{font:600 11.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--c)}
+  .sub{color:var(--muted);font-size:15.5px;margin:0 0 22px}
+  .hint{color:var(--faint);font-size:12.5px;margin:-6px 0 16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:34px}
+  .chip{font:12px/1 var(--mono);color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px}
+  .chip b{color:var(--text);font-weight:600}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  .graph{width:100%;height:auto;display:block;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px 20px;margin-top:16px;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .legend i{width:10px;height:10px;border-radius:3px}
+  .swatch{width:26px;height:0;border-top:2px solid #7c8ea6}
+  .swatch.dash{border-top-style:dashed}
+  .n rect{fill:var(--g);stroke:var(--g);fill-opacity:.07;stroke-width:1.3}
+  .n .t{font:600 14px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#f2f6fb}
+  .n .s{font:11px var(--mono);fill:var(--muted)}
+  .n.boot rect{fill:var(--a);stroke:var(--a)} .n.boot .t{fill:var(--a)}
+  .n.svc rect{fill:var(--c);stroke:var(--c)}   .n.svc .t{fill:var(--c)}
+  .n.cons rect{fill:var(--e);stroke:var(--e)}  .n.cons .t{fill:var(--e)}
+  .n.eng rect{fill:var(--b);stroke:var(--b)}   .n.eng .t{fill:var(--b)}
+  .n.cfg rect{fill:var(--d);stroke:var(--d)}   .n.cfg .t{fill:var(--d)}
+  .n.tool rect{fill:var(--g);stroke:var(--g)}  .n.tool .t{fill:var(--g)}
+  .n.test rect{fill:var(--h);stroke:var(--h)}  .n.test .t{fill:var(--h)}
+  .edge{fill:none;stroke:#7c8ea6;stroke-width:1.6}
+  .edge.dash{stroke-dasharray:6 5}
+  .elabel{font:11px var(--mono);fill:#a9bacd;paint-order:stroke;stroke:var(--panel2);stroke-width:4px;stroke-linejoin:round}
+  .steps{list-style:none;margin:0;padding:0;counter-reset:step}
+  .steps li{position:relative;padding:0 0 18px 46px;counter-increment:step}
+  .steps li::before{content:counter(step);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:8px;
+    background:rgba(242,179,68,.12);border:1px solid rgba(242,179,68,.5);color:var(--a);font:600 12px/25px var(--mono);text-align:center}
+  .steps li::after{content:"";position:absolute;left:13px;top:31px;bottom:2px;width:1px;background:var(--line)}
+  .steps li:last-child::after{display:none}
+  .steps .st{font-weight:600;font-size:14px}
+  .steps .note{color:var(--muted);font-size:13px;margin-top:2px}
+  .tag{display:inline-block;font:10.5px/1 var(--mono);padding:4px 7px;border-radius:6px;margin:0 6px 4px 0;
+    background:rgba(148,163,184,.10);border:1px solid rgba(148,163,184,.35);color:#b8c4d4}
+  .rulelist{margin:0;padding:0 0 0 18px;color:var(--muted);font-size:13.5px}
+  .rulelist li{margin:0 0 6px}
+  .rulelist b{color:var(--text)}
+  .cards{display:grid;gap:12px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--g);border-radius:10px;padding:14px 16px}
+  .card h3{font-size:14px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .card h3 .who{font:10.5px var(--mono);color:var(--muted);font-weight:400}
+  .card p{color:var(--muted);font-size:13.5px;margin:0 0 8px}
+  .card ul{margin:0;padding-left:16px;color:var(--muted);font-size:13px}
+  .card.danger{border-left-color:var(--danger)}
+  .card.danger h3 b{color:var(--danger)}
+  .sev{font:10.5px/1 var(--mono);padding:4px 7px;border-radius:6px;white-space:nowrap}
+  .sev.warn{background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.4);color:var(--danger)}
+  .sev.soft{background:rgba(148,163,184,.10);border:1px solid rgba(148,163,184,.35);color:#b8c4d4}
+  footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:26px;padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Architecture Map</div>
+    <h1>PROJECT</h1>
+    <p class="sub">WHAT THIS SYSTEM IS · runtime only — what it is not yet.</p>
+    <div class="chips">
+      <span class="chip"><b>N</b> scripts</span>
+      <span class="chip">key fact</span>
+      <span class="chip">tests <b>x/y</b></span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="dot"></span>Runtime dependency graph</h2>
+    <p class="hint">Runtime only — tooling and tests are the sections below. Arrows point from caller to callee / dependency.</p>
+    <!--
+      Grid: columns x = 60 / 520 / 1060 (width 340–360), canvas 1440.
+      Edges: orthogonal M/H/V only, endpoints exactly on box edges, one lane per edge family.
+      Labels: .elabel, attached to their segment (see the skill's references/layout-rules.md).
+    -->
+    <svg class="graph" viewBox="0 0 1440 320" role="img" aria-label="PROJECT dependency graph">
+      <defs>
+        <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="1.3" cy="1.3" r="1.3" fill="#182234"/>
+        </pattern>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#7c8ea6"/>
+        </marker>
+      </defs>
+      <rect width="1440" height="320" fill="url(#dots)"/>
+
+      <!-- edges first (under nodes) -->
+      <path class="edge" d="M400,120 H520" marker-end="url(#ah)"/>
+      <text class="elabel" x="460" y="112" text-anchor="middle">constructs</text>
+
+      <!-- nodes -->
+      <g class="n boot" transform="translate(60,88)">
+        <rect width="340" height="64" rx="12"/>
+        <text class="t" x="20" y="28">Composition Root</text>
+        <text class="s" x="20" y="49">one responsibility · path/file.cs:1</text>
+      </g>
+      <g class="n svc" transform="translate(520,88)">
+        <rect width="360" height="64" rx="12"/>
+        <text class="t" x="20" y="28">Service</text>
+        <text class="s" x="20" y="49">public surface · path/file.cs:1</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><i style="background:#f2b344"></i> bootstrap</span>
+      <span><i style="background:#38bdf8"></i> services</span>
+      <span><i style="background:#4ade80"></i> consumers</span>
+      <span><span class="swatch"></span> calls / owns / creates</span>
+      <span><span class="swatch dash"></span> resolve / deferred</span>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="dot" style="background:var(--a)"></span>Boot sequence</h2>
+    <ol class="steps">
+      <li>
+        <div class="st"><span class="tag">trigger</span> <code>Entry.Point()</code></div>
+        <div class="note">What happens, why it matters, failure behavior. <code>path/file.cs:1</code></div>
+      </li>
+      <li>
+        <div class="st">Second step</div>
+        <div class="note">Order guarantees, idempotency, guards. <code>path/file.cs:1</code></div>
+      </li>
+    </ol>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--c)"></span>Subsystem A</h2>
+      <ul class="rulelist">
+        <li><b>Invariant:</b> rule + why, with <code>path:line</code>.</li>
+        <li><b>Failure handling:</b> rollback / fallback behavior.</li>
+      </ul>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--d)"></span>Subsystem B</h2>
+      <ul class="rulelist">
+        <li><b>Invariant:</b> rule + why, with <code>path:line</code>.</li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--g)"></span>Tooling</h2>
+      <div class="cards">
+        <div class="card">
+          <h3><b>Tool</b> <span class="who">how it is invoked</span></h3>
+          <p>What it does, idempotency, exit codes.</p>
+        </div>
+      </div>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--h)"></span>Tests &amp; seams</h2>
+      <div class="cards">
+        <div class="card">
+          <h3><b>x/y passing</b> <span class="who">where</span></h3>
+          <ul><li>What is covered, what is deliberately not.</li></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <h2><span class="dot" style="background:var(--danger)"></span>Watch items</h2>
+    <div class="cards">
+      <div class="card danger">
+        <h3><b>Gap or inconsistency</b> <span class="sev warn">category</span></h3>
+        <p>What, why it matters, evidence. <code>path/file.cs:1</code></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Static snapshot — DATE · sources: <code>src/</code>, <code>tools/</code>, <code>docs/</code>.
+    Re-run the analysis after structural changes.
+  </footer>
+</div>
+</body>
+</html>
