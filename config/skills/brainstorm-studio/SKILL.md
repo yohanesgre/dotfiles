@@ -117,7 +117,7 @@ Route by material before drawing:
 - **Any logic that must be correct** (backend, API, data flow, algorithm, state machine, pipeline, error handling, tests) → load `design-thinking`; draw the happy-path graph (A), break points (E), and requirements (R).
 - **Interface surfaces** (screen, layout, user flow, empty/error states) → load `design-thinking`; draw surfaces with their content flow (C), void states (V), and needs (N) — C/V/N is A/E/R turned on the interface.
 - **Multi-step work or delegation** (subagents, parallel waves) → draw the task graph per `design-thinking`'s graph-protocol.
-- **"How does X work / what calls X / trace a flow"** → load `call-graph`.
+- **"How does X work / what calls X / trace a flow"** → load `design-thinking` (references/call-graph.md).
 
 Carry the graph into the spec: each design section states its graph (A/E/R for logic, C/V/N for interface), so the plan and the implementation build the drawn graph instead of re-inventing it. A section with no graph yet is not ready to present.
 

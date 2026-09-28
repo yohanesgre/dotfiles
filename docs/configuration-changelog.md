@@ -4,6 +4,24 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-28 — `call-graph` folded into `design-thinking`
+
+One r17x entry point, per user decision. The 2026-09-24 review had kept `call-graph` standalone (real usage: 5 invocations / 3 reads), but the two skills duplicated the same paradigm and `design-thinking` already routes its other materials by reference file — the answer material now lives the same way. The gist's four files (`DESIGN_THINKING` / `OPT_DESIGN_GRAPH` / `OPT_GRAPH_PROTOCOL` / `ECALL_GRAPH_IN_YOUR_AGENTS`) now map 1:1 onto design-thinking's four references.
+
+- `config/skills/design-thinking/references/call-graph.md` (new; was `config/skills/call-graph/references/output-format.md`, superset of the gist's ECALL file) — paradigm header added, output contract unchanged.
+- `config/skills/design-thinking/SKILL.md` — router gains the answer row; description absorbs the call-graph triggers (how-it-works, caller/callee, request path, trace, upstream/downstream, Indonesian phrases) and drops the sibling pointer; `Pipelines` + `Common mistakes` gain the answer-mode lines.
+- Dependents updated: `explorer` description, `brainstorm-studio`, `architecture-viz` (description + body), `researcher` agent route, `AGENTS.md` (researcher delegation + tool-selection rows; live copy updates at next hm-switch), `sources.json` keep (34→33), `CONFIGURATION.md` (researcher route row; inventory 34→33 dirs; 22→21 local; 2 r17x → 1). Stale `~/.agents/skills/call-graph` symlink removed — the live skill scan already serves the merged skill.
+- Gates: `validate-skills.sh --manifest config/skills/sources.json` exit 0 (37 skills, 5 pre-existing warnings); `bash scripts/validate.sh --ci` exit 0 (38 passed / 0 failed / 4 skipped). No commit, no push, no nix rebuild, no hm-switch.
+
+## 2026-09-28 — Enable OpenCode's built-in attention sounds (`attention.sound`)
+
+OpenCode v2.0.18 defaults `attention.sound` and `attention.notifications` to `false`, so the built-in `opencode.notifications` TUI plugin (`packages/tui/src/feature-plugins/system/notifications.ts`, `attention.ts`) was silent. Meanwhile Luvus 0.14.2 never queues its own cues for panes whose state is written by `agent.report` / `integration_report` — which is every pane the `opencode.pulse` module publishes — so neither the Luvus blocked nor the done cue fired. `attention.sound: true` turns on the OpenCode-side cue instead: question / permission / done / subagent_done / error. It is independent of Luvus's own notification sounds, which stay enabled. `attention.notifications` stays off. The same edit synced the previously live-only `session` block (`permissions: "autoaccept"`, `thinking: "show"`) from the live file into the repo copy, so both copies are now byte-identical.
+
+- `config/opencode/cli.json` — gains `attention: { "sound": true }` and the `session` block (live copy matched).
+- `config/opencode/CONFIGURATION.md` — new `### TUI prefs (cli.json)` subsection with the current file contents and the cue/independence notes; no dated entry added there (that file is current-state only).
+
+No commit, no push, no nix rebuild, no hm-switch.
+
 ## 2026-09-28 — Add `build` to jg/Jev routing docs
 
 The built-in `build` agent already held the widest permissions — `opencode.jsonc` sets `default_agent: "build"` with `"build": { "mode": "all" }` and no permission envelope, so it inherits the global `permission: allow` (shell `*`, `execute`, every MCP tool including `codegraph_*` and `jev-mcp_*`) — but the jg/Jev routing docs only listed the custom agents. This documents `build` explicitly so the routing rules are complete for it; no config change (no `build.md`, `opencode.jsonc` untouched).

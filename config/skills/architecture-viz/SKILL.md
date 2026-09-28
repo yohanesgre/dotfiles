@@ -1,13 +1,13 @@
 ---
 name: architecture-viz
-description: 'Create a self-contained HTML architecture visualization of a codebase — a hand-authored SVG dependency graph plus subsystem, flow, and risk panels. Use when the user asks to visualize, map, diagram, draw, or chart a project''s architecture, dependencies, module structure, service graph, bootstrap flow, or how the system fits together; or when an architecture doc needs a viewer-friendly visual. Output is one offline HTML file. Not for data charts (create-viz), pre-code design graphs (design-thinking), or text call-flow answers (call-graph).'
+description: 'Create a self-contained HTML architecture visualization of a codebase — a hand-authored SVG dependency graph plus subsystem, flow, and risk panels. Use when the user asks to visualize, map, diagram, draw, or chart a project''s architecture, dependencies, module structure, service graph, bootstrap flow, or how the system fits together; or when an architecture doc needs a viewer-friendly visual. Output is one offline HTML file. Not for data charts (create-viz), pre-code design graphs (design-thinking), or text call-flow answers (design-thinking).'
 ---
 
 # Architecture Viz — HTML dependency graphs that read well
 
 Produce a single self-contained HTML file that a human can open and understand: a layered dependency graph (hand-authored SVG, no libraries, no CDN), a boot/runtime sequence, per-subsystem panels, and an evidence footer. The hard part is not drawing boxes — it is **placement**: labels, arrows, and corridors. This skill encodes the rules that keep the graph readable, the failure modes that make it unreadable, and a verification loop that catches them without eyeballing.
 
-This is for *documenting an existing system*. For charts of data use create-viz; for drawing a design before code exists use design-thinking; for call-path text answers use call-graph.
+This is for *documenting an existing system*. For charts of data use create-viz; for drawing a design before code exists use design-thinking; for call-path text answers use design-thinking.
 
 ## 1. Research first — build a node/edge inventory with evidence
 

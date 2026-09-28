@@ -5,5 +5,12 @@
   "tabs": {
     "layout": "horizontal"
   },
-  "plugins": ["./luvus-v2"]
+  "plugins": ["./luvus-v2"],
+  "attention": {
+    "sound": true
+  },
+  "session": {
+    "permissions": "autoaccept",
+    "thinking": "show"
+  }
 }

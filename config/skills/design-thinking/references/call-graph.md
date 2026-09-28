@@ -1,4 +1,6 @@
-# Call-Graph Output Contract
+# Call Graph — Answers
+
+Same method, turned on existing code: read the implementation, draw the call graph it already is, and answer with that graph. Every node verified, never guessed.
 
 Use for call graphs, execution flows, request paths, architecture traces, function callers, upstream and downstream behavior, "How does X work?", "What calls X?", "Where does X go?", and production/test flow comparisons.
 

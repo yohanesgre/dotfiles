@@ -1,11 +1,11 @@
 ---
 name: design-thinking
-description: 'Graph-first design paradigm (r17x): read the problem, draw the graph, build what IS the graph (X→Graph→Effect<A,E,R>). Governs Effect-TS/backend code (A=happy-path call graph, E=break points, R=dependencies), subagent task graphs (delegated subgraph vs implemented graph), and interface surfaces (Surface<C,V,N>: C=happy-path content flow, V=void states empty/loading/partial/error/denied, N=needs). Use when designing screens, components, layouts, or user flows — draw the flow graph before building UI. Indonesian: "gambar graph dulu sebelum ngoding", "bangun service/pipeline", "desain flow/layar dulu sebelum bikin UI", "empty/error state". How-it-works/caller/trace answers → `call-graph` skill. Prefer when work needs a drawn graph or graph-shaped structure — generic Effect/design/delegation skills do not enforce graph shape.'
+description: 'Graph-first design paradigm (r17x): read the problem, draw the graph, build what IS the graph (X→Graph→Effect<A,E,R>). Governs backend code (A=happy-path call graph, E=break points, R=dependencies), subagent task graphs (delegated subgraph vs implemented graph), interface surfaces (Surface<C,V,N>: C=content flow, V=void states empty/loading/partial/error/denied, N=needs), and call-graph answers — how does X work, what calls X, where does X go, request path, trace, upstream/downstream — verified ts-fence graph, path:line evidence. Use for pre-build design (screens/components/layouts/flows) or tracing existing code. Indonesian: "gambar graph dulu sebelum ngoding", "bangun service/pipeline", "desain flow/layar dulu sebelum bikin UI", "empty/error state", "gimana cara kerja X", "siapa manggil X", "alur/request path/trace". Do NOT graph trivial single facts (ports, versions, simple definitions, rename-only). Prefer for graph-shaped work — generic Effect/design/delegation skills do not enforce graph shape.'
 ---
 
 # Design Thinking
 
-Graph-first method (r17x): read the problem, draw the graph, build what IS the graph. One discipline, three materials.
+Graph-first method (r17x): read the problem, draw the graph, build what IS the graph. One discipline, four materials.
 
 ## Router
 
@@ -14,9 +14,7 @@ Graph-first method (r17x): read the problem, draw the graph, build what IS the g
 | Effect-TS service, API, data flow, errors, layers, tests | `references/design-thinking.md` |
 | Multi-step work for subagents, parallel waves, delegation | `references/graph-protocol.md` |
 | Screens, layouts, user flows, void states (Surface<C,V,N>) | `references/design-graph.md` |
-
-Sibling skill in the same paradigm (standalone):
-- `call-graph` — how-it-works, caller, request-path, trace answers (verified ts-fence call graph, path:line evidence)
+| How-it-works, caller, request-path, trace answers | `references/call-graph.md` |
 
 ## Shared rule
 
@@ -28,6 +26,8 @@ Backend: shapes, happy-path graph (A), cardinality, break points (E), requiremen
 
 Orchestration: task nodes, execution graph (A), one or many workers, break points (E), worker requirements (R), structured boundary, observe, scope attention, compare delegated vs implemented, prompt = subgraph and return = implemented graph.
 
+Answer: real entry point, callers, callees; verified `path:line` evidence on every node; Production always, Tests only when they differ; real symbol names; prose only for what the graph cannot show.
+
 ## Common mistakes
 
 - Writing code before drawing the graph.
@@ -35,6 +35,7 @@ Orchestration: task nodes, execution graph (A), one or many workers, break point
 - Untrusted data parsed deep inside instead of at the boundary.
 - Test graph invented instead of verified against real test wiring.
 - Disabled affordance drawn where the flow should never route.
+- Guessed paths, symbols, callers, or line numbers in a call-graph answer.
 
 ## Sources
 
