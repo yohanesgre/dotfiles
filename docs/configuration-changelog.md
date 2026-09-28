@@ -4,6 +4,71 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-28 — Phase 2: drop 3 dead upstream skills, reauthor `verification-before-completion` as local `completion-verification`
+
+Second de-wiring pass over the `obra/superpowers` wired set. Four verbatim upstream copies had 0 loads ever; three were deleted outright, the fourth — a live gate referenced by name — was re-authored as a local bare skill.
+
+| Upstream (removed) | Result |
+|---|---|
+| `dispatching-parallel-agents` | deleted (dead) |
+| `using-git-worktrees` | deleted (dead) |
+| `executing-plans` | deleted (dead) |
+| `verification-before-completion` | local bare `completion-verification` |
+
+- `config/skills/`: created `completion-verification/SKILL.md` (~28 lines, bare — no scripts, no `superpowers:` prefix; description kept verbatim; evidence-before-claim gate: run command, read output, then claim). Deleted `dispatching-parallel-agents/`, `using-git-worktrees/`, `executing-plans/`, `verification-before-completion/` (`git rm -r`, staged).
+- Repoints: `steward/SKILL.md` (gate row + requires list), `systematic-debugging/SKILL.md`, `writing-skills/SKILL.md` `verification-before-completion` → `completion-verification`. `writing-plans/SKILL.md` and `subagent-driven-development/SKILL.md` dropped all `executing-plans` / `using-git-worktrees` refs to plain prose (no replacement skill this phase). No remaining refs to the 3 deleted names.
+- `config/skills/sources.json`: `keep` 44 → 41 (remove 4, add `completion-verification`); `obra-superpowers-wired.skills` 11 → 7; `obra-superpowers-dropped` gains the 4 names + phase-2 note. Validated with `python3 -m json.tool`.
+- `config/opencode/CONFIGURATION.md`: counts 44 → 41 dirs (21 local / 23 wired → 22 local / 19 wired), `obra` 11 → 7, `completion-verification` added to the local process group.
+- Gates: `bash scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0; `bash scripts/validate.sh` all pass.
+- **Reload required**: `hm-switch` to drop the stale `~/.agents/skills/` symlinks and pick up `completion-verification`, plus an opencode restart — neither run in this change. No commit made.
+
+## 2026-09-28 — De-wire three `obra/superpowers` process skills into local bare copies
+
+`obra/superpowers` wired set 14 → 11. Three skills the repo carried as verbatim wired copies were re-authored as local bare skills so their process can evolve in-repo without the `--wired --force` overwrite hazard:
+
+| Wired (removed) | Local bare (new) |
+|---|---|
+| `using-superpowers` | `skill-first` |
+| `requesting-code-review` | `review-request` (keeps `code-reviewer.md` inside) |
+| `receiving-code-review` | `review-response` |
+
+- Why: they route core behavior by name across agents and `AGENTS.md`, so they must be editable in-repo; the wired copies pinned an upstream we do not control and `--wired --force` would clobber local edits. Bare rewrites drop the `superpowers:` prefix and the `references/` platform files.
+- `config/skills/`: created `skill-first/`, `review-request/{SKILL.md,code-reviewer.md}`, `review-response/`; deleted `using-superpowers/`, `requesting-code-review/`, `receiving-code-review/`.
+- Repoints: `subagent-driven-development/SKILL.md` `../requesting-code-review/code-reviewer.md` → `../review-request/code-reviewer.md` (4 refs, incl. the final-review wording); `executing-plans/SKILL.md` dropped the `../using-superpowers/references/` parenthetical; `writing-skills/SKILL.md` replaced two dead `references/` links with plain-text runtime-dir guidance.
+- `config/skills/sources.json`: `keep` swaps the 3 names for the 3 new ones (still 44 dirs); `obra-superpowers-wired.skills` 14 → 11; new provenance source `obra-superpowers-dropped` (scope `dropped`) records the three upstream skills and the replacement. Validated with `python3 -m json.tool`.
+- `config/opencode/CONFIGURATION.md`: counts updated to 21 local / 23 wired (was 18/26), `obra` 14 → 11, new names added to the local process group.
+- Gates: `bash scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0; `bash scripts/validate.sh` all pass.
+- **Reload required**: the new skills need a `hm-switch` (recreates the `~/.agents/skills/` symlinks; the 3 stale ones were removed here) and an opencode restart — neither run in this change. No commit made.
+
+## 2026-09-28 — `jg` pilot findings folded into routing docs
+
+Pilot: `.tmp/pilot-jg.md` (jg 0.4.2, dotfiles repo + one unindexed scratch project; `jg doctor` pass — auth now done). No permission or routing-order change; this is a correctness patch to how the existing rung is judged.
+
+- `End context.` is **not** a completeness sentinel — SIGINT (rc 130) partial output ends with it. Callers must gate on the exit code: `0` complete, `2` incomplete, `1` failed, `130` interrupted. rc 2 was not reproducible; treat missing context as unknown.
+- Validation/usage errors print to **stdout, not stderr** (stderr empty) — a stdout-only parser can read an error line as context.
+- rc 0 with **locations-only** results is not an answer: a config question returned 23 correct file leads and 0 source excerpts, so the follow-up grep was still needed. Locations-only → drop to `grep`/`glob`.
+- **codegraph is blind to JSONC/Markdown config** (no symbol entries for `opencode.jsonc` / agent MD) and returned unrelated plugin TS for a config question. Config-shaped questions go straight to grep; codegraph stays for real code.
+- Cost 3 s (small tree) → 31–41 s (this repo); `--concurrency 1` ~33% slower, no quality gain. `jg` ignores the codegraph index entirely (works unindexed).
+- Takes effect at the next `hm-switch` (agent prompt files are symlinked into `~/.config/opencode/agents/`); no opencode restart needed for prompt-only edits.
+- Takes effect at the next `hm-switch` (agent prompt files are symlinked into `~/.config/opencode/agents/`); no opencode restart needed for prompt-only edits.
+- Touched: `config/opencode/AGENTS.md` § Behavior search (4 new rules: exit codes, stdout errors, locations-only fallback, codegraph config blindness), `config/opencode/CONFIGURATION.md` § Behavior search (auth now verified, exit-code + evidence-quality bullets, routing line notes the gate).
+
+## 2026-09-28 — Behavior search `jg` (jevgrep) wired into agents
+
+- Installed `jg` 0.4.2 from npm `@dzhng/jevgrep` to `~/.local/bin` (`npm install -g --prefix $HOME/.local`); a plain global install fails `EACCES` on `/usr/lib/node_modules`. Requires Node 22+ (v24.21.0 present). Not Nix-managed.
+- Installed the `jevgrep` skill globally: `npx skills add dzhng/jevgrep --skill jevgrep --global --yes` → `~/.agents/skills/jevgrep`. Recorded in `config/skills/sources.json` as `dzhng-jevgrep` (scope `project`, `updated` bumped to 2026-09-28) so `scripts/skills-sync.sh --source dzhng-jevgrep` restores it. Note: `npx skills add --global` is the CLI's global-install flag; the recorded scope is `project`, and `skills-sync.sh --global` includes the project scope in addition to user scope.
+- **Auth is pending and is the user's step**: `jg doctor` reports `Run jg auth or use jg auth --provider NAME --stdin.` The user runs `jg auth --provider opencode` (or the `--stdin` form); no agent runs it or handles the secret. Until then jg falls through to the fallback chain.
+- `config/opencode/agents/researcher.md`: added `shell` allows for `jg *` and `command -v jg` only — the first shell access in that envelope; every other shell command stays denied. Prompt boundary line updated from "you have NO `shell`" and the inline-tool list now names jg.
+- `config/opencode/agents/swe.md`: one routing line (jg first when `command -v jg` succeeds, else codegraph → `grep`/`glob`); permission envelope unchanged.
+- `architect`/`reviewer`/`designer`/`steward` untouched — no jg grant.
+- `config/opencode/AGENTS.md`: new § Behavior search (`jg` — jevgrep) with the per-agent routing matrix and the universal fallback order (jg → codegraph → `grep`/`glob` → `researcher`).
+- `config/opencode/CONFIGURATION.md`: new § Behavior search section, plus the researcher and swe table rows and the AGENTS.md section list updated.
+
+## 2026-09-27 — Share OpenCode MCP servers with Codex
+
+- Added `home/modules/codex/default.nix`, imported by `home/common.nix`; Home Manager activation idempotently registers `browser-use`, `codegraph`, and `jev-mcp` with Codex via `codex mcp add`, preserving unrelated `~/.codex/config.toml` settings.
+- Browser-use uses `browser-use-mcp` (key from `~/.config/browser-use/key`) with the existing localhost proxy/model settings; codegraph and jev-mcp use their bun-global executables.
+
 ## 2026-09-26 — Luvus `opencode.depth` module extracted to standalone repo, renamed `opencode.pulse`
 
 - The Luvus module formerly vendored at `config/luvus/modules/opencode-depth/` is now a standalone publishable project at `~/projects/luvus-opencode-pulse` (the repo root is the module root); the vendored copy was deleted from dotfiles.

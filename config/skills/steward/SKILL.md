@@ -36,7 +36,7 @@ Load `git-workflow` for anything that mutates git. Then load the chore's skill(s
 | repo hygiene (format/.gitignore/lockfile/temp) | — | build + test after |
 | release (changelog/version/tag) | `git-workflow`, `deploy-checklist` | full gate |
 | dependency bump | — | full gate |
-| run gate | `verification-before-completion` (`testing-strategy` if none) | — |
+| run gate | `completion-verification` (`testing-strategy` if none) | — |
 | tracked chore | `work-plans` | — |
 
 ## 2. Workflow
@@ -64,7 +64,7 @@ R  requires:
    project AGENTS.md/.opencode rules (WIN)
    `git-workflow` for every git mutation
    routed skills: caveman-commit, documentation, docs-hub, work-plans,
-                  verification-before-completion, testing-strategy, deploy-checklist
+                  completion-verification, testing-strategy, deploy-checklist
    a gate entrypoint (validate.sh | make | task | package scripts) or explicit "none"
 ```
 

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-24",
+  "updated": "2026-09-28",
   "policy": "Commit only local-authored and wired skills. Externalized skills install globally on every hm-switch via scripts/skills-sync.sh --global (npx skills -a universal from $HOME -> ~/.agents/skills), or per project on demand; upstream owns their content.",
   "keep": [
     "agent-browser",
@@ -16,12 +16,11 @@
     "caveman-help",
     "caveman-review",
     "caveman-stats",
+    "completion-verification",
     "design-system-patterns",
     "design-thinking",
     "designer",
-    "dispatching-parallel-agents",
     "docs-hub",
-    "executing-plans",
     "explorer",
     "finishing-a-development-branch",
     "frontend-design",
@@ -31,9 +30,10 @@
     "librarian",
     "nix",
     "orchestration",
-    "receiving-code-review",
-    "requesting-code-review",
+    "review-request",
+    "review-response",
     "reviewer",
+    "skill-first",
     "steward",
     "subagent-driven-development",
     "swe",
@@ -41,9 +41,6 @@
     "systematic-debugging",
     "test-driven-development",
     "transcribe",
-    "using-git-worktrees",
-    "using-superpowers",
-    "verification-before-completion",
     "work-plans",
     "writing-plans",
     "writing-skills"
@@ -61,23 +58,31 @@
       "scope": "wired",
       "skills": [
         "brainstorming",
-        "dispatching-parallel-agents",
-        "executing-plans",
         "finishing-a-development-branch",
-        "receiving-code-review",
-        "requesting-code-review",
         "subagent-driven-development",
         "systematic-debugging",
         "test-driven-development",
-        "using-git-worktrees",
-        "using-superpowers",
-        "verification-before-completion",
         "writing-plans",
         "writing-skills"
       ],
       "notes": "committed exception; routed by repo-authored skills / AGENTS.md",
       "upstream_sha": "5bf4e78",
       "upstream_imported": "2026-09-25"
+    },
+    {
+      "id": "obra-superpowers-dropped",
+      "repo": "obra/superpowers",
+      "scope": "dropped",
+      "skills": [
+        "receiving-code-review",
+        "requesting-code-review",
+        "using-superpowers",
+        "dispatching-parallel-agents",
+        "using-git-worktrees",
+        "executing-plans",
+        "verification-before-completion"
+      ],
+      "notes": "de-wired 2026-09-28; replaced by local bare skill-first, review-request (code-reviewer.md), review-response; phase-2 2026-09-28 dropped dispatching-parallel-agents, using-git-worktrees, executing-plans, verification-before-completion; verification-before-completion reauthored local as completion-verification"
     },
     {
       "id": "anthropics-skills-wired",
@@ -367,6 +372,15 @@
         "caveman-stats"
       ],
       "notes": "committed exception; customized caveman system. --wired refresh overwrites \u2014 diff local customizations before copying."
+    },
+    {
+      "id": "dzhng-jevgrep",
+      "repo": "dzhng/jevgrep",
+      "scope": "project",
+      "skills": [
+        "jevgrep"
+      ],
+      "notes": "global install via `npx skills add dzhng/jevgrep --skill jevgrep --global --yes` -> ~/.agents/skills/jevgrep; requires jg binary (npm i -g @dzhng/jevgrep, Node 22+) and per-user `jg auth`"
     }
   ]
 }
