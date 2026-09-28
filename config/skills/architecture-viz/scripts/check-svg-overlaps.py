@@ -26,6 +26,8 @@ Checks:
   5. node text lines wider than their own boxes
   6. edge segments crossing node box interiors (rectangle-span test; endpoints
      merely touching a box edge do not count)
+  7. node text too close to its box top/bottom edge (vertical fit; box heights
+     must be sized from the last text baseline, not from the top)
 
 Path data is tokenized directly, so compact syntax (e.g. `M400,120H900,300`) and
 repeated coordinates parse without a normalization pass; absolute M/H/V/L/Z are
@@ -46,6 +48,8 @@ CHAR_W = 6.6          # mono 11px average advance
 ASCENT, DESCENT = 8.5, 2.5
 TITLE_W = 7.8         # bold 14px system-ui average advance
 SUB_W = 6.6           # mono 11px
+MIN_PAD_TOP = 10.0    # first text baseline minus ascent, from the box top
+MIN_PAD_BOTTOM = 12.0  # box bottom minus last text baseline
 
 PATH_TOK_RE = re.compile(r"[A-Za-z]|-?(?:\d+(?:\.\d+)?|\.\d+)")
 TRANS_RE = re.compile(r"translate\(\s*(-?[\d.]+)[,\s]+(-?[\d.]+)\s*\)(.*)")
@@ -449,13 +453,33 @@ def main():
             continue
         r = g.find("rect")
         w = float(r.get("width"))
-        for t in g.findall("text"):
+        h = float(r.get("height"))
+        texts = g.findall("text")
+        name = (texts[0].text or "").strip() if texts and texts[0].text else "?"
+        baselines = []
+        for t in texts:
             txt = "".join(t.itertext())
             x = float(t.get("x", 0))
+            y = float(t.get("y", 0))
+            baselines.append(y)
             cw = TITLE_W if t.get("class") == "t" else SUB_W
             need = x + len(txt) * cw
             if need > w - 8:
                 findings.append(f'text "{txt}" needs ~{need:.0f}px > box width {w:.0f}px')
+        if baselines:
+            first, last = min(baselines), max(baselines)
+            top_gap = first - ASCENT
+            bottom_gap = h - last
+            if top_gap < MIN_PAD_TOP:
+                findings.append(
+                    f'node "{name}": first text baseline {first:.0f} leaves only '
+                    f"{top_gap:.1f}px to box top (min {MIN_PAD_TOP:.0f})"
+                )
+            if bottom_gap < MIN_PAD_BOTTOM:
+                findings.append(
+                    f'node "{name}": last text baseline {last:.0f} leaves only '
+                    f"{bottom_gap:.1f}px to box bottom (min {MIN_PAD_BOTTOM:.0f})"
+                )
 
     if findings:
         print(f"{len(findings)} finding(s) in {path} (svg #{used}):")

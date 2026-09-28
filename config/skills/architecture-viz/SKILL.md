@@ -30,8 +30,9 @@ Write down explicit coordinates and path `d` strings first; edit numbers on pape
 **Canvas and boxes**
 
 - `viewBox` width 1440 (the template's `.wrap` is 1340px wide with 28px padding → 1284px content → ~0.89 scale). Vertical space is cheap; width is not.
-- Node boxes ~340–360 wide. Heights: 64 (2 lines), 76–124 (3 lines) — title + up to 2 mono sub-lines.
+- Node boxes ~340–360 wide. Size each box from its last baseline: title y≈28–32, sub-line pitch 22, `height = last baseline + 16` (2 subs ≈ 84, 5 rows ≈ 140). Never reuse an old height after adding a row — the checker flags text within 12px of the box's top/bottom.
 - Columns of 3–4; horizontal corridors between columns ≥120px (180+ when several edges and labels share them). Vertical free bands between rows ≥60px for labels.
+- **Detail graphs:** when nodes carry 8+ sub-lines, split into two — a composition graph with short edges, and a service→touchpoints graph with tall source boxes in col A, targets in col C, one straight horizontal edge per dependency (long runs make long labels safe, label above each run).
 - Leave a full free band between a node column and the edge corridor; do not route lines through node rows.
 
 **Edges**
@@ -77,7 +78,7 @@ bash <skill-dir>/scripts/render-check.sh docs/architecture.html /tmp/viz.png
 ```
 
 - Checker exit codes: `0` clean, `1` findings, `2` usage/parse error. A malformed graph (renamed classes, missing `rect`, an unsupported path command, no nodes/edges/labels) exits `2` and never prints "clean"; the clean line reports the parsed counts (`clean: <file> (svg #N): N nodes, M edges, K labels`). Treat it as a lint — it approximates font width — but treat a parse error as a hard stop, not a pass.
-- Checker reports: label→node overlaps, label→line crossings, label→label overlaps, arrowheads not landing on node edges, node text wider than its box, and **edge segments crossing node box interiors** (the rectangle-span test; a segment may touch a box edge at its endpoints but not pass through the interior). Fix findings, re-run until clean.
+- Checker reports: label→node overlaps, label→line crossings, label→label overlaps, arrowheads not landing on node edges, node text wider than its box, node text too close to its box top/bottom, and **edge segments crossing node box interiors** (the rectangle-span test; a segment may touch a box edge at its endpoints but not pass through the interior). Fix findings, re-run until clean.
 - The checker's DOM contract — the exact classes/attributes it parses — is in `references/layout-rules.md` § Checker contract; keep generated SVGs on it.
 - Render exit codes: `0` fresh PNG written, `1` browser present but no fresh PNG (its stderr is shown), `2` usage/missing file/bad width-height, `3` no chromium/chrome found. A stale PNG from a previous revision is never accepted.
 - The render pass screenshots the page headlessly (chromium/chrome; falls back to manual open). If you are a text-only model, delegate the PNG to a **vision agent** and explicitly name a vision-capable model (this user prefers `opencode-go/mimo-v2.5`; otherwise ask). Checklist: any overlap with coordinates, detached/ambiguous labels, arrowheads off edges, clipped text, where it still feels tight.

@@ -4,6 +4,16 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-28 — `architecture-viz` vertical-fit check in overlap checker
+
+The overlap checker only tested horizontal fit, so a node whose last text line sat flush against (or past) the bottom of its own box passed — the vertically-squashed case the 2026-09-28 hardening pass didn't cover. A vertical-fit rule closes it: node text landing within 12px of a node box's top or bottom edge is flagged. The reference file and the skill itself now carry the baseline/height recipe that produces compliant boxes, plus the explicit "boxes sized from the top only" anti-pattern, and SKILL.md routes detail graphs (the denser, tighter case) at the same sizing discipline.
+
+- `config/skills/architecture-viz/scripts/check-svg-overlaps.py` — new vertical-fit check: last baseline within 12px of a node box's bottom (and text near the top edge) is flagged.
+- `config/skills/architecture-viz/references/layout-rules.md` — baseline/height sizing recipe + the "boxes sized from the top only" anti-pattern.
+- `config/skills/architecture-viz/SKILL.md` — box sizing guidance and detail-graph guidance for the tighter layout.
+
+Gates: `validate-skills.sh --manifest config/skills/sources.json` exit 0 (37 skills, 5 pre-existing warnings). No commit, no push, no stage.
+
 ## 2026-09-28 — `call-graph` folded into `design-thinking`
 
 One r17x entry point, per user decision. The 2026-09-24 review had kept `call-graph` standalone (real usage: 5 invocations / 3 reads), but the two skills duplicated the same paradigm and `design-thinking` already routes its other materials by reference file — the answer material now lives the same way. The gist's four files (`DESIGN_THINKING` / `OPT_DESIGN_GRAPH` / `OPT_GRAPH_PROTOCOL` / `ECALL_GRAPH_IN_YOUR_AGENTS`) now map 1:1 onto design-thinking's four references.

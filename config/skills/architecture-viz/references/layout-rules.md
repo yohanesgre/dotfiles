@@ -16,6 +16,14 @@ Detailed geometry for hand-authored SVG dependency graphs. Read this when the gr
 
 The template's SVG uses columns `x = 60`, `520`, `1060` (canvas 1440, 340–360 wide boxes, right margin 40) and its single sample row at `y = 88` (box 88–152, edge at y 120). Worked example rows below assume 64-tall boxes: `y = 40`, `170`, `300`, `430`, `560`, `690`, `820` (pitch 130 = 64 + 66 free). A row of 76–124-tall boxes needs pitch ≥184; recompute rather than reusing the 64-row list.
 
+**Vertical rhythm — size the box from the LAST baseline, never from the top.** Row placement is the cheap part; the bottom inset is what breaks:
+
+- title baseline y=28…32, sub-line pitch 22 (small 2-line boxes: title 28, subs 50/68, height 84 → 16px bottom inset)
+- `height = last baseline + 16`; the checker flags any node whose text comes within 12px of the box top or bottom
+- the classic failure: a 5-row node (last baseline 122) kept at height 124 → 2px to the border — reads as "no bottom padding" on a rendered page. Recompute `height = last baseline + 16` (140) every time a row is added; never reuse the old height
+- tall source boxes (300px+) used for straight-edge fan-out: fill the dead space with more real sub-lines, or trim the height to `last departure y + 16` — an empty bottom half looks like a bug too
+- same audit for the left inset: text x=20 on a 340 box → keep mono lines ≤ ~46 chars
+
 Reserve **dedicated corridors**: 
 - left margin `x < 60` — long bypass routes + rotated labels
 - between col1 and col2: `x = 400..520`
@@ -77,11 +85,12 @@ All labels carry the halo: `.elabel { paint-order: stroke; stroke: <panel-bg>; s
 - **Labels starting flush at a node edge** in a busy corner → they visually merge with the box. Fix: offset 10px+ and prefer the midpoint of the run.
 - **Mixed runtime + editor nodes** in one graph → spaghetti. Fix: runtime graph only; tooling/tests as HTML panels below.
 - **Long sub-lines in small boxes** — text clipped at render. Fix: box height/width per rule table, ≤2 sub-lines, and the checker's text-fit test.
+- **Boxes sized from the top only.** Adding a row without adding 22px of height leaves the last line 2px off the bottom border; a width-only glance calls it fine. Fix: `height = last baseline + 16` (the checker's vertical-fit rule flags <12px).
 - **Re-rendering after every pixel-nudge.** Slow and noisy. Fix: batch edits, run the checker, one screenshot + vision pass per revision.
 
 ## 5. Verification loop
 
-1. `python3 <skill-dir>/scripts/check-svg-overlaps.py <file>` → fix findings (it approximates font width; treat as lint). It also runs the rectangle-span test (edge segment through a node box) for you.
+1. `python3 <skill-dir>/scripts/check-svg-overlaps.py <file>` → fix findings (it approximates font width; treat as lint). It also runs the rectangle-span test (edge segment through a node box) and the vertical-fit test (node text within 12px of the box's top/bottom edge) for you.
    - Exit codes: `0` clean (prints `clean: … N nodes, M edges, K labels`), `1` findings, `2` usage or parse error (malformed SVG, renamed classes, unsupported path command, no nodes/edges/labels). Exit `2` is a hard stop, never a pass.
 2. `bash <skill-dir>/scripts/render-check.sh <file> /tmp/viz.png` → screenshot. Exit codes: `0` fresh PNG, `1` browser present but failed, `2` usage/missing file/bad width-height, `3` no browser found. A pre-existing PNG is never accepted as a fresh render.
 3. Text-only model: delegate the PNG to a vision agent (name the vision model explicitly; this user prefers `opencode-go/mimo-v2.5`). Ask for: label/line/box overlaps with coordinates, detached labels, arrowheads off edges, clipped text, remaining tightness.
