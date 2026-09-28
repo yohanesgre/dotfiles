@@ -1,6 +1,6 @@
 ---
 name: work-plans
-description: Per-plan work tracking in status/ folders — open, update, and close work plans with lane heartbeats, chronological TIMELINE, and memory links. Use whenever the user mentions work plans, status plans, opening or closing a plan, plan stubs, lanes inside a plan, plan templates, TIMELINE.md, or organizing status/ artifacts per plan instead of flat files — even if they don't say "work-plans".
+description: Per-plan work tracking in status/ folders — open, update, and close work plans with lane heartbeats, chronological TIMELINE, and memory links. This is the tracking plane — it tracks plan state and never authors the plan (authoring is the `writing-plans` skill). Use whenever the user mentions work plans, status plans, opening or closing a plan, plan stubs, lanes inside a plan, plan templates, TIMELINE.md, or organizing status/ artifacts per plan instead of flat files — even if they don't say "work-plans".
 metadata:
   requires: []
 ---
@@ -47,8 +47,9 @@ when a gated flow drives the plan; `iter:` = current
 `W<n>i<m>` loop position. Omit when unused.
 
 `plan.md` is the plan of record for the flow that opened it. Design/plan
-artifacts produced elsewhere (specs, ADRs, project plan docs) are inputs —
-link them, never duplicate them here.
+artifacts produced elsewhere (a `writing-plans` document, specs, ADRs,
+project plan docs) are inputs — link them, never duplicate them here. The
+`writing-plans` skill authors the plan document; this skill tracks it.
 
 Then write `status/<plan>/status.md`:
 

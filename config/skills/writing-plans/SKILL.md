@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before touching code
+description: Use when you have a spec or requirements for a multi-step task, before touching code. Authors the implementation-plan document (authoring plane); runtime tracking is the separate `work-plans` skill.
 ---
 
 # Writing Plans
@@ -16,6 +16,14 @@ Assume a skilled developer who knows almost nothing about this toolset or proble
 **Save plans to:** `.agents/plans/YYYY-MM-DD-<feature-name>.md`
 - User preferences for plan location override this default.
 - **Local artifact:** never commit or push the plan. Gitignore the plan directory if it is tracked.
+
+## Scope (authoring plane)
+
+This skill **authors** the plan document — the what and how (files, code, tests, verify commands). It is the *authoring plane*, not the tracking plane:
+
+- It never creates or edits `status/` or `status/TIMELINE.md` — runtime tracking is the `work-plans` skill.
+- Under `/goal` (or the Orchestrated handoff), `status/<plan>/plan.md` stays the single plan of record; **this document is an input artifact** — its files/tasks/tests are folded into that plan and linked from it, never duplicated.
+- The Orchestrated handoff loads `orchestration`, which requires `work-plans` (tracking); the Inline handoff needs neither.
 
 ## Scope Check
 
@@ -128,7 +136,7 @@ After saving the plan, offer the execution choice:
 
 **"Plan complete and saved to `.agents/plans/<filename>.md`. Two execution options:**
 
-**1. Orchestrated (recommended)** — hand the plan to the `orchestration` skill: dispatch tasks into isolated lanes, run the execution gate, verify, and review per lane.
+**1. Orchestrated (recommended)** — hand the plan to the `orchestration` skill: dispatch tasks into isolated lanes, run the execution gate, verify, and review per lane. Tracking opens via the `work-plans` skill (required by `orchestration`) — this plan doc becomes its linked input, not a second plan of record.
 **2. Inline Execution** — execute the plan in this session in batches with checkpoints.
 
 **Which approach?"**
