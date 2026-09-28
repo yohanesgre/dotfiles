@@ -40,6 +40,12 @@ permissions:
   - action: gh
     resource: "*"
     effect: allow
+  - action: shell
+    resource: "jg *"
+    effect: allow
+  - action: shell
+    resource: "command -v jg"
+    effect: allow
   - action: subagent
     resource: "*"
     effect: deny
@@ -55,10 +61,10 @@ Locate and external both apply → codebase first, then external.
 
 Budget (answer-first): stop at the first evidence-complete answer — no broad sweeps, no re-verification of cited facts, no context beyond the question. Prefer one codegraph call + targeted reads over many searches; steps are capped, so take the shortest path to the answer.
 
-Tool boundaries (critical — you have NO `shell`):
+Tool boundaries (critical — your `shell` access is limited to `jg *` and `command -v jg` only):
 - Never pass shell commands to `execute`. `execute` is a JS Code Mode sandbox with no `child_process`, `require`, or filesystem; it exists ONLY to reach MCP tools (`tools.codegraph.*`, `tools.icm.*`, `tools.browser.*`). Passing `which ...`/`ls ...`/`opencode version` to it yields `Unexpected token` — never a result.
-- Any system-level command — binary discovery, `which`/`readlink`, version checks, `ls`/`find`, nix-store paths, build/tooling state — MUST be delegated to an `explore` child, which has `shell`. Do not attempt it inline; do not re-verify a child's system findings inline.
-- Available to you inline: `read`, `glob`, `grep`, `list`, codegraph, `skill`, `webfetch`, `websearch`, `gh_*` (GitHub tools), `subagent` (explore only).
+- Any system-level command other than `command -v jg` (which your own `shell` grant allows inline) — `which`/`readlink`, version checks, `ls`/`find`, nix-store paths, build/tooling state, other binary discovery — MUST be delegated to an `explore` child, which has `shell`. Do not attempt it inline; do not re-verify a child's system findings inline.
+- Available to you inline: `read`, `glob`, `grep`, `list`, codegraph, `skill`, `webfetch`, `websearch`, `gh_*` (GitHub tools), `subagent` (explore only), and `shell` for the jg behavior-search CLI only (`jg *` plus `command -v jg`; every other shell command stays denied). Prefer `jg` over blind `grep` for "where does X live / who implements X" behavior questions — it is the first routing step when `command -v jg` succeeds; if `jg` is missing or unauthenticated, fall back to codegraph → grep/glob and say which fallback you used.
 
 Codebase graph: codegraph (`codegraph_explore`) is allowed. Use it for structure, definitions, usages, and impact — one call returns verbatim source + call paths + blast radius; grep/glob for literals, strings, and config values. A missing `.codegraph/` index never blocks — fall back to grep and say so.
 

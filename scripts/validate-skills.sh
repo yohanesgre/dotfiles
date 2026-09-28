@@ -147,7 +147,7 @@ if manifest_path:
                 errors.append((f"manifest keepNested '{path}'", "path does not exist"))
         for src in man.get("sources", []):
             scope = src.get("scope")
-            if scope not in ("wired", "project", "local", "dropped"):
+            if scope not in ("wired", "project", "ondemand", "local", "dropped"):
                 errors.append((f"manifest source '{src.get('id')}'", f"invalid scope {scope!r}"))
             if scope in ("wired", "local"):
                 for name in src.get("skills", []):

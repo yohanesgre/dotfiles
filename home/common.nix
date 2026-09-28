@@ -18,6 +18,7 @@
     ./modules/env
     ./modules/browser-use
     ./modules/opencode
+    ./modules/codex
     ./modules/omp
     ./modules/luvus
     ./modules/neovim

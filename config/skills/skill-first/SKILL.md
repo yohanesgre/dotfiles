@@ -17,8 +17,8 @@ Dispatched as a subagent to execute a specific task? This routing does not apply
 
 Process skills come first — they set the approach. Domain/implementation skills then carry it out.
 
-- "Let's build X" → a brainstorming/design process skill first, then implementation skills.
-- "Fix this bug" → a systematic-debugging process skill first, then domain skills.
+- "Let's build X" → a brainstorm-studio/design process first, then implementation skills.
+- "Fix this bug" → prose (no dedicated skill): diagnose first, then domain skills.
 - UI work → the process skill first, then the design/implementation skill.
 
 When several skills apply, load the process one before the domain one.

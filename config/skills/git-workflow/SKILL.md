@@ -29,7 +29,7 @@ These are never negotiable — report conflict, don't "fix" it yourself:
 1. **Single trunk: `main` never receives direct commits.** Every task creates a new branch from `main`, work there, then PR → merge. Even docs/one-liners follow this.
 2. **No commit unless user explicitly asked.** "commit this", "commit with message X", or orchestrator approval. Never auto-commit after edits — and never on `main`.
 3. **No push unless user explicitly asked.** Never `git push`, `git push --force`, or `gh` publish without exact instruction.
-4. **No merge/rebase/cherry-pick unless user explicitly asked.** Present options, wait for choice (see `finishing-a-development-branch` skill for merge menu — default is push + PR).
+4. **No merge/rebase/cherry-pick unless user explicitly asked.** Present the integration menu (§5), wait for choice — default is push + PR.
 5. **No scope creep.** Only files/changes in the brief. If something missing, report — don't add tables/columns/endpoints/error codes.
 6. **Names exact.** Table/column/error code/route/config key must match the project's docs verbatim.
 7. **Submodules are commit-inside-first.** See §6.
@@ -90,7 +90,7 @@ Run the project's one-shot gate script if it declares one (e.g. a `scripts/` gat
 
 ## 4. Push rules
 
-- No push without user saying "push", "push branch X", or picking the PR option in the finishing menu.
+- No push without user saying "push", "push branch X", or picking the PR option in the integration menu.
 - Before push:
   ```bash
   git status
@@ -103,7 +103,7 @@ Run the project's one-shot gate script if it declares one (e.g. a `scripts/` gat
 ## 5. PR & merge rules — branch → PR → trunk
 
 - Always `branch → push → PR → review → merge to main`. Never `commit on main` or `merge locally without PR` unless user explicitly says "merge locally" (then still via menu).
-- Use the `finishing-a-development-branch` skill menu verbatim when work complete. Default choice = **2. Push and create PR** (trunk workflow). Option 1 (merge locally) only if user explicitly wants local integration without GitHub review.
+- **When work is complete, present the integration menu — `1.` merge locally (<base-branch>) · `2.` push + create PR (default) · `3.` keep as-is — and wait for the choice.** Option 1 only if the user explicitly wants local integration without GitHub review; discard only on the user's explicit `discard`.
 - Branch must be green before PR: run the project's gate.
   ```bash
   git log --oneline origin/main..HEAD
@@ -111,7 +111,7 @@ Run the project's one-shot gate script if it declares one (e.g. a `scripts/` gat
   ```
 - PR: base = `main` (confirm if plan says otherwise), title = conventional commit style, description = what/why, docs conflicts (if any), gate outputs, testing notes. Use template if repo has one.
 - After PR approved and CI green, merge via GitHub (squash or merge commit per repo setting — don't force-push to `main`). After `git merge <feature>` locally (only when user picks local merge), re-run the project's gate on the merged result before pushing.
-- Never delete worktree/branch until PR merged or user typed `discard` (finishing skill rule). Keep worktree for PR feedback.
+- Never delete worktree/branch until PR merged or user typed `discard` (integration-menu rule). Keep worktree for PR feedback.
 
 ## 6. Submodules
 
@@ -155,7 +155,7 @@ Direct tag/commit on `main` without PR is blocked — release also goes through 
 | `worktree add` / branch create | yes | §2 checks |
 | `git commit` | yes | §3.2 checklist + project gate |
 | `git push` | yes | §4 checks |
-| `git merge/rebase` | yes | menu + re-verify gate |
+| `git merge/rebase` | yes | integration menu + re-verify gate |
 | `git tag` release | yes | §7 checklist |
 | `push --force` | explicit "force" | `--force-with-lease` only |
 

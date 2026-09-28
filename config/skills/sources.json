@@ -7,7 +7,6 @@
     "architect",
     "architecture",
     "brainstorm-studio",
-    "brainstorming",
     "call-graph",
     "cavecrew",
     "caveman",
@@ -20,13 +19,10 @@
     "design-system-patterns",
     "design-thinking",
     "designer",
-    "docs-hub",
     "explorer",
-    "finishing-a-development-branch",
     "frontend-design",
     "git-workflow",
     "goal",
-    "lexa-cli",
     "librarian",
     "nix",
     "orchestration",
@@ -35,15 +31,11 @@
     "reviewer",
     "skill-first",
     "steward",
-    "subagent-driven-development",
     "swe",
     "system-design",
-    "systematic-debugging",
-    "test-driven-development",
     "transcribe",
     "work-plans",
-    "writing-plans",
-    "writing-skills"
+    "writing-plans"
   ],
   "keepNested": [
     "nix/debug",
@@ -52,38 +44,6 @@
     "nix/service"
   ],
   "sources": [
-    {
-      "id": "obra-superpowers-wired",
-      "repo": "obra/superpowers",
-      "scope": "wired",
-      "skills": [
-        "brainstorming",
-        "finishing-a-development-branch",
-        "subagent-driven-development",
-        "systematic-debugging",
-        "test-driven-development",
-        "writing-plans",
-        "writing-skills"
-      ],
-      "notes": "committed exception; routed by repo-authored skills / AGENTS.md",
-      "upstream_sha": "5bf4e78",
-      "upstream_imported": "2026-09-25"
-    },
-    {
-      "id": "obra-superpowers-dropped",
-      "repo": "obra/superpowers",
-      "scope": "dropped",
-      "skills": [
-        "receiving-code-review",
-        "requesting-code-review",
-        "using-superpowers",
-        "dispatching-parallel-agents",
-        "using-git-worktrees",
-        "executing-plans",
-        "verification-before-completion"
-      ],
-      "notes": "de-wired 2026-09-28; replaced by local bare skill-first, review-request (code-reviewer.md), review-response; phase-2 2026-09-28 dropped dispatching-parallel-agents, using-git-worktrees, executing-plans, verification-before-completion; verification-before-completion reauthored local as completion-verification"
-    },
     {
       "id": "anthropics-skills-wired",
       "repo": "anthropics/skills",
@@ -103,15 +63,6 @@
       "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
     },
     {
-      "id": "arvindrk-extract-design-system-wired",
-      "repo": "arvindrk/extract-design-system",
-      "scope": "dropped",
-      "skills": [
-        "extract-design-system"
-      ],
-      "notes": "removed from config/skills 2026-09-24 (unused); reinstall: flip scope to 'project' + skills-sync.sh --source arvindrk-extract-design-system-wired --global, or re-add as wired"
-    },
-    {
       "id": "anthropics-knowledge-work-plugins-wired",
       "repo": "anthropics/knowledge-work-plugins",
       "scope": "wired",
@@ -129,36 +80,6 @@
         "agent-browser"
       ],
       "notes": "committed exception; routed by repo-authored skills / AGENTS.md"
-    },
-    {
-      "id": "Unity-Technologies-skills",
-      "repo": "Unity-Technologies/skills",
-      "scope": "project",
-      "skills": [
-        "build-live-game",
-        "implement-in-app-purchases",
-        "initialize-ai-navigation",
-        "levelplay-unity-integration",
-        "localization",
-        "new-unity-project",
-        "optimize-audio",
-        "optimize-text-mesh-pro",
-        "optimize-web",
-        "physics-3d-collision",
-        "setup-multiplayer-services",
-        "setup-vivox-voice-chat",
-        "shader-graph-create-custom-node",
-        "sprite-editor",
-        "ui",
-        "ui-imgui",
-        "ui-ugui",
-        "ui-uitk",
-        "unity-cli",
-        "unity-package-management",
-        "urp-postprocessing",
-        "validate-urp-render-graph-renderer-feature"
-      ],
-      "notes": "per-project install via scripts/skills-sync.sh"
     },
     {
       "id": "anthropics-knowledge-work-plugins",
@@ -254,15 +175,6 @@
       "notes": "per-project install via scripts/skills-sync.sh"
     },
     {
-      "id": "davila7-claude-code-templates",
-      "repo": "davila7/claude-code-templates",
-      "scope": "project",
-      "skills": [
-        "game-development"
-      ],
-      "notes": "per-project install via scripts/skills-sync.sh"
-    },
-    {
       "id": "nextlevelbuilder-ui-ux-pro-max-skill",
       "repo": "nextlevelbuilder/ui-ux-pro-max-skill",
       "scope": "project",
@@ -306,15 +218,6 @@
       "notes": "per-project install via scripts/skills-sync.sh"
     },
     {
-      "id": "vasilyu1983-ai-agents-public",
-      "repo": "vasilyu1983/ai-agents-public",
-      "scope": "project",
-      "skills": [
-        "software-ui-ux-design"
-      ],
-      "notes": "per-project install via scripts/skills-sync.sh"
-    },
-    {
       "id": "vercel-labs-agent-skills",
       "repo": "vercel-labs/agent-skills",
       "scope": "project",
@@ -348,15 +251,6 @@
         "resume-tailor"
       ],
       "notes": "per-project install via scripts/skills-sync.sh"
-    },
-    {
-      "id": "local-penpot",
-      "repo": null,
-      "scope": "dropped",
-      "skills": [
-        "penpot"
-      ],
-      "notes": "no recorded upstream; removed from git, recoverable from backup branch"
     },
     {
       "id": "JuliusBrussee-caveman-wired",

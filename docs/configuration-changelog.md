@@ -4,6 +4,70 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-28 — Remove `davila7-claude-code-templates` source entry
+
+`config/skills/sources.json`: the `davila7-claude-code-templates` block (repo, `game-development` skill, scope `project`) removed — user reports the source is no longer used. Sources 21 → 20.
+
+- No orphan cleanup: `game-development` was never in `keep`/`keepNested`, no `config/skills/game-development/` dir, no symlink, no other file (md/sh/json/nix) referenced the repo or the skill.
+- `config/opencode/CONFIGURATION.md` needed no edit (never mentioned the entry).
+
+Gates: `python -m json.tool` OK, `scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0 (37 skills, 5 pre-existing warnings), `grep -c "davila7/claude-code-templates" config/skills/sources.json` 0. No commit, no push.
+
+## 2026-09-28 — Remove `Unity-Technologies-skills` source entry entirely
+
+`config/skills/sources.json`: the `Unity-Technologies-skills` block (repo, 22 skills, ondemand note) removed — zero mentions left, no per-project repo record. Local project use is raw `npx skills add Unity-Technologies/skills` only. `CONFIGURATION.md` needed no edit (never mentioned the entry). Gates: `python -m json.tool` OK, `scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0 (37 skills, 5 pre-existing warnings), `grep -ri unity config/skills/sources.json` 0. No commit, no push.
+
+## 2026-09-28 — Drop `arvindrk-extract-design-system-wired` source entry
+
+Tombstone removed; upstream never re-added. No behavior change.
+
+- `config/skills/sources.json`: removed source `arvindrk-extract-design-system-wired` (repo `arvindrk/extract-design-system`, scope already `dropped` since 2026-09-24). Sources 20 → 19 (working-tree count; the 2026-09-24 removal of `obra-superpowers-wired` is uncommitted).
+- No orphan cleanup needed: `extract-design-system` was never in `keep`, no `config/skills/extract-design-system/` dir (removed 2026-09-24), no `~/.agents/skills/extract-design-system` symlink, no other file references it.
+- `config/opencode/CONFIGURATION.md` counts unchanged (33 dirs / 21 local / 12 wired — entry described a source record, not a dir).
+
+## 2026-09-28 — Nuke local-infra skills `lexa-cli` + `docs-hub`
+
+Two unused local-authored skills removed; committed skill set 35 → 33 dirs (23 → 21 local, 12 wired unchanged). Nothing routes to them after the repoints below.
+
+- `config/skills/lexa-cli/` + `config/skills/docs-hub/` (`git rm -rf`, staged; `docs-hub` carried `agents/openai.yaml`, `private_SKILL.md`, `scripts/list_docs.py`). `lexa-cli` removed wholesale (SKILL + tree).
+- `config/skills/sources.json`: `keep` 35 → 33 (drop `lexa-cli`, `docs-hub`). JSON re-validated with `python3 -m json.tool`.
+- `config/skills/steward/SKILL.md`: docs-sync route repointed to `documentation` only (dropped the `docs-hub` publish cell at the chore table); §2 requires list drops `docs-hub` (line 66).
+- `config/opencode/CONFIGURATION.md`: committed-skills counts 35 → 33 dirs, local 23 → 21; local-infra group now `transcribe`/`nix`.
+- `~/.agents/skills/`: removed the stale per-skill symlinks `lexa-cli` + `docs-hub` (both were dangling `-L` links into the deleted repo dirs; no real dirs touched).
+- Gates: `bash scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0; `bash scripts/validate.sh` all pass. No commit, no push.
+
+## 2026-09-28 — Unity skills `project` → `ondemand`; 22 global copies removed
+
+Unity-Technologies/skills (22 skills) no longer install globally on hm-switch — they are per-project only now.
+
+- `config/skills/sources.json`: `Unity-Technologies-skills` scope `project` → `ondemand` (skills list, repo, per-project note preserved; note now names `--source Unity-Technologies-skills`).
+- `scripts/skills-sync.sh`: `_scope_filter` accepts a space-separated scope list; `--source` matches `project` + `ondemand` (new `SELECTABLE_TSV`), `--all`/`--global` bulk stay `project`-only; error text now "no project/ondemand source matches".
+- `scripts/validate-skills.sh`: `ondemand` added to the accepted scope set (was rejecting the Unity entry).
+- `~/.agents/skills/`: backed up 22 real Unity dirs to `~/.agents/skills.backup/unity-2026-09-28/` and removed them from the global root (guard: `[ -d ] && [ ! -L ]`; no symlinks touched).
+- Gates: `bash scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0. `bash scripts/skills-sync.sh --global --check` still exits 1 but reports **no Unity line** — missing count dropped 55 → 33, exactly the 22 Unity skills; the remaining 33 are pre-existing unrelated drift (cloudflare `sandbox-sdk`, `game-development`, nextlevelbuilder, openai, paramchoudhary, vercel, wexxwuther, vasilyu never globally installed). No commit.
+- Per-project restore: `bash scripts/skills-sync.sh --source Unity-Technologies-skills --project <dir>`.
+
+## 2026-09-28 — Phase 3: de-wire remaining `obra/superpowers` set (obra wired 0); `writing-plans` reauthored local bare
+
+Third and final de-wiring pass. Six verbatim upstream copies with 0 loads were deleted outright; `writing-plans` stays under its own name as a local bare skill. `obra/superpowers` now has 0 wired skills.
+
+| Upstream (removed) | Result |
+|---|---|
+| `brainstorming` | deleted (superseded by `brainstorm-studio`) |
+| `finishing-a-development-branch` | deleted (integration menu folded into `git-workflow`) |
+| `subagent-driven-development` | deleted (handoff now `orchestration`) |
+| `systematic-debugging` | deleted |
+| `test-driven-development` | deleted |
+| `writing-skills` | deleted |
+| `writing-plans` | local bare (name kept) |
+
+- `config/skills/`: reauthored `writing-plans/SKILL.md` bare (save path `.agents/plans/YYYY-MM-DD-<feature-name>.md`, handoff to `orchestration`, no `superpowers:` refs; `plan-document-reviewer-prompt.md` kept). Deleted `brainstorming/`, `finishing-a-development-branch/`, `subagent-driven-development/`, `systematic-debugging/`, `test-driven-development/`, `writing-skills/` (`git rm -r`, staged).
+- Repoints (before delete): `skill-first` (`brainstorming`→`brainstorm-studio`; `systematic-debugging`→prose); `git-workflow` config + `.agents` copies (finishing menu inlined compact as the integration menu); `steward` push/PR row drops the finishing skill; `brainstorm-studio` description drops the plain-`brainstorming` pointer; `docs-hub` SKILL + `private_SKILL` drop the dead `docs/superpowers` plan pointer; `omp/agents/brainstormer.md` autoload + deferral → `brainstorm-studio`; `CONFIGURATION.md` wiring drops the "defers core process to `brainstorming`" clause.
+- `config/skills/sources.json`: `keep` 41 → 35 (remove 6); `obra-superpowers-wired` entry deleted; `obra-superpowers-dropped` extended to all 14 upstream skills with the phase-3 note. Validated with `python3 -m json.tool`.
+- `config/opencode/CONFIGURATION.md`: counts 41 → 35 dirs (22 local / 19 wired → 23 local / 12 wired), obra wired 7 → 0, `writing-plans` added to the local process group.
+- Gates: `bash scripts/validate-skills.sh --manifest config/skills/sources.json` exit 0; `bash scripts/validate.sh` all pass.
+- **Reload required**: `hm-switch` to drop the stale `~/.agents/skills/` symlinks — not run in this change. No commit made.
+
 ## 2026-09-28 — Phase 2: drop 3 dead upstream skills, reauthor `verification-before-completion` as local `completion-verification`
 
 Second de-wiring pass over the `obra/superpowers` wired set. Four verbatim upstream copies had 0 loads ever; three were deleted outright, the fourth — a live gate referenced by name — was re-authored as a local bare skill.

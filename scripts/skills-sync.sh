@@ -104,8 +104,10 @@ PY
 }
 
 _scope_filter() {
-    local wanted_scope="$1"
-    _manifest_tsv | awk -F'\t' -v sc="$wanted_scope" '$3 == sc'
+    _manifest_tsv | awk -F'\t' -v sc="$*" '
+        BEGIN { n = split(sc, a, " "); for (i = 1; i <= n; i++) want[a[i]] = 1 }
+        want[$3]
+    '
 }
 
 _print_source() {
@@ -249,9 +251,12 @@ case "$MODE" in
 
         TMPD="$(mktemp -d)"
         PROJECT_TSV="$TMPD/project.tsv"
+        SELECTABLE_TSV="$TMPD/selectable.tsv"
         SELECTED="$TMPD/selected.tsv"
         trap 'rm -rf "$TMPD"' EXIT
         _scope_filter project > "$PROJECT_TSV"
+        # --source may pull project or ondemand sources; --all/--global bulk stays project-only.
+        _scope_filter "project ondemand" > "$SELECTABLE_TSV"
         : > "$SELECTED"
 
         if [ "$ALL" = true ] \
@@ -259,10 +264,10 @@ case "$MODE" in
             cat "$PROJECT_TSV" > "$SELECTED"
         elif [ "${#SOURCES[@]}" -gt 0 ]; then
             for want in "${SOURCES[@]}"; do
-                awk -F'\t' -v w="$want" '$1 == w' "$PROJECT_TSV" >> "$SELECTED"
+                awk -F'\t' -v w="$want" '$1 == w' "$SELECTABLE_TSV" >> "$SELECTED"
             done
             if [ ! -s "$SELECTED" ]; then
-                echo "skills-sync: no project-scope source matches: ${SOURCES[*]}" >&2
+                echo "skills-sync: no project/ondemand source matches: ${SOURCES[*]}" >&2
                 echo "  try: skills-sync.sh --list" >&2
                 exit 2
             fi

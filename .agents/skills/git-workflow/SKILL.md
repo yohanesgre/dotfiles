@@ -37,7 +37,7 @@ These are never negotiable — report conflict, don't "fix" it yourself:
 1. **Single trunk: `main` is the trunk.** Control-checkout work (the main worktree) commits directly to `main` — no branch, no PR; docs, fixes, chores, and releases included. Worktree-isolated work goes branch → PR → merge. Never commit to `main` from a worktree; never open a PR for control-checkout commits.
 2. **No commit unless user explicitly asked.** "commit this", "commit with message X", or orchestrator approval. Never auto-commit after edits.
 3. **No push unless user explicitly asked.** Never `git push`, `git push --force`, or `gh` publish without exact instruction.
-4. **No merge/rebase/cherry-pick unless user explicitly asked.** Present options, wait for choice (see `finishing-a-development-branch` skill for merge menu — for worktree work, default is push + PR).
+4. **No merge/rebase/cherry-pick unless user explicitly asked.** Present the integration menu (§5), wait for choice — for worktree work, default is push + PR.
 5. **No scope creep.** Only files/changes in the brief. If something missing, report — don't add tables/columns/endpoints/error codes.
 6. **Names exact.** Table/column/error code/route/config key must match the project's docs verbatim.
 7. **Submodules are commit-inside-first.** See §6.
@@ -98,7 +98,7 @@ Run the project's one-shot gate script if it declares one (e.g. a `scripts/` gat
 
 ## 4. Push rules
 
-- No push without user saying "push", "push branch X", or picking the PR option in the finishing menu.
+- No push without user saying "push", "push branch X", or picking the PR option in the integration menu.
 - Before push:
   ```bash
   git status
@@ -111,7 +111,8 @@ Run the project's one-shot gate script if it declares one (e.g. a `scripts/` gat
 ## 5. PR & merge rules — worktree work → PR
 
 - Worktree work: always `branch → push → PR → review → merge to main`. Never commit on `main` from a worktree/lane; never merge worktree work locally without a PR unless the user explicitly says "merge locally" (then still via the menu).
-- Control-checkout work: no PR — commits land on `main` directly. Push still needs the explicit ask (§4). The `finishing-a-development-branch` menu applies to branch/worktree work only; its default (push + PR) is for that case.
+- Control-checkout work: no PR — commits land on `main` directly. Push still needs the explicit ask (§4). The integration menu applies to branch/worktree work only; its default (push + PR) is for that case.
+- **Integration menu (work complete, wait for the choice): `1.` merge locally (<base-branch>) · `2.` push + create PR (default) · `3.` keep as-is.** Discard only on the user's explicit `discard`.
 - Branch must be green before PR: run the project's gate.
   ```bash
   git log --oneline origin/main..HEAD
@@ -119,7 +120,7 @@ Run the project's one-shot gate script if it declares one (e.g. a `scripts/` gat
   ```
 - PR: base = `main` (confirm if plan says otherwise), title = conventional commit style, description = what/why, docs conflicts (if any), gate outputs, testing notes. Use template if repo has one.
 - After PR approved and CI green, merge via GitHub (squash or merge commit per repo setting — don't force-push to `main`). After `git merge <feature>` locally (only when user picks local merge), re-run the project's gate on the merged result before pushing.
-- Never delete worktree/branch until PR merged or user typed `discard` (finishing skill rule). Keep worktree for PR feedback.
+- Never delete worktree/branch until PR merged or user typed `discard` (integration-menu rule). Keep worktree for PR feedback.
 
 ## 6. Submodules
 
@@ -162,7 +163,7 @@ Follow the project's release doc — never improvise:
 | `git commit` on `main` (control checkout) | yes | §3.2 checklist + project gate — no branch/PR |
 | `git commit` on a worktree branch | yes | §3.2 checklist + project gate |
 | `git push` | yes | §4 checks |
-| `git merge/rebase` | yes | menu + re-verify gate |
+| `git merge/rebase` | yes | integration menu + re-verify gate |
 | `git tag` release | yes | §7 checklist |
 | `push --force` | explicit "force" | `--force-with-lease` only |
 

@@ -31,8 +31,8 @@ Load `git-workflow` for anything that mutates git. Then load the chore's skill(s
 | git status/diff/log/show/blame | — (read-only) | none |
 | stage/commit | `git-workflow`, `caveman-commit` | project gate green before commit |
 | branch/worktree/stash | `git-workflow` | branch checks |
-| push/PR/merge/tag | `git-workflow` (+ `finishing-a-development-branch`) | only on explicit ask |
-| docs sync (README/config drift) | `documentation` (content), `docs-hub` (publish) | configs parse; links resolve |
+| push/PR/merge/tag | `git-workflow` | only on explicit ask |
+| docs sync (README/config drift) | `documentation` (content) | configs parse; links resolve |
 | repo hygiene (format/.gitignore/lockfile/temp) | — | build + test after |
 | release (changelog/version/tag) | `git-workflow`, `deploy-checklist` | full gate |
 | dependency bump | — | full gate |
@@ -63,7 +63,7 @@ E  break points:
 R  requires:
    project AGENTS.md/.opencode rules (WIN)
    `git-workflow` for every git mutation
-   routed skills: caveman-commit, documentation, docs-hub, work-plans,
+   routed skills: caveman-commit, documentation, work-plans,
                   completion-verification, testing-strategy, deploy-checklist
    a gate entrypoint (validate.sh | make | task | package scripts) or explicit "none"
 ```

@@ -67,6 +67,30 @@ Query the codegraph index instead of re-grepping/re-reading files. Structural qu
 
 **Delegation:** subagents don't see MCP initialize guidance — tell them to call `codegraph_explore` (or the `codegraph explore` CLI). Include the project name and known `file:line`/symbols so they skip re-discovery.
 
+## Behavior search (`jg` — jevgrep)
+
+Natural-language code search: `jg "where is auth token validated"` returns relevant files plus source excerpts. First-choice step before blind `grep`/`glob` for "where does X live / who implements X / how is X handled" behavior questions. Binary `jg` 0.4.2 at `~/.local/bin/jg` (Node 22+), skill `jevgrep` installed globally at `~/.agents/skills/jevgrep` (source `dzhng/jevgrep`, recorded in `config/skills/sources.json`).
+
+**Setup / auth:** `jg` is installed per-user and requires a per-user credential. If `command -v jg` fails, the binary is missing. If `jg doctor` reports `Run jg auth or use jg auth --provider NAME --stdin.`, ask the user to authenticate themselves — never run `jg auth` for them and never handle the secret: `jg auth --provider opencode` (or the `--stdin` form). Agents must fall back cleanly while auth is pending.
+
+**Routing matrix:**
+
+| Caller | Access | Order |
+|--------|--------|-------|
+| `swe` | `shell: *` (unchanged) | jg when `command -v jg` succeeds and it is authenticated → else codegraph → `grep`/`glob` |
+| `researcher` | `shell` allowed for `jg *` + `command -v jg` ONLY; every other shell command stays denied | jg → else codegraph → `grep`/`glob` |
+| `architect` / `reviewer` / `designer` / `steward` | unchanged — no jg grant | codegraph → `grep`/`glob` (unchanged) |
+
+**Fallback order (universal):** `jg` (only if installed AND authenticated) → codegraph `codegraph_explore` (only if `.codegraph/` exists) → `grep`/`glob` → delegate to `researcher` (for the `researcher` itself, stop at `grep`/`glob` — there is no delegate rung). Always state which rung produced the answer. Grep still wins for string literals, error messages, config values, non-code files, and raw-content regex.
+
+**Exit codes — gate on them, never on the output sentinel.** `jg` ends almost every run with `End context.`, including a truncated SIGINT abort, so that line is NOT a completeness signal. Always capture the exit code: `0` complete, `2` incomplete (partial context — treat missing as unknown, re-query or fall through), `1` failed (1-line message, no `End context.`), `130` interrupted (output partial, discard it). `2` is rarely observed; never infer it from missing text. A pipe truncated by EPIPE (e.g. `| head`) can still yield rc 0 — an rc 0 truncated stream still needs the locations-only / excerpt check below.
+
+**Errors print to stdout, not stderr.** Validation/usage failures (`--concurrency 0`, bad flag, bad root) print their message on **stdout** with empty stderr, so a stdout-only parser can mistake an error line for context. Gate on the exit code before trusting any output.
+
+**rc 0 with locations-only output is not an answer.** On a config-shaped question in a large prose repo `jg` returned 23 correct file leads and **0 source excerpts** ("locations only") — no line numbers, no code, no token win over grep. If the result lists files but no excerpts, skip straight to `grep`/`glob` (or codegraph) instead of re-reading every lead.
+
+**codegraph is blind to JSONC/Markdown config.** Its symbol index has no entries for `opencode.jsonc` or `*.md` agent files, so `codegraph_explore` returns unrelated TS (plugins/rows) for a config question. Config-shaped questions (opencode.jsonc, agent MD, CONFIGURATION.md) go to `grep` directly; codegraph stays for real code.
+
 ## Jev — Typed Decisions
 
 `jev-mcp` is the typed decision layer, reached through `execute` (Code Mode): `tools["jev-mcp"].*`. Agents allowed to call it directly: `architect`, `researcher`, `reviewer`, `swe` (nested `jev-mcp_*` allow in their permission envelopes; the primary session allows all tools). Use it often — cheap and fast — but ADVISORY only: never a completion signal, never a replacement for `reviewer`, CI, tests, or pasted evidence, never a blocker. Unreachable / error / `abstain` → skip and fall back.
