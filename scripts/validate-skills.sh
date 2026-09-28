@@ -12,7 +12,7 @@
 #   bash scripts/validate-skills.sh --dir DIR  # scan another skills root
 #   bash scripts/validate-skills.sh --strict   # warnings fail the run
 #   bash scripts/validate-skills.sh --verbose  # list every warning
-#   bash scripts/validate-skills.sh --manifest FILE  # assert committed keep/wired skills exist
+#   bash scripts/validate-skills.sh --manifest [FILE]  # default: config/skills/sources.json
 #
 # Exit 0 if no errors (and no warnings under --strict), 1 otherwise.
 set -euo pipefail
@@ -30,7 +30,12 @@ while [ $# -gt 0 ]; do
         --dir) SKILLS_DIR="$2"; shift 2 ;;
         --strict) STRICT=true; shift ;;
         --verbose) VERBOSE=true; shift ;;
-        --manifest) MANIFEST="$2"; shift 2 ;;
+        --manifest)
+            if [ $# -ge 2 ] && [ "${2#-}" = "$2" ]; then
+                MANIFEST="$2"; shift 2
+            else
+                MANIFEST="$REPO_ROOT/config/skills/sources.json"; shift
+            fi ;;
         -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
         *) echo "validate-skills: unknown arg '$1'" >&2; exit 2 ;;
     esac
