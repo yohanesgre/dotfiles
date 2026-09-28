@@ -78,6 +78,7 @@ Natural-language code search: `jg "where is auth token validated"` returns relev
 | Caller | Access | Order |
 |--------|--------|-------|
 | `swe` | `shell: *` (unchanged) | jg when `command -v jg` succeeds and it is authenticated → else codegraph → `grep`/`glob` |
+| `build` | blanket allow (global `permission: allow`; no agent envelope) | jg when `command -v jg` succeeds and it is authenticated → else codegraph → `grep`/`glob` |
 | `researcher` | `shell` allowed for `jg *` + `command -v jg` ONLY; every other shell command stays denied | jg → codegraph → `grep`/`glob` |
 | `architect` | `shell` allowed for `jg *` + `command -v jg` ONLY (new — previously no shell at all); every other shell command stays denied | jg → codegraph → `grep`/`glob` |
 | `reviewer` | `shell: *` ask, but `jg *` + `command -v jg` explicitly allowed (frictionless, no prompt) | jg → codegraph → `grep`/`glob` |
@@ -97,7 +98,7 @@ Natural-language code search: `jg "where is auth token validated"` returns relev
 
 ## Jev — Typed Decisions
 
-`jev-mcp` is the typed decision layer, reached through `execute` (Code Mode): `tools["jev-mcp"].*`. Agents allowed to call it directly: `architect`, `researcher`, `reviewer`, `swe` (nested `jev-mcp_*` allow in their permission envelopes; the primary session allows all tools). Use it often — cheap and fast — but ADVISORY only: never a completion signal, never a replacement for `reviewer`, CI, tests, or pasted evidence, never a blocker. Unreachable / error / `abstain` → skip and fall back.
+`jev-mcp` is the typed decision layer, reached through `execute` (Code Mode): `tools["jev-mcp"].*`. Agents allowed to call it directly: `architect`, `researcher`, `reviewer`, `swe` (nested `jev-mcp_*` allow in their permission envelopes), plus the built-in `build` (blanket `permission: allow` — no envelope; the primary session likewise allows all tools). Use it often — cheap and fast — but ADVISORY only: never a completion signal, never a replacement for `reviewer`, CI, tests, or pasted evidence, never a blocker. Unreachable / error / `abstain` → skip and fall back.
 
 - `jev_check` — one yes/no over a state (diff, artifact, plan, decision). Always pass `yes_means`/`no_means`; keep `state` structured and small.
 - `jev_ask` — several typed questions over ONE shared state in one request (≤64): the batch lever — far cheaper and faster than N calls. Prefer it whenever one state answers several questions.
@@ -196,4 +197,4 @@ Use the `agent-browser` skill for browser automation (load it before browser wor
 
 ### Vision Delegation (Text-Only Models)
 
-When an image MUST be read (screenshot, diagram, chart, mockup) and the active model has no vision: delegate to the `vision` agent (native omni-modal, model-agnostic — inherits the session model). Pass the image path in the prompt; consume the text description it returns. Never send images directly to a text-only model.
+When an image MUST be read (screenshot, diagram, chart, mockup) and the active model has no vision: delegate to the `vision` agent (native omni-modal; pins `opencode-go/mimo-v2.5`). Pass the image path in the prompt; consume the text description it returns. Never send images directly to a text-only model.

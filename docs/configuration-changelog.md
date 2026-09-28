@@ -4,6 +4,16 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-28 — Add `build` to jg/Jev routing docs
+
+The built-in `build` agent already held the widest permissions — `opencode.jsonc` sets `default_agent: "build"` with `"build": { "mode": "all" }` and no permission envelope, so it inherits the global `permission: allow` (shell `*`, `execute`, every MCP tool including `codegraph_*` and `jev-mcp_*`) — but the jg/Jev routing docs only listed the custom agents. This documents `build` explicitly so the routing rules are complete for it; no config change (no `build.md`, `opencode.jsonc` untouched).
+
+- `config/opencode/AGENTS.md` — jg routing matrix gains a `build` row — blanket allow (global `permission: allow`; no agent envelope) — with the same universal order; Jev direct-call list now names the built-in `build` as reaching jev via the blanket allow, distinct from the nested `jev-mcp_*` envelopes.
+- `config/opencode/CONFIGURATION.md` — agent-prose "other agents cannot call it" corrected (build can, via blanket allow); per-agent table gains a `build` row (built-in, `mode: all`, blanket allow, routing documented now); § Behavior search Permissions + Codegraph grants bullets note build's blanket-allow access; AGENTS.md digest enumerations include build.
+- `config/opencode/opencode.jsonc`, `config/opencode/agents/` — untouched (no `build.md` created).
+
+No commit, no push, no nix rebuild.
+
 ## 2026-09-28 — Harden `architecture-viz` verify loop; skill committed
 
 The skill's mandatory verify loop was only as trustworthy as its checkers, and review found both could bless a broken map. `render-check.sh` happily reused a stale PNG from a previous edit, so a changed template could be "verified" against the old render; it now fails when the screenshot is older than its input. `check-svg-overlaps.py` was hardened to parse what it actually documents — compact path syntax (`M x y L x y …`), a count guard against a truncated element list, segment-through-node-box intersection, and exit codes `0` clean / `1` overlaps found / `2` checker error, with no raw tracebacks leaking to the caller. The false-clean routes those two gaps opened are closed. The checker's required DOM contract is now documented, and the eval suite follows the repo convention (notes + assertions + generated fixtures + README, 5 evals including a non-trigger and a scale case) instead of a bare spec list. This commit lands the previously-untracked `config/skills/architecture-viz` dir, so the `skillsLinks` activation owns the symlink rather than a manual one.
