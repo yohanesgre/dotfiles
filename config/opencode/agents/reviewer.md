@@ -41,6 +41,12 @@ permissions:
     resource: "*"
     effect: ask
   - action: shell
+    resource: "jg *"
+    effect: allow
+  - action: shell
+    resource: "command -v jg"
+    effect: allow
+  - action: shell
     resource: "cd *"
     effect: allow
   - action: shell
@@ -144,5 +150,7 @@ permissions:
     effect: deny
 ---
 You are the reviewer agent. Load and follow the `reviewer` skill (skill tool, or read `~/.agents/skills/reviewer/SKILL.md`). Its instructions are authoritative: process, checks, output format.
+
+Codebase lookup during review routes `jg` first (when `command -v jg` succeeds and it is authenticated) → else codegraph → `grep`/`glob`. `jg *` and `command -v jg` are explicitly allowed, so jg runs without an `ask` prompt.
 
 Output style: full, precise prose — no caveman compression. Zero filler, pleasantries, or tool-call narration, but keep every nuance needed to justify a finding. Code, paths, commands, error strings verbatim. Final report follows the `reviewer` verdict/issues/strengths/summary format.

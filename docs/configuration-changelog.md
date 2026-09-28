@@ -4,6 +4,41 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-28 — Grant `codegraph` to `designer`; annotate `steward` as codegraph-free
+
+Resolves the doc-vs-enforcement gap left by the jg expansion: the universal fallback order (`jg → codegraph → grep/glob`) claims a codegraph rung that the `steward` and `designer` permission envelopes did not actually have (neither holds `execute` nor `codegraph_*`). Jev judgment `add_designer_only` 0.73 — designer benefit 0.77, steward benefit 0.27 (no). `steward` keeps no codegraph and its matrix row now says so instead of claiming the rung.
+
+- `config/opencode/agents/designer.md` — added `execute` / `*` and `codegraph_*` / `*` allow rules after the `skill` allow (Code Mode needs both: `execute` to reach the namespace, `codegraph_*` to pass the deny-all base for the nested call); body routing line notes the `tools.codegraph.codegraph_explore` path. Design-only boundary and `edit` rules untouched.
+- `config/opencode/AGENTS.md` — routing matrix: `designer` row now records the `execute` + `codegraph_*` grant; `steward` row Order cell is `jg when authed → grep/glob (no codegraph permission)`.
+- `config/opencode/CONFIGURATION.md` — `designer` agent-table row lists the codegraph/`execute` grant and keeps `jg → codegraph → grep/glob`; `steward` row states no codegraph grant; § Behavior search gained a **Codegraph grants** bullet listing which agents hold the grant (designer in, steward out) with the Jev numbers.
+- `config/opencode/opencode.jsonc` — untouched.
+
+No commit, no push, no nix rebuild. `scripts/validate.sh` green.
+
+## 2026-09-28 — Add `designer` to `jg` routing (exclusion reversed)
+
+The earlier 2026-09-28 `jg` expansion excluded `designer` as "not a code-lookup agent". A Jev re-judgment overrules that: designer genuinely benefits from jg (0.91), grep/glob alone is insufficient (0.24), and `include_narrow` scored 0.95 at confidence 0.93. Reason: designer reviews implementations for design drift, responsiveness, and accessibility, and grounds specs in existing UI code — both need codebase search beyond grep/glob.
+
+- `config/opencode/agents/designer.md` — added the two allow rules (`shell` / `jg *`, `shell` / `command -v jg`) directly after the `shell: *` ask, so later specific rules override the ask and jg is frictionless; body gained one routing line (jg when `command -v jg` succeeds and it is authenticated → else codegraph → `grep`/`glob`). Design-only / never-edit-implementation boundary untouched.
+- `config/opencode/AGENTS.md` — routing matrix row `designer`/`vision` split: `designer` gets its own row matching `reviewer` (`shell: *` ask with explicit `jg *` + `command -v jg` allow, frictionless), `vision` keeps no grant (image-only, no shell, not applicable).
+- `config/opencode/CONFIGURATION.md` — `designer` agent-table row notes the narrow jg grant and first-rung routing; § Behavior search `Permissions` bullet and the § Summary agent list now include `designer` among the narrow-grant agents.
+- `config/opencode/opencode.jsonc` — untouched.
+
+Routing order unchanged for the set: `jg` (installed AND `jg doctor` authenticated) → codegraph `codegraph_explore` (`.codegraph/` present) → `grep`/`glob`. No commit, no push, no nix rebuild.
+
+## 2026-09-28 — Expand `jg` routing to `architect`/`reviewer`/`steward`
+
+Drift found: the `AGENTS.md` § "Behavior search (`jg` — jevgrep)" routing matrix claimed `architect`/`reviewer`/`designer`/`steward` had "no jg grant", but enforcement disagreed — `steward`'s `shell: *` allow let jg run, `reviewer`/`designer` `shell: *` ask silently blocked frictionless jg, `architect` had no shell at all so jg was impossible. Goal: jg effectively used across the code-lookup agents. Jev judgment `expand_narrow_grants`, confidence 0.99, P=1.00.
+
+- `config/opencode/agents/architect.md` — added narrow `shell` allow for `jg *` + `command -v jg` after the `execute` allow (its first shell capability); body routing line added after the Read-only paragraph. Read-only + Code Mode caveats intact.
+- `config/opencode/agents/reviewer.md` — added the same two allow rules directly after the `shell: *` ask (later specific rules override the ask); body routing line added. Full-prose output mandate intact.
+- `config/opencode/agents/steward.md` — no permission change (`shell: *` already allows jg); body routing line only.
+- `config/opencode/AGENTS.md` — routing matrix rewritten from 3 data rows to 6: `swe`, `researcher`, `architect`, `reviewer`, `steward`, `designer`/`vision`.
+- `config/opencode/CONFIGURATION.md` — agent-table rows for `steward`/`architect`/`reviewer` and the § Behavior search `Permissions` bullet updated; the § Summary sentence no longer says "narrow `shell` grant for `researcher` only".
+- `config/opencode/opencode.jsonc` — untouched.
+
+`designer` deliberately excluded: not a code-lookup agent. Routing order for the expanded set: `jg` (installed AND `jg doctor` authenticated) → codegraph `codegraph_explore` (`.codegraph/` present) → `grep`/`glob`. No commit, no push, no nix rebuild.
+
 ## 2026-09-28 — Remove `davila7-claude-code-templates` source entry
 
 `config/skills/sources.json`: the `davila7-claude-code-templates` block (repo, `game-development` skill, scope `project`) removed — user reports the source is no longer used. Sources 21 → 20.
