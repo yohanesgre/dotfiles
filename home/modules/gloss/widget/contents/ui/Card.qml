@@ -172,16 +172,38 @@ Item {
 
                     // 8 px: heading to pronunciation/POS. The 4 px left offset
                     // stops this reading as a label for the heading above it.
-                    Text {
+                    // Only the IPA is monospace (spec §8); the part of speech is
+                    // human-facing and stays in the system family. Two Text
+                    // items rather than rich text — model output needs no
+                    // escaping.
+                    RowLayout {
                         Layout.fillWidth: true
                         Layout.topMargin: card.hasIpaOrPos ? T.space8 : 0
                         Layout.leftMargin: T.space4
                         visible: card.hasIpaOrPos
-                        text: [card.payload.ipa || "", card.payload.pos || ""].filter(Boolean).join("  ·  ")
-                        font.pixelSize: T.metaSize
-                        font.family: "monospace"
-                        color: Kirigami.Theme.disabledTextColor
-                        wrapMode: Text.Wrap
+                        spacing: T.space8
+
+                        Text {
+                            id: ipaText
+                            visible: card.payload.ipa !== undefined
+                                     && card.payload.ipa !== null && card.payload.ipa !== ""
+                            text: card.payload.ipa || ""
+                            font.pixelSize: T.metaSize
+                            font.family: "monospace"
+                            color: Kirigami.Theme.disabledTextColor
+                            wrapMode: Text.Wrap
+                        }
+
+                        Text {
+                            id: posText
+                            Layout.fillWidth: true
+                            visible: card.payload.pos !== undefined
+                                     && card.payload.pos !== null && card.payload.pos !== ""
+                            text: (ipaText.visible ? "·  " : "") + (card.payload.pos || "")
+                            font.pixelSize: T.metaSize
+                            color: Kirigami.Theme.disabledTextColor
+                            wrapMode: Text.Wrap
+                        }
                     }
 
                     // 16 px: IPA/POS to translation.

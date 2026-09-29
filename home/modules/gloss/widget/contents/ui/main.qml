@@ -22,10 +22,14 @@ PlasmoidItem {
     property string source: "auto"
     property string target: "id"
     property string fieldText: ""
-    // A recorded envelope was rendered. The popup-open lookup is suppressed so
-    // the GLOSS_FIXTURE door keeps its card (the fixture is a dev render path,
-    // not a live one).
-    property bool fixtureAccepted: false
+
+    // The languages the widget owns. Only these (its own picker values) may
+    // become part of a command; run.js allow-lists them again before
+    // interpolating. Never read a language from an envelope — model output is
+    // untrusted, and the command goes through a shell.
+    function languageOptions(refresh) {
+        return { source: root.source, target: root.target, refresh: refresh === true }
+    }
 
     // Fixture door (deferred acceptance item): when GLOSS_FIXTURE names a
     // recorded envelope on disk, the widget renders it through the same Card
@@ -46,11 +50,14 @@ PlasmoidItem {
     // ---- the two doors ---------------------------------------------------
 
     // The hotkey path. The CLI reads the primary selection itself, so the text
-    // never enters the widget and never becomes part of a shell command. Called
-    // when the popup expands (below).
+    // never enters the widget and never becomes part of a shell command. Kept
+    // for the CLI capability (`gloss lookup --selection` from a terminal) — the
+    // widget no longer calls it: the card opens empty and reads nothing (user
+    // decision: "open empty, never read the clipboard"). Do not re-wire it to
+    // onExpandedChanged thinking it was forgotten.
     function lookUpSelection() {
         root.phase = "loading"
-        root.run(Run.selectionCommand(root.binary))
+        root.run(Run.selectionCommand(root.binary, root.languageOptions(false)))
     }
 
     // The typed path. Base64 only — no shell metacharacter can survive it.
@@ -61,7 +68,7 @@ PlasmoidItem {
             return
         root.fieldText = String(text)
         root.phase = "loading"
-        root.run(Run.typedCommand(root.binary, String(text), refresh === true))
+        root.run(Run.typedCommand(root.binary, String(text), root.languageOptions(refresh)))
     }
 
     function relook() {
@@ -92,17 +99,14 @@ PlasmoidItem {
         // leave phase and envelope exactly as they were.
         if ((data.stdout || "").trim() === "")
             return
-        root.fixtureAccepted = true
         root.accept(root.fixtureSource, data)
     }
 
-    // The shell turns the global shortcut (and keyboard activation) into
-    // Plasmoid.activated(), which expands the popup; the shortcut cannot be bound
-    // to code, so the selection is translated when the popup opens — the same
-    // toggle the panel icon performs. A rendered fixture is left alone.
+    // Opening the card reads nothing — the clipboard is never consulted. It
+    // shows the empty state with the field focused, ready to type or paste.
     onExpandedChanged: {
-        if (root.expanded && !root.fixtureAccepted)
-            root.lookUpSelection()
+        if (root.expanded)
+            Qt.callLater(function () { card.takeFocus() })
     }
 
     // The global shortcut default. plasma-desktop's AppletConfiguration.qml
@@ -132,6 +136,16 @@ PlasmoidItem {
             return
         }
         root.envelope = parsed
+        // The chips must show what was actually used. The widget's own values
+        // built the command (and the CLI echoes them back in `query`), so this
+        // only reconciles drift — a config default, or a swap. `detected` is
+        // left to Chrome.qml, which keeps an auto-detected source dotted.
+        if (parsed.query) {
+            if (typeof parsed.query.source === "string" && parsed.query.source !== "")
+                root.source = parsed.query.source
+            if (typeof parsed.query.target === "string" && parsed.query.target !== "")
+                root.target = parsed.query.target
+        }
         // The field is a local echo, never re-set from the payload. On the
         // selection path the widget never saw the text, so the CLI's echo of
         // what it read is the only place the headword can come from.
@@ -171,7 +185,7 @@ PlasmoidItem {
 
         PlasmaComponents.ToolTip {
             enabled: false
-            text: i18n("gloss — EN↔ID lookup (Meta+Ctrl+G)")
+            text: i18n("gloss — Meta+Ctrl+G opens the card · type or paste, then press Enter")
             visible: compactHover.hovered
         }
     }
