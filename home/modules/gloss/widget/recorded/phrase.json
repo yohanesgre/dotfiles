@@ -1,0 +1,41 @@
+{
+  "kind": "phrase",
+  "query": {
+    "text": "The board was reluctant to sign off on the merger, citing unresolved regulatory questions on both sides of the Atlantic.",
+    "source": "auto",
+    "target": "id",
+    "explain_in": "id"
+  },
+  "detected": {
+    "source": "en",
+    "mode": "phrase"
+  },
+  "payload": {
+    "translation": "Dewan direksi enggan menyetujui merger itu, dengan alasan pertanyaan regulasi yang belum tuntas di kedua sisi Atlantik.",
+    "explanation": [
+      {
+        "term": "sign off on",
+        "note": "phrasal verb, to give formal approval. Stiffer than approve; standard in business writing."
+      },
+      {
+        "term": "citing",
+        "note": "menyebut sebagai alasan. Fronts the reason rather than stating it plainly."
+      },
+      {
+        "term": "on both sides of the Atlantic",
+        "note": "idiom: in both the US and Europe, i.e. two separate regulators."
+      }
+    ],
+    "notes": "Business register. Board here is the board of directors."
+  },
+  "meta": {
+    "model": "gemini-3.5-flash-lite",
+    "cached": true,
+    "fetched_at": "2026-09-29T14:05:02Z",
+    "warnings": []
+  },
+  "usage": {
+    "input_tokens": 96,
+    "output_tokens": 141
+  }
+}

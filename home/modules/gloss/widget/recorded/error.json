@@ -1,0 +1,6 @@
+{
+  "kind": "error",
+  "code": "rate_limited",
+  "message": "Rate limited — try again in 30s",
+  "retry_after": 30
+}
