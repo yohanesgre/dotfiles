@@ -1,0 +1,14 @@
+{
+    "KPlugin": {
+        "Id": "org.gloss.translator",
+        "Name": "Gloss",
+        "Description": "Quick translation and word study",
+        "Icon": "accessories-dictionary",
+        "Category": "Language",
+        "Version": "0.1.0",
+        "License": "MIT",
+        "Authors": [{ "Name": "yohanes" }]
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "KPackageStructure": "Plasma/Applet"
+}

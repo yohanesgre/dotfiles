@@ -1,0 +1,38 @@
+{
+  "kind": "word",
+  "query": {
+    "text": "nevertheless",
+    "source": "en",
+    "target": "id",
+    "explain_in": "id"
+  },
+  "detected": null,
+  "payload": {
+    "term": "nevertheless",
+    "ipa": "ˌnevəðəˈles",
+    "pos": "adverb",
+    "translation": "meskipun demikian, namun",
+    "meaning": "in spite of that; however",
+    "examples": [
+      {
+        "src": "It was raining; nevertheless, we went out.",
+        "dst": "Hujan turun; meskipun demikian, kami tetap keluar."
+      },
+      {
+        "src": "The plan is risky. Nevertheless, we should try.",
+        "dst": "Rencananya berisiko. Meskipun demikian, kita harus mencoba."
+      }
+    ],
+    "notes": "Formal. Commoner in writing than in speech — in casual Indonesian walaupun begitu is more natural."
+  },
+  "meta": {
+    "model": "gemini-3.5-flash-lite",
+    "cached": true,
+    "fetched_at": "2026-09-29T14:02:11Z",
+    "warnings": []
+  },
+  "usage": {
+    "input_tokens": 412,
+    "output_tokens": 388
+  }
+}
