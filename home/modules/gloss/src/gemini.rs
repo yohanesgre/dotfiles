@@ -24,14 +24,15 @@ examples. Leave explanation empty.
   - pos is a short grammatical label only — e.g. adverb, noun, phrasal verb. Never a \
 definition, never a sentence, never prose. Anything worth saying about usage or \
 register belongs in notes, not in pos.
-  - meaning is a one-line gloss of the term in the source language, e.g. \
-\"in spite of that; however\". It is never empty for a word.
+  - meaning is a one-line explanation of the term in the explain language, e.g. \
+\"meskipun demikian; namun\". It is never empty for a word.
   - each example has src (a sentence in the source language) and dst (that sentence \
 translated into the target language).
 For a PHRASE: give the full translation and an explanation of the parts worth knowing \
-(phrasal verbs, idioms, register), each as a term and a note. Leave the word fields empty.
-translation is in the target language; ipa, pos, meaning and every example's src are in \
-the source language.
+(phrasal verbs, idioms, register), each as a term (the source-language word or phrase) \
+and a note in the explain language. Leave the word fields empty.
+translation is in the target language; ipa, pos and every example's src are in the \
+source language; meaning, notes and explanation are in the explain language.
 Write notes only when there is something genuinely useful to say about register or usage.
 Produce no commentary outside the JSON.";
 
@@ -44,7 +45,7 @@ pub const RESPONSE_SCHEMA: &str = r#"{
     "translation": { "type": "STRING", "description": "The translation, in the target language" },
     "ipa": { "type": "STRING", "description": "IPA for the word, no slashes" },
     "pos": { "type": "STRING", "description": "A short grammatical label only — e.g. adverb, noun, phrasal verb. Never a definition, a sentence, or prose; explanations belong in notes." },
-    "meaning": { "type": "STRING", "description": "A one-line gloss of the term in the source language, e.g. \"in spite of that; however\". Never empty for a word." },
+    "meaning": { "type": "STRING", "description": "A one-line explanation of the term in the explain language, e.g. \"meskipun demikian; namun\". Never empty for a word." },
     "examples": {
       "type": "ARRAY",
       "description": "Exactly two entries for a word. src is a sentence in the source language; dst is its translation into the target language.",
@@ -54,11 +55,12 @@ pub const RESPONSE_SCHEMA: &str = r#"{
     },
     "explanation": {
       "type": "ARRAY",
+      "description": "Idioms, phrasal verbs and register notes for a phrase. Each note is in the explain language; term stays the source-language word or phrase it is about.",
       "items": { "type": "OBJECT",
         "properties": { "term": { "type": "STRING" }, "note": { "type": "STRING" } },
         "required": ["term", "note"] }
     },
-    "notes": { "type": "STRING" }
+    "notes": { "type": "STRING", "description": "Register or usage remarks, in the explain language." }
   },
   "required": ["kind", "detected_source", "translation", "meaning", "examples"]
 }"#;
@@ -73,8 +75,9 @@ fn language_name(code: &str) -> &str {
 
 fn direction_line(q: &Query) -> String {
     if q.source == "auto" {
-        format!("Detect the source language yourself. Translate into {} ({}).",
-                language_name(&q.target), q.target)
+        format!("Detect the source language yourself. Translate into {} ({}). Explain in {} ({}).",
+                language_name(&q.target), q.target,
+                language_name(&q.explain_in), q.explain_in)
     } else {
         format!("Translate from {} ({}) into {} ({}). Explain in {} ({}).",
                 language_name(&q.source), q.source,
@@ -460,6 +463,8 @@ mod build_tests {
         let body = build_request(&q("en"), "gemini-3.5-flash-lite").body;
         assert!(body.contains("English"), "a concrete source must be named in the prompt");
         assert!(body.contains("Indonesian"), "the target must be named in the prompt");
+        assert!(body.contains("Explain in Indonesian (id)"),
+                "the concrete-source branch must name the explain language");
     }
 
     #[test]
@@ -467,6 +472,29 @@ mod build_tests {
         let body = build_request(&q("auto"), "gemini-3.5-flash-lite").body;
         assert!(body.contains("detect"), "auto must ask for detection");
         assert!(!body.contains("from English"), "auto must not assert a source language");
+        assert!(body.contains("Explain in Indonesian (id)"),
+                "the auto branch must still name the explain language");
+    }
+
+    #[test]
+    fn the_auto_branch_names_the_explain_language() {
+        // Regression: `auto` is the default source, and it used to omit the
+        // "Explain in ..." clause entirely, so the model fell back to English.
+        let body = build_request(&q("auto"), "gemini-3.5-flash-lite").body;
+        assert!(body.contains("Explain in Indonesian (id)"),
+                "the explain language must be stated on the auto branch too");
+    }
+
+    #[test]
+    fn the_prompt_puts_meaning_notes_and_explanation_in_the_explain_language() {
+        assert!(SYSTEM_PROMPT.contains(
+            "meaning is a one-line explanation of the term in the explain language"),
+            "meaning must be explained in the explain language");
+        assert!(SYSTEM_PROMPT.contains(
+            "meaning, notes and explanation are in the explain language"),
+            "the trailing sentence must place meaning, notes and explanation in the explain language");
+        assert!(!SYSTEM_PROMPT.contains("meaning and every example's src are in"),
+                "the old source-language wording for meaning must not return");
     }
 
     #[test]

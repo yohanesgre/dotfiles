@@ -8,4 +8,8 @@ cap = 1000
 # for short inputs, which are often ambiguous between languages.
 source = "auto"
 target = "id"
-explain_in = "id"
+
+# Empty (or the literal "target") means "the same language as the target".
+# Set an explicit code to override — e.g. explain_in = "en" to read English
+# explanations while translating into another language.
+explain_in = ""
