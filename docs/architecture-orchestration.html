@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<!--
+  Architecture map of the dotfiles orchestration pipeline (goal → orchestration → work-plans).
+  Hand-authored from skill sources 2026-09-29 (includes the uncommitted batch-dispatch change).
+  Verify with architecture-viz scripts: check-svg-overlaps.py + render-check.sh.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>orchestration — Architecture Map</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#101826; --panel2:#0c121c; --line:#1e2a3a;
+    --text:#e8eef6; --muted:#8fa0b5; --faint:#5b6b80;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --a:#f2b344; --b:#a78bfa; --c:#38bdf8; --d:#2dd4bf; --e:#4ade80; --f:#f472b6;
+    --g:#94a3b8; --h:#60a5fa; --danger:#f87171;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1100px 480px at 12% -8%, rgba(56,189,248,.10), transparent 60%),
+               radial-gradient(900px 460px at 92% -4%, rgba(167,139,250,.10), transparent 60%), var(--bg);}
+  .wrap{max-width:1340px;margin:0 auto;padding:44px 28px 90px}
+  code,.mono{font-family:var(--mono);font-size:.86em;color:#cfe0f2}
+  h1{font-size:34px;letter-spacing:-.02em;margin:6px 0}
+  h2{font-size:19px;margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  h2 .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+  .kicker{font:600 11.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--c)}
+  .sub{color:var(--muted);font-size:15.5px;margin:0 0 22px}
+  .hint{color:var(--faint);font-size:12.5px;margin:-6px 0 16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:34px}
+  .chip{font:12px/1 var(--mono);color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px}
+  .chip b{color:var(--text);font-weight:600}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  .graph{width:100%;height:auto;display:block;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px 20px;margin-top:16px;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .legend i{width:10px;height:10px;border-radius:3px}
+  .swatch{width:26px;height:0;border-top:2px solid #7c8ea6}
+  .swatch.dash{border-top-style:dashed}
+  .n rect{fill:var(--g);stroke:var(--g);fill-opacity:.07;stroke-width:1.3}
+  .n .t{font:600 14px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#f2f6fb}
+  .n .s{font:11px var(--mono);fill:var(--muted)}
+  .n.boot rect{fill:var(--a);stroke:var(--a)} .n.boot .t{fill:var(--a)}
+  .n.svc rect{fill:var(--c);stroke:var(--c)}   .n.svc .t{fill:var(--c)}
+  .n.cons rect{fill:var(--e);stroke:var(--e)}  .n.cons .t{fill:var(--e)}
+  .n.eng rect{fill:var(--b);stroke:var(--b)}   .n.eng .t{fill:var(--b)}
+  .n.cfg rect{fill:var(--d);stroke:var(--d)}   .n.cfg .t{fill:var(--d)}
+  .n.tool rect{fill:var(--g);stroke:var(--g)}  .n.tool .t{fill:var(--g)}
+  .n.test rect{fill:var(--h);stroke:var(--h)}  .n.test .t{fill:var(--h)}
+  .edge{fill:none;stroke:#7c8ea6;stroke-width:1.6}
+  .edge.dash{stroke-dasharray:6 5}
+  .elabel{font:11px var(--mono);fill:#a9bacd;paint-order:stroke;stroke:var(--panel2);stroke-width:4px;stroke-linejoin:round}
+  .steps{list-style:none;margin:0;padding:0;counter-reset:step}
+  .steps li{position:relative;padding:0 0 18px 46px;counter-increment:step}
+  .steps li::before{content:counter(step);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:8px;
+    background:rgba(242,179,68,.12);border:1px solid rgba(242,179,68,.5);color:var(--a);font:600 12px/25px var(--mono);text-align:center}
+  .steps li::after{content:"";position:absolute;left:13px;top:31px;bottom:2px;width:1px;background:var(--line)}
+  .steps li:last-child::after{display:none}
+  .steps .st{font-weight:600;font-size:14px}
+  .steps .note{color:var(--muted);font-size:13px;margin-top:2px}
+  .tag{display:inline-block;font:10.5px/1 var(--mono);padding:4px 7px;border-radius:6px;margin:0 6px 4px 0;
+    background:rgba(148,163,184,.10);border:1px solid rgba(148,163,184,.35);color:#b8c4d4}
+  .rulelist{margin:0;padding:0 0 0 18px;color:var(--muted);font-size:13.5px}
+  .rulelist li{margin:0 0 6px}
+  .rulelist b{color:var(--text)}
+  .cards{display:grid;gap:12px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--g);border-radius:10px;padding:14px 16px}
+  .card h3{font-size:14px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .card h3 .who{font:10.5px var(--mono);color:var(--muted);font-weight:400}
+  .card p{color:var(--muted);font-size:13.5px;margin:0 0 8px}
+  .card ul{margin:0;padding-left:16px;color:var(--muted);font-size:13px}
+  .card.danger{border-left-color:var(--danger)}
+  .card.danger h3 b{color:var(--danger)}
+  .sev{font:10.5px/1 var(--mono);padding:4px 7px;border-radius:6px;white-space:nowrap}
+  .sev.warn{background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.4);color:var(--danger)}
+  .sev.soft{background:rgba(148,163,184,.10);border:1px solid rgba(148,163,184,.35);color:#b8c4d4}
+  footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:26px;padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Architecture Map</div>
+    <h1>orchestration — agent-lane execution plane</h1>
+    <p class="sub">A frozen plan (from <code>goal</code>) runs through one human gate, then isolated luvus lanes verify, review, and merge themselves. Static, hand-authored snapshot — no runtime introspection; every claim carries a source line.</p>
+    <div class="chips">
+      <span class="chip"><b>14</b> nodes · <b>15</b> edges</span>
+      <span class="chip">wave lanes run <b>in parallel</b> (batch dispatch, 2026-09-29)</span>
+      <span class="chip">jev advisory at <b>4</b> points</span>
+      <span class="chip">validate-skills <b>rc 0</b> · wave-wait smoke <b>6/6</b></span>
+      <span class="chip">snapshot <b>2026-09-29</b></span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="dot"></span>Runtime dependency graph</h2>
+    <p class="hint">Runtime only — tooling, tests, and the verification loop are panels below. Arrows point caller → callee / dependency; the human gate is the only place execution waits for a person.</p>
+    <svg class="graph" viewBox="0 0 1440 920" role="img" aria-label="orchestration pipeline dependency graph">
+      <defs>
+        <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="1.3" cy="1.3" r="1.3" fill="#182234"/>
+        </pattern>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#7c8ea6"/>
+        </marker>
+      </defs>
+      <rect width="1440" height="920" fill="url(#dots)"/>
+
+      <!-- edges first (under nodes) -->
+      <path class="edge" d="M230,124 V170" marker-end="url(#ah)"/>
+      <text class="elabel" x="242" y="151" text-anchor="start">loads</text>
+
+      <path class="edge" d="M230,254 V300" marker-end="url(#ah)"/>
+      <text class="elabel" x="242" y="281" text-anchor="start">opens plan</text>
+
+      <path class="edge" d="M400,70 H520" marker-end="url(#ah)"/>
+      <text class="elabel" x="460" y="62" text-anchor="middle">frozen plan</text>
+
+      <path class="edge" d="M400,200 H470 V96 H520" marker-end="url(#ah)"/>
+      <text class="elabel" x="482" y="152" text-anchor="start">hands off</text>
+
+      <path class="edge" d="M650,124 V170" marker-end="url(#ah)"/>
+      <text class="elabel" x="662" y="151" text-anchor="start">approved</text>
+
+      <path class="edge" d="M650,254 V300" marker-end="url(#ah)"/>
+      <text class="elabel" x="662" y="281" text-anchor="start">worktrees ready</text>
+
+      <path class="edge" d="M880,320 H970 V150 H1060" marker-end="url(#ah)"/>
+      <text class="elabel" x="1015" y="142" text-anchor="middle">dispatch</text>
+
+      <path class="edge dash" d="M880,400 H1030 V570 H1060" marker-end="url(#ah)"/>
+      <text class="elabel" x="960" y="390" text-anchor="middle">triage</text>
+
+      <path class="edge" d="M650,432 V470" marker-end="url(#ah)"/>
+      <text class="elabel" x="662" y="455" text-anchor="start">returns</text>
+
+      <path class="edge" d="M880,560 H1000 V460 H1060" marker-end="url(#ah)"/>
+      <text class="elabel" x="940" y="552" text-anchor="middle">reviews</text>
+
+      <path class="edge" d="M650,580 V620" marker-end="url(#ah)"/>
+      <text class="elabel" x="662" y="604" text-anchor="start">green</text>
+
+      <path class="edge" d="M650,730 V770" marker-end="url(#ah)"/>
+      <text class="elabel" x="662" y="754" text-anchor="start">done</text>
+
+      <path class="edge" d="M880,650 H990 V720 H1060" marker-end="url(#ah)"/>
+      <text class="elabel" x="1025" y="712" text-anchor="middle">merge</text>
+
+      <path class="edge" d="M880,410 H910 V740 H1060" marker-end="url(#ah)"/>
+      <text class="elabel" x="922" y="620" text-anchor="start">drives tools</text>
+
+      <path class="edge" d="M520,800 H430 V360 H400" marker-end="url(#ah)"/>
+      <text class="elabel" x="442" y="600" text-anchor="start">finalize tracking</text>
+
+      <!-- nodes -->
+      <g class="n boot" transform="translate(60,40)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">/goal · /orchestrate</text>
+        <text class="s" x="20" y="50">entry commands → load the skill</text>
+        <text class="s" x="20" y="68">$ARGUMENTS; frozen-plan shortcut</text>
+      </g>
+      <g class="n svc" transform="translate(60,170)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">goal skill — Phases 0–3</text>
+        <text class="s" x="20" y="50">intake → design → protocol → track</text>
+        <text class="s" x="20" y="68">freezes acceptance; hands off</text>
+      </g>
+      <g class="n cfg" transform="translate(60,300)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">work-plans — tracking plane</text>
+        <text class="s" x="20" y="50">status/&lt;plan&gt;/: plan · lanes · report</text>
+        <text class="s" x="20" y="68">single writer; plan-check.sh + jev</text>
+      </g>
+
+      <g class="n svc" transform="translate(520,40)">
+        <rect width="360" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Execution gate — human, once</text>
+        <text class="s" x="20" y="50">approves waves · lanes · models</text>
+        <text class="s" x="20" y="68">no approval = no execution</text>
+      </g>
+      <g class="n svc" transform="translate(520,170)">
+        <rect width="360" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Isolate — worktrees first</text>
+        <text class="s" x="20" y="50">worktree add from origin/main</text>
+        <text class="s" x="20" y="68">all before setup; setups concurrent</text>
+      </g>
+      <g class="n svc" transform="translate(520,300)">
+        <rect width="360" height="132" rx="12"/>
+        <text class="t" x="20" y="28">Dispatch — batch, not a loop</text>
+        <text class="s" x="20" y="50">brief = delegated subgraph (WHY/Nodes…)</text>
+        <text class="s" x="20" y="72">master+grid layout, one pane per lane</text>
+        <text class="s" x="20" y="94">fire EVERY lane (pane run, non-blocking)</text>
+        <text class="s" x="20" y="116">then join: wave-wait.ts [--any]</text>
+      </g>
+      <g class="n svc" transform="translate(520,470)">
+        <rect width="360" height="110" rx="12"/>
+        <text class="t" x="20" y="28">Verify + review wave</text>
+        <text class="s" x="20" y="50">frozen acceptance · gate evidence</text>
+        <text class="s" x="20" y="72">graph compare vs delegated subgraph</text>
+        <text class="s" x="20" y="94">reviewer per lane, async fan-out</text>
+      </g>
+      <g class="n svc" transform="translate(520,620)">
+        <rect width="360" height="110" rx="12"/>
+        <text class="t" x="20" y="28">Close-out → PR → merge → loop</text>
+        <text class="s" x="20" y="50">commit · push · PR · auto-merge on CI</text>
+        <text class="s" x="20" y="72">loop guard: 3/wave · cap 5/plan</text>
+        <text class="s" x="20" y="94">policy-blocked PR → park + report</text>
+      </g>
+      <g class="n svc" transform="translate(520,770)">
+        <rect width="360" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Plan close-out — DONE | FAILED</text>
+        <text class="s" x="20" y="50">close panes → remove worktrees</text>
+        <text class="s" x="20" y="68">report.md · status.md · TIMELINE · memory</text>
+      </g>
+
+      <g class="n cons" transform="translate(1060,40)">
+        <rect width="340" height="132" rx="12"/>
+        <text class="t" x="20" y="28">Lanes — swe | designer</text>
+        <text class="s" x="20" y="50">one pane · one worktree · one owner</text>
+        <text class="s" x="20" y="72">foreground in luvus; pane persists</text>
+        <text class="s" x="20" y="94">.worktrees/&lt;plan&gt;-&lt;lane&gt;</text>
+        <text class="s" x="20" y="116">inline subagents allowed, scopes disjoint</text>
+      </g>
+      <g class="n cons" transform="translate(1060,240)">
+        <rect width="340" height="110" rx="12"/>
+        <text class="t" x="20" y="28">steward — mutating subagent</text>
+        <text class="s" x="20" y="50">non-behavior upkeep, control checkout</text>
+        <text class="s" x="20" y="72">serialized · hardened gate · no commit</text>
+        <text class="s" x="20" y="94">behavior change → re-dispatch to lane</text>
+      </g>
+      <g class="n cons" transform="translate(1060,390)">
+        <rect width="340" height="110" rx="12"/>
+        <text class="t" x="20" y="28">Read-only subagents</text>
+        <text class="s" x="20" y="50">architect foreground · researcher fans</text>
+        <text class="s" x="20" y="72">reviewer per lane, prose output</text>
+        <text class="s" x="20" y="94">models pinned in the agent md</text>
+      </g>
+      <g class="n tool" transform="translate(1060,540)">
+        <rect width="340" height="110" rx="12"/>
+        <text class="t" x="20" y="28">jev — advisory judgments</text>
+        <text class="s" x="20" y="50">4 points: gate · dispatch · review · PR</text>
+        <text class="s" x="20" y="72">path items read server-side (no ctx cost)</text>
+        <text class="s" x="20" y="94">never a gate, never a completion signal</text>
+      </g>
+      <g class="n eng" transform="translate(1060,690)">
+        <rect width="340" height="154" rx="12"/>
+        <text class="t" x="20" y="28">Runtime</text>
+        <text class="s" x="20" y="50">luvus CLI + UHP layout.apply</text>
+        <text class="s" x="20" y="72">pane split/run/close · tabs · workspace</text>
+        <text class="s" x="20" y="94">opencode run --auto --model --agent</text>
+        <text class="s" x="20" y="116">scripts: lane-layout · lane-wait · wave-wait</text>
+        <text class="s" x="20" y="138">git/CI: branch → PR → merge</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><i style="background:#f2b344"></i> entry</span>
+      <span><i style="background:#38bdf8"></i> pipeline skills</span>
+      <span><i style="background:#2dd4bf"></i> tracking plane</span>
+      <span><i style="background:#4ade80"></i> workers</span>
+      <span><i style="background:#a78bfa"></i> runtime</span>
+      <span><i style="background:#94a3b8"></i> advisory tooling</span>
+      <span><span class="swatch"></span> drives / owns / invokes</span>
+      <span><span class="swatch dash"></span> advisory</span>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="dot" style="background:var(--a)"></span>Run sequence — from /goal to a closed plan</h2>
+    <ol class="steps">
+      <li>
+        <div class="st"><span class="tag">entry</span> <code>/goal &lt;text&gt;</code> — the only un-gated human step</div>
+        <div class="note">Loads the goal skill with the request as <code>$ARGUMENTS</code>; intake is the one place the pipeline waits on a plain reply. <code>commands/goal.md:5</code>, <code>goal/SKILL.md:73-86</code></div>
+      </li>
+      <li>
+        <div class="st">Route: simple = 1 lane, complex = 1..N</div>
+        <div class="note">Classified on contract surface (schema/API/design authority/shared files), never file count; “when unsure, it is complex”. <code>goal/SKILL.md:88-114</code>, <code>orchestration/SKILL.md:130-155</code></div>
+      </li>
+      <li>
+        <div class="st">Design + protocol: wave graph into <code>plan.md</code></div>
+        <div class="note">design-thinking graphs; waves ordered by dependency, one owner per node, file ownership per lane so parallel tracks never collide. <code>goal/SKILL.md:116-149</code></div>
+      </li>
+      <li>
+        <div class="st">Open the plan — <code>status/&lt;plan&gt;/</code></div>
+        <div class="note">Template → <code>plan.md</code>; <code>status.md</code> = PLAN; acceptance frozen BEFORE any lane runs. <code>goal/SKILL.md:151-178</code>, <code>work-plans/SKILL.md:37-66</code></div>
+      </li>
+      <li>
+        <div class="st">Pre-gate validation (advisory)</div>
+        <div class="note"><code>plan-check.sh</code> (strict) + jev open triage (advisory) — a red plan is fixed before the gate, never after. <code>goal/SKILL.md:191-195</code>, <code>work-plans/SKILL.md:154-160</code></div>
+      </li>
+      <li>
+        <div class="st"><span class="tag">human</span> Execution gate — last human gate</div>
+        <div class="note">Approves waves, lanes, resolved models, worktrees/branches, and the whole lifecycle (branch → commit → push → PR → auto-merge on green CI). No approval = no execution; lapse 72h. Simple route → fast path (ack = go). <code>orchestration/SKILL.md:157-175</code></div>
+      </li>
+      <li>
+        <div class="st">Isolate — every worktree before any setup</div>
+        <div class="note"><code>git worktree add</code> from <code>origin/main</code> per lane; setups then run concurrently (independent paths); per-worktree clean check inside. Collision → FAST EXIT, never unisolated. <code>orchestration/SKILL.md:183-206</code></div>
+      </li>
+      <li>
+        <div class="st">Layout — master column + lane grid, once per wave</div>
+        <div class="note"><code>lane-layout.ts</code>: orchestrator stays left at full height, lanes tile ~2:1; more than 6 lanes overflow to extra lane-only tabs, never squeezed. <code>orchestration/SKILL.md:219-231</code></div>
+      </li>
+      <li>
+        <div class="st">Brief + model — self-contained, explicit</div>
+        <div class="note">Brief = delegated subgraph (WHY/Nodes/Edges/Docs/Acceptance/Gate/Forbidden/Boundary); model is read verbatim from the role agent's md and passed with <code>--model</code> — the md pin does NOT apply to a primary <code>opencode run</code> session. <code>orchestration/SKILL.md:233-256</code></div>
+      </li>
+      <li>
+        <div class="st"><span class="tag">2026-09-29</span> Dispatch is a BATCH, not a loop</div>
+        <div class="note">Fire EVERY lane of the wave before waiting on anything — <code>luvus pane run</code> is a non-blocking text+Enter submission. Serialize only shared-file lanes and the steward subagent; dispatch-one/wait-one is now an explicit deviation. <code>orchestration/SKILL.md:278-289</code>, <code>references/lane-dispatch.md:13-20</code></div>
+      </li>
+      <li>
+        <div class="st">Join — <code>wave-wait.ts [--any] [--timeout]</code></div>
+        <div class="note">200 ms poll over N return files; <code>--any</code> lets an early lane's reviewer spawn while siblings still run. A return file's appearance means the runner finished; <code>rc=0</code> is real completion. Timeout ≠ dead lane — check <code>luvus pane status</code>, re-wait. <code>orchestration/scripts/wave-wait.ts:5-21</code></div>
+      </li>
+      <li>
+        <div class="st">Verify + review wave — per lane, then merge</div>
+        <div class="note">End of wave: gates + frozen acceptance + graph compare (extra/missing node = deviation). Reviewer per lane, async, stable lane↔reviewer map; jev diff pre-filter first; a lane closes out on its own green — no sibling wait. <code>orchestration/SKILL.md:325-388</code></div>
+      </li>
+      <li>
+        <div class="st">PR → auto-merge → loop guard</div>
+        <div class="note">Green + met → commit, push, PR (body = result + gate tails + deviations); CI green → auto-merge. Loop guard: 3 iterations/wave without progress → park; hard cap 5/plan → FAILED. Policy-blocked → park + report, never poll. <code>orchestration/SKILL.md:390-400</code>, <code>:451-455</code></div>
+      </li>
+      <li>
+        <div class="st"><span class="tag">close</span> Plan close-out — DONE | FAILED</div>
+        <div class="note">Close every lane pane → remove merged worktrees/branches → <code>plan-check.sh</code> + jev closure judgment → <code>report.md</code>/<code>status.md</code>/TIMELINE → <code>icm_memory_store</code>. The plan is not DONE until its panes are closed. <code>orchestration/SKILL.md:405-419</code></div>
+      </li>
+    </ol>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--c)"></span>goal — plan authoring (Phases 0–3)</h2>
+      <ul class="rulelist">
+        <li><b>One plan of record:</b> <code>status/&lt;plan&gt;/plan.md</code>; a <code>writing-plans</code> artifact is input folded into it, never a second plan. <code>goal/SKILL.md:129-136</code></li>
+        <li><b>Acceptance frozen</b> before any lane executes — one verifiable criterion per work item, each with its verify command. <code>goal/SKILL.md:174-178</code></li>
+        <li><b>Lanes only when parallel:</b> the simple route deletes the lanes section rather than inventing a lane to fill the shape. <code>goal/SKILL.md:169-170</code></li>
+        <li><b>Handoff:</b> after Phase 3 the plan is frozen; execution is owned by <code>orchestration</code> from the gate onward. <code>goal/SKILL.md:197-205</code></li>
+      </ul>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:#f472b6"></span>orchestration — guardrails</h2>
+      <ul class="rulelist">
+        <li><b>Main-session guard:</b> the orchestrator edits only <code>status/**</code> + memory; a self-made code edit is reverted and re-dispatched. <code>orchestration/SKILL.md:83-93</code>, <code>:469-476</code></li>
+        <li><b>Hardened gate for steward:</b> serialized, named files only, no commit/push, verify-then-accept (out-of-scope hunk → revert + re-dispatch). <code>orchestration/SKILL.md:338-352</code></li>
+        <li><b>Break points:</b> FAST EXIT (env/binary/worktree collision/model gap) stops one lane; WAIT parks it and continues others; secrets = the only halt-everything. <code>orchestration/SKILL.md:424-459</code></li>
+        <li><b>Evidence rule:</b> a bare “tests pass” is never green — gate output tails are pasted into the lane report. <code>orchestration/SKILL.md:359-361</code></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--e)"></span>workers — lanes &amp; subagents</h2>
+      <ul class="rulelist">
+        <li><b>Lane:</b> <code>swe</code> (implementation) or <code>designer</code> (design artifacts) in a luvus pane, cwd = its worktree; the pane persists through the loop and closes only at plan DONE/FAILED. <code>orchestration/SKILL.md:96-102</code>, <code>:312-323</code></li>
+        <li><b>Boundary:</b> brief (delegated subgraph IN) → <code>&lt;slug&gt;-return.md</code> (implemented graph OUT, <code>rc=</code> line); extra/missing node = deviation. <code>orchestration/SKILL.md:68-76</code>, <code>:291-306</code></li>
+        <li><b>Read-only:</b> <code>architect</code> foreground, <code>researcher</code> fans out leaves, <code>reviewer</code> one per lane async; they never mutate. <code>orchestration/SKILL.md:110-119</code></li>
+        <li><b>One mutating subagent only:</b> <code>steward</code> (upkeep) — never a lane, never parallel. <code>orchestration/SKILL.md:103-109</code></li>
+      </ul>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--g)"></span>jev — advisory at four points (+ tracking)</h2>
+      <ul class="rulelist">
+        <li><b>Gate:</b> <code>jev_check</code> on the frozen plan — a no is surfaced, the human still decides. <code>references/jev-layer.md:13-16</code></li>
+        <li><b>Dispatch:</b> <code>jev_ask</code> over proposed lanes — disjoint files, independent outputs, self-contained prompts, <b>batch-dispatched</b> (added 2026-09-29). <code>references/jev-layer.md:17-24</code></li>
+        <li><b>Review pre-filter:</b> <code>jev_triage</code> over each lane's diff as a <code>path</code> item (read server-side, never in context) — scope · acceptance · secrets · offscript; passing does NOT skip the reviewer. <code>references/jev-layer.md:33-40</code></li>
+        <li><b>Tracking:</b> work-plans open/close judgments stay advisory; <code>plan-check.sh</code> stays authoritative. <code>work-plans/SKILL.md:154-168</code></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--b)"></span>Tooling</h2>
+      <div class="cards">
+        <div class="card">
+          <h3><b>lane-layout.ts</b> <span class="who">bun · once per wave</span></h3>
+          <p>Locates the anchor pane via UHP snapshot, splits panes, parks each shell in its worktree, applies one atomic <code>layout.apply</code> per tab. Exit 0 ok · 1 error · 2 usage.</p>
+        </div>
+        <div class="card">
+          <h3><b>lane-wait.ts</b> <span class="who">bun · one lane</span></h3>
+          <p>File-sentinel watch + Effect timeout, 200 ms poll, default 120 s; prints last 4000 chars. Exit 0 seen · 1 timeout · 2 argv.</p>
+        </div>
+        <div class="card">
+          <h3><b>wave-wait.ts</b> <span class="who">bun · new 2026-09-29</span></h3>
+          <p>Joins N return files; <code>--any</code> returns on the first (early reviewer spawn); default 600 s. Exit 0 all/≥1 · 1 timeout with missing listed · 2 argv.</p>
+        </div>
+        <div class="card">
+          <h3><b>plan-check.sh</b> <span class="who">bash · work-plans</span></h3>
+          <p>Artifact lint: 3-line heartbeats/status, state enum, DONE|FAILED needs <code>report.md</code>, TIMELINE row. Exit 0 GREEN · 1 RED · 2 usage.</p>
+        </div>
+        <div class="card">
+          <h3><b>lane runner</b> <span class="who">generated per lane</span></h3>
+          <p><code>opencode run --auto --model … --agent …</code> tee'd live, then <code>rc=</code> + atomic rename onto the return file as the LAST step — the file's appearance means the runner finished.</p>
+        </div>
+      </div>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--h)"></span>Verification &amp; seams</h2>
+      <div class="cards">
+        <div class="card">
+          <h3><b>green</b> <span class="who">2026-09-29</span></h3>
+          <ul>
+            <li><code>validate-skills.sh</code> rc 0 — 37 skills, 5 pre-existing warnings.</li>
+            <li><code>wave-wait.ts</code> smoke 6/6: argv, timeout, <code>--any</code>, late arrival, <code>rc≠0</code> parse.</li>
+            <li>jev 1.13.0: batch-dispatch yes 0.82 · consistency 0.91 · soundness 1.75/2.</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><b>not yet run</b> <span class="who">the open seam</span></h3>
+          <ul>
+            <li>No live end-to-end wave (3 lanes) since the batch change — jev action stays <code>review</code>.</li>
+            <li>Traps read before closing a wave: dirty worktree, shared-file collision, rebase-before-PR, files-are-truth. <code>references/edge-cases.md:1-26</code></li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <h2><span class="dot" style="background:var(--danger)"></span>Watch items</h2>
+    <div class="cards">
+      <div class="card danger">
+        <h3><b>Concurrency fix not yet proven live</b> <span class="sev warn">verify</span></h3>
+        <p>The batch-dispatch rule + <code>wave-wait.ts</code> are new (uncommitted as of this snapshot); correctness is proven for the script and the text, not yet for a real multi-lane wave. jev is advisory-<code>review</code>, not <code>act</code>. <code>orchestration/SKILL.md:278-289</code>, <code>scripts/wave-wait.ts</code></p>
+      </div>
+      <div class="card danger">
+        <h3><b>Fire-and-forget dispatch</b> <span class="sev warn">observability</span></h3>
+        <p><code>luvus pane run</code> has no ack, so a dead lane is indistinguishable from a slow one until the wait times out; the rule “timeout ≠ dead lane” softly degrades the distinction. <code>references/cli-reference.md:162-164</code>, <code>wave-wait.ts:19-20</code></p>
+      </div>
+      <div class="card">
+        <h3><b>Layout has no rollback</b> <span class="sev soft">runtime</span></h3>
+        <p>Each UHP request is a separate process spawn; a mid-way <code>lane-layout</code> failure leaves panes created with the layout unapplied — partial state, recovered by hand. <code>scripts/lane-layout.ts:123-128</code><code>:262</code>, <code>cli-reference.md:74-80</code></p>
+      </div>
+      <div class="card">
+        <h3><b>Routing text duplicated</b> <span class="sev soft">drift</span></h3>
+        <p>The simple/complex classification is byte-duplicated in goal and orchestration with no single source; goal says orchestration “re-uses” it, but nothing enforces equality. <code>goal/SKILL.md:88-114</code> vs <code>orchestration/SKILL.md:130-155</code></p>
+      </div>
+      <div class="card">
+        <h3><b>status/ gitignored — but cited as chronology</b> <span class="sev soft">docs</span></h3>
+        <p>Reports travel via PR bodies because <code>status/</code> is gitignored, while <code>git log -- status/</code> is offered elsewhere as a history source — a third reading of where plan history lives. <code>orchestration/SKILL.md:402</code> vs <code>work-plans/SKILL.md:120-122</code></p>
+      </div>
+      <div class="card">
+        <h3><b>Worktree-removal approval conflict</b> <span class="sev soft">docs</span></h3>
+        <p>“Removal after merge needs no approval inside the loop” vs “removal needs explicit user approval” — both in the same skill, no precedence marker; worktree+reviewer races are the practical reading. <code>orchestration/SKILL.md:401-402</code> vs <code>:318-320</code></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Static snapshot — 2026-09-29 · sources: <code>config/skills/{goal,orchestration,work-plans}/**</code>, <code>config/opencode/{commands,agents}/**</code>, <code>config/skills/orchestration/scripts/**</code>, <code>docs/configuration-changelog.md</code>.
+    Line refs are repo-relative; the newer concurrency change is on disk but uncommitted. Re-run the analysis after structural changes.
+  </footer>
+</div>
+</body>
+</html>

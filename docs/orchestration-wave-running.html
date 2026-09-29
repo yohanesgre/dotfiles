@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<!--
+  Runtime view: one orchestration wave with three lanes running in parallel.
+  Hand-authored 2026-09-29 from the orchestration skill sources (batch-dispatch change included).
+  Durations are illustrative (15/20/35 min lane runs, 12 min reviews).
+  Verify with architecture-viz scripts: check-svg-overlaps.py (svg 0 + 1) + render-check.sh.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>orchestration — a wave in flight</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#101826; --panel2:#0c121c; --line:#1e2a3a;
+    --text:#e8eef6; --muted:#8fa0b5; --faint:#5b6b80;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --a:#f2b344; --b:#a78bfa; --c:#38bdf8; --d:#2dd4bf; --e:#4ade80; --f:#f472b6;
+    --g:#94a3b8; --h:#60a5fa; --danger:#f87171;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1100px 480px at 12% -8%, rgba(56,189,248,.10), transparent 60%),
+               radial-gradient(900px 460px at 92% -4%, rgba(167,139,250,.10), transparent 60%), var(--bg);}
+  .wrap{max-width:1340px;margin:0 auto;padding:44px 28px 90px}
+  code,.mono{font-family:var(--mono);font-size:.86em;color:#cfe0f2}
+  h1{font-size:34px;letter-spacing:-.02em;margin:6px 0}
+  h2{font-size:19px;margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  h2 .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+  .kicker{font:600 11.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--c)}
+  .sub{color:var(--muted);font-size:15.5px;margin:0 0 22px}
+  .hint{color:var(--faint);font-size:12.5px;margin:-6px 0 16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:34px}
+  .chip{font:12px/1 var(--mono);color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px}
+  .chip b{color:var(--text);font-weight:600}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  .graph{width:100%;height:auto;display:block;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px 20px;margin-top:16px;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .legend i{width:10px;height:10px;border-radius:3px}
+  .swatch{width:26px;height:0;border-top:2px solid #7c8ea6}
+  .n rect{fill:var(--g);stroke:var(--g);fill-opacity:.07;stroke-width:1.3}
+  .n .t{font:600 14px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#f2f6fb}
+  .n .s{font:11px var(--mono);fill:var(--muted)}
+  .n.boot rect{fill:var(--a);stroke:var(--a)} .n.boot .t{fill:var(--a)}
+  .n.svc rect{fill:var(--c);stroke:var(--c)}   .n.svc .t{fill:var(--c)}
+  .n.cons rect{fill:var(--e);stroke:var(--e)}  .n.cons .t{fill:var(--e)}
+  .n.eng rect{fill:var(--b);stroke:var(--b)}   .n.eng .t{fill:var(--b)}
+  .n.cfg rect{fill:var(--d);stroke:var(--d)}   .n.cfg .t{fill:var(--d)}
+  .n.tool rect{fill:var(--g);stroke:var(--g)}  .n.tool .t{fill:var(--g)}
+  .n.test rect{fill:var(--h);stroke:var(--h)}  .n.test .t{fill:var(--h)}
+  .edge{fill:none;stroke:#7c8ea6;stroke-width:1.6}
+  .edge.dash{stroke-dasharray:6 5}
+  .elabel{font:11px var(--mono);fill:#a9bacd;paint-order:stroke;stroke:var(--panel2);stroke-width:4px;stroke-linejoin:round}
+  .rlabel{font:11px var(--mono);fill:var(--muted)}
+  .tick{font:10.5px var(--mono);fill:var(--faint)}
+  .rulelist{margin:0;padding:0 0 0 18px;color:var(--muted);font-size:13.5px}
+  .rulelist li{margin:0 0 6px}
+  .rulelist b{color:var(--text)}
+  .cards{display:grid;gap:12px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--g);border-radius:10px;padding:14px 16px}
+  .card h3{font-size:14px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .card h3 .who{font:10.5px var(--mono);color:var(--muted);font-weight:400}
+  .card p{color:var(--muted);font-size:13.5px;margin:0 0 8px}
+  .card ul{margin:0;padding-left:16px;color:var(--muted);font-size:13px}
+  .card.danger{border-left-color:var(--danger)}
+  .card.danger h3 b{color:var(--danger)}
+  .sev{font:10.5px/1 var(--mono);padding:4px 7px;border-radius:6px;white-space:nowrap}
+  .sev.warn{background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.4);color:var(--danger)}
+  .sev.soft{background:rgba(148,163,184,.10);border:1px solid rgba(148,163,184,.35);color:#b8c4d4}
+  table{border-collapse:collapse;width:100%;font-size:13px;color:var(--muted)}
+  th,td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--text);font-weight:600;font-size:12px}
+  footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:26px;padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Runtime View</div>
+    <h1>a wave in flight — three lanes, one orchestrator</h1>
+    <p class="sub">What the wall clock looks like while workers run in parallel: dispatch is a batch, the join is a single wait, and reviewers start as lanes land. Durations are illustrative; the mechanics and line refs are real.</p>
+    <div class="chips">
+      <span class="chip">wall clock = <b>max(tᵢ)</b>, not Σtᵢ</span>
+      <span class="chip">3 lanes <b>+ steward serial</b></span>
+      <span class="chip">early reviewers via <b>--any</b></span>
+      <span class="chip"><code>wave-wait.ts</code></span>
+      <span class="chip">snapshot <b>2026-09-29</b></span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="dot" style="background:var(--e)"></span>Timeline — the parallel window</h2>
+    <p class="hint">Shaded stages = how many lanes are still running (3 → 2 → 1). Bars are illustrative durations: lane A 35 min, lane B 20 min, lane C 15 min, reviews 12 min. Everything the orchestrator does while the lanes run happens inside one <code>wave-wait</code>.</p>
+    <svg class="graph" viewBox="0 0 1440 560" role="img" aria-label="parallel wave timeline">
+      <defs>
+        <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="1.3" cy="1.3" r="1.3" fill="#182234"/>
+        </pattern>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#7c8ea6"/>
+        </marker>
+      </defs>
+      <rect width="1440" height="560" fill="url(#dots)"/>
+
+      <!-- in-flight stage shades (background) -->
+      <rect x="355" y="56" width="246" height="396" fill="#4ade80" fill-opacity="0.05"/>
+      <rect x="601" y="56" width="83" height="396" fill="#4ade80" fill-opacity="0.035"/>
+      <rect x="684" y="56" width="246" height="396" fill="#4ade80" fill-opacity="0.02"/>
+
+      <!-- tick gridlines -->
+      <line x1="355" y1="56" x2="355" y2="452" stroke="#1e2a3a"/>
+      <line x1="470" y1="56" x2="470" y2="452" stroke="#1e2a3a"/>
+      <line x1="585" y1="56" x2="585" y2="452" stroke="#1e2a3a"/>
+      <line x1="700" y1="56" x2="700" y2="452" stroke="#1e2a3a"/>
+      <line x1="815" y1="56" x2="815" y2="452" stroke="#1e2a3a"/>
+      <line x1="930" y1="56" x2="930" y2="452" stroke="#1e2a3a"/>
+      <line x1="1045" y1="56" x2="1045" y2="452" stroke="#1e2a3a"/>
+      <line x1="1160" y1="56" x2="1160" y2="452" stroke="#1e2a3a"/>
+      <line x1="1275" y1="56" x2="1275" y2="452" stroke="#1e2a3a"/>
+      <line x1="1390" y1="56" x2="1390" y2="452" stroke="#1e2a3a"/>
+
+      <!-- per-lane trigger edges: lane return → review → close-out -->
+      <path class="edge" d="M550,276 V285 H650 V294" marker-end="url(#ah)"/>
+      <path class="edge" d="M700,332 V341 H850 V276" marker-end="url(#ah)"/>
+      <path class="edge" d="M670,220 V232 H960 V369 H881" marker-end="url(#ah)"/>
+      <path class="edge" d="M800,388 V398 H1100 V201 H1029" marker-end="url(#ah)"/>
+      <path class="edge" d="M930,145 H1050 V406" marker-end="url(#ah)"/>
+      <path class="edge" d="M1127,425 H1200 V164" marker-end="url(#ah)"/>
+      <path class="edge" d="M1045,89 H1275" marker-end="url(#ah)"/>
+      <path class="edge" d="M355,89 H367" marker-end="url(#ah)"/>
+
+      <!-- axis labels -->
+      <text class="tick" x="240" y="44" text-anchor="middle">fire</text>
+      <text class="tick" x="355" y="44" text-anchor="middle">T+0</text>
+      <text class="tick" x="470" y="44" text-anchor="middle">7</text>
+      <text class="tick" x="585" y="44" text-anchor="middle">14</text>
+      <text class="tick" x="700" y="44" text-anchor="middle">21</text>
+      <text class="tick" x="815" y="44" text-anchor="middle">28</text>
+      <text class="tick" x="930" y="44" text-anchor="middle">35</text>
+      <text class="tick" x="1045" y="44" text-anchor="middle">42</text>
+      <text class="tick" x="1160" y="44" text-anchor="middle">49</text>
+      <text class="tick" x="1275" y="44" text-anchor="middle">56</text>
+      <text class="tick" x="1390" y="44" text-anchor="middle">63 min</text>
+
+      <!-- row labels -->
+      <text class="rlabel" x="222" y="94" text-anchor="end">Orchestrator</text>
+      <text class="rlabel" x="222" y="150" text-anchor="end">Lane A · swe · ~35m</text>
+      <text class="rlabel" x="222" y="206" text-anchor="end">Lane B · swe · ~20m</text>
+      <text class="rlabel" x="222" y="262" text-anchor="end">Lane C · designer · ~15m</text>
+      <text class="rlabel" x="222" y="318" text-anchor="end">Reviewer C</text>
+      <text class="rlabel" x="222" y="374" text-anchor="end">Reviewer B</text>
+      <text class="rlabel" x="222" y="430" text-anchor="end">Reviewer A</text>
+
+      <!-- stage labels -->
+      <text class="elabel" x="478" y="64" text-anchor="middle">3 lanes in flight</text>
+      <text class="elabel" x="642" y="64" text-anchor="middle">2 lanes</text>
+      <text class="elabel" x="807" y="64" text-anchor="middle">1 lane</text>
+
+      <!-- orchestration bars -->
+      <g class="n svc" transform="translate(240,70)">
+        <rect width="115" height="38" rx="8"/>
+        <text class="s" x="12" y="22">fire 3 lanes</text>
+      </g>
+      <g class="n svc" transform="translate(367,70)">
+        <rect width="563" height="38" rx="8"/>
+        <text class="s" x="12" y="22">wave-wait: join + spawn reviewers on --any</text>
+      </g>
+      <g class="n svc" transform="translate(930,70)">
+        <rect width="115" height="38" rx="8"/>
+        <text class="s" x="12" y="22">verify wave</text>
+      </g>
+      <g class="n svc" transform="translate(1275,70)">
+        <rect width="115" height="38" rx="8"/>
+        <text class="s" x="12" y="22">report · DONE</text>
+      </g>
+
+      <!-- lane A -->
+      <g class="n cons" transform="translate(355,126)">
+        <rect width="575" height="38" rx="8"/>
+        <text class="s" x="12" y="22">swe · opencode run --auto</text>
+      </g>
+      <g class="n svc" transform="translate(1127,126)">
+        <rect width="148" height="38" rx="8"/>
+        <text class="s" x="12" y="22">PR + merge</text>
+      </g>
+
+      <!-- lane B -->
+      <g class="n cons" transform="translate(355,182)">
+        <rect width="329" height="38" rx="8"/>
+        <text class="s" x="12" y="22">swe · run (~20m)</text>
+      </g>
+      <g class="n svc" transform="translate(881,182)">
+        <rect width="148" height="38" rx="8"/>
+        <text class="s" x="12" y="22">PR + merge</text>
+      </g>
+
+      <!-- lane C -->
+      <g class="n cons" transform="translate(355,238)">
+        <rect width="246" height="38" rx="8"/>
+        <text class="s" x="12" y="22">designer · run (~15m)</text>
+      </g>
+      <g class="n svc" transform="translate(798,238)">
+        <rect width="148" height="38" rx="8"/>
+        <text class="s" x="12" y="22">PR + merge</text>
+      </g>
+
+      <!-- reviewers -->
+      <g class="n tool" transform="translate(601,294)">
+        <rect width="197" height="38" rx="8"/>
+        <text class="s" x="12" y="22">review (12m)</text>
+      </g>
+      <g class="n tool" transform="translate(684,350)">
+        <rect width="197" height="38" rx="8"/>
+        <text class="s" x="12" y="22">review</text>
+      </g>
+      <g class="n tool" transform="translate(930,406)">
+        <rect width="197" height="38" rx="8"/>
+        <text class="s" x="12" y="22">review</text>
+      </g>
+
+      <!-- event captions -->
+      <text class="elabel" x="240" y="500" text-anchor="start">T+0 — batch dispatch: every pane fired</text>
+      <text class="elabel" x="601" y="500" text-anchor="start">first return → reviewer C starts early (--any)</text>
+      <text class="elabel" x="930" y="500" text-anchor="start">wave complete → verify</text>
+    </svg>
+    <div class="legend">
+      <span><i style="background:#38bdf8"></i> orchestrator + lane close-out</span>
+      <span><i style="background:#4ade80"></i> lane run (mutation, in its pane)</span>
+      <span><i style="background:#94a3b8"></i> reviewer (read-only subagent)</span>
+      <span>background shade = lanes still in flight</span>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="dot" style="background:var(--c)"></span>State at the first return — what is live at once</h2>
+    <p class="hint">Snapshot of the same wave the moment lane C's return file appears (dashed edge = the advisory/async path). One orchestrator, three lanes, one reviewer already running, one mutating subagent parked.</p>
+    <svg class="graph" viewBox="0 0 1440 420" role="img" aria-label="mid-wave state graph">
+      <rect width="1440" height="420" fill="url(#dots)"/>
+
+      <!-- edges first (under nodes) -->
+      <path class="edge" d="M230,124 V170" marker-end="url(#ah)"/>
+      <text class="elabel" x="242" y="151" text-anchor="start">drives</text>
+
+      <path class="edge" d="M400,200 H470 V82 H520" marker-end="url(#ah)"/>
+      <text class="elabel" x="482" y="140" text-anchor="start">watches A</text>
+
+      <path class="edge" d="M400,222 H520" marker-end="url(#ah)"/>
+      <text class="elabel" x="460" y="214" text-anchor="middle">watches B</text>
+
+      <path class="edge" d="M400,246 H445 V342 H520" marker-end="url(#ah)"/>
+      <text class="elabel" x="457" y="296" text-anchor="start">watches C</text>
+
+      <path class="edge" d="M400,178 H420 V20 H1200 V40" marker-end="url(#ah)"/>
+      <text class="elabel" x="810" y="12" text-anchor="middle">spawns reviewer on first return</text>
+
+      <!-- nodes -->
+      <g class="n svc" transform="translate(60,40)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Orchestrator — waiting</text>
+        <text class="s" x="20" y="50">wave-wait is its only idle state</text>
+        <text class="s" x="20" y="68">never codes; tracks + joins</text>
+      </g>
+      <g class="n eng" transform="translate(60,170)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">wave-wait.ts</text>
+        <text class="s" x="20" y="50">200ms poll · N return files</text>
+        <text class="s" x="20" y="68">--any → react on first</text>
+      </g>
+
+      <g class="n cons" transform="translate(520,40)">
+        <rect width="360" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Lane A — swe</text>
+        <text class="s" x="20" y="50">pane running opencode run</text>
+        <text class="s" x="20" y="68">cwd .worktrees/&lt;plan&gt;-a</text>
+      </g>
+      <g class="n cons" transform="translate(520,170)">
+        <rect width="360" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Lane B — swe</text>
+        <text class="s" x="20" y="50">pane running opencode run</text>
+        <text class="s" x="20" y="68">cwd .worktrees/&lt;plan&gt;-b</text>
+      </g>
+      <g class="n cons" transform="translate(520,300)">
+        <rect width="360" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Lane C — designer</text>
+        <text class="s" x="20" y="50">return written · rc=0</text>
+        <text class="s" x="20" y="68">pane persists (scrollback)</text>
+      </g>
+
+      <g class="n test" transform="translate(1060,40)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Reviewer C — subagent</text>
+        <text class="s" x="20" y="50">spawned early on --any</text>
+        <text class="s" x="20" y="68">findings bind to lane C</text>
+      </g>
+      <g class="n tool" transform="translate(1060,170)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">steward — parked</text>
+        <text class="s" x="20" y="50">serial: never beside lanes</text>
+        <text class="s" x="20" y="68">hardened gate if dispatched</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><i style="background:#38bdf8"></i> orchestrator</span>
+      <span><i style="background:#a78bfa"></i> runtime tool</span>
+      <span><i style="background:#4ade80"></i> lane (mutation)</span>
+      <span><i style="background:#60a5fa"></i> reviewer (read-only)</span>
+      <span><i style="background:#94a3b8"></i> upkeep (serial)</span>
+      <span><span class="swatch"></span> drives / watches / spawns</span>
+    </div>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--c)"></span>Wall clock: max, not sum</h2>
+      <table>
+        <tr><th>What</th><th>Serial (old)</th><th>Batch (now)</th></tr>
+        <tr><td>Lane runs</td><td>15 + 20 + 35 = 70m</td><td>35m (max)</td></tr>
+        <tr><td>First review starts</td><td>after 70m</td><td>15m (lane C lands)</td></tr>
+        <tr><td>First PR open</td><td>82m</td><td>27m (C: 15 + 12)</td></tr>
+        <tr><td>Wave verified</td><td>82m+</td><td>35m (last lane)</td></tr>
+      </table>
+      <ul class="rulelist">
+        <li><b>Why serial happened:</b> the old text said “one lane at a time” and the only wait primitive watched one file — so the natural reading was start → block → start. <code>references/lane-dispatch.md:13-20</code></li>
+        <li><b>Why batch is safe:</b> completion is a durable file, not pane output — the runner writes <code>&lt;slug&gt;-return.md</code> atomically as its last step. <code>references/cli-reference.md:120-146</code></li>
+      </ul>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--e)"></span>What the orchestrator does while they run</h2>
+      <ul class="rulelist">
+        <li><b>Waits once:</b> <code>wave-wait.ts</code> polls all return files — it is the orchestrator's only idle state. <code>orchestration/SKILL.md:278-289</code></li>
+        <li><b>Reacts per lane:</b> a landed file → its reviewer spawns (background, read-only); <code>rc≠0</code> → FAST EXIT/WAIT, never review. <code>:375-388</code></li>
+        <li><b>Triages server-side:</b> jev reads the full return artifact and lane diff as <code>path</code> items — never into orchestrator context. <code>references/jev-layer.md:24-40</code></li>
+        <li><b>Never codes:</b> main-session guard — while lanes run, the orchestrator touches only <code>status/**</code> + memory. <code>orchestration/SKILL.md:83-93</code></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:#f472b6"></span>What is NOT parallel</h2>
+      <ul class="rulelist">
+        <li><b>Shared-file lanes:</b> migrations, lockfiles, CHANGELOG, submodule gitlinks — one owner, serialized through one lane. <code>references/edge-cases.md:9-12</code></li>
+        <li><b>steward:</b> the one mutating subagent (control checkout, no worktree) — one at a time, never beside a lane touching the same files. <code>orchestration/SKILL.md:338-352</code></li>
+        <li><b>Dependent waves:</b> an edge gates the next wave; wave-to-wave is the plan's outer loop, not a per-lane loop. <code>orchestration/SKILL.md:78-81</code></li>
+      </ul>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--danger)"></span>Failure while running</h2>
+      <ul class="rulelist">
+        <li><b>Wait timeout ≠ dead lane:</b> fire-and-forget dispatch has no ack — check <code>luvus pane status</code>, re-wait; only a dead pane with no return file is WAIT + re-dispatch. <code>references/lane-dispatch.md:88-96</code></li>
+        <li><b>Lane died mid-run:</b> resume the pane with <code>opencode --session</code> (state lives in the worktree). <code>orchestration/SKILL.md:315-317</code></li>
+        <li><b>Reviewer fail/timeout:</b> not green — retry, or self-review that lane against the checklist. <code>:445-446</code></li>
+        <li><b>Secrets:</b> the only halt-everything — kill that lane immediately. <code>:457-458</code></li>
+      </ul>
+    </section>
+  </div>
+
+  <section>
+    <h2><span class="dot" style="background:var(--danger)"></span>Watch items — while the wave is live</h2>
+    <div class="cards">
+      <div class="card danger">
+        <h3><b>Slow lane vs dead lane look identical</b> <span class="sev warn">observability</span></h3>
+        <p>No ack on <code>luvus pane run</code>; the return file is the only signal. Timeout handling depends on the orchestrator remembering to check pane status. <code>references/cli-reference.md:162-164</code></p>
+      </div>
+      <div class="card danger">
+        <h3><b>Provider rate limits cap real concurrency</b> <span class="sev warn">external</span></h3>
+        <p>Three <code>opencode run</code> sessions share one provider quota; the batch fires them, but upstream may queue them. Bulk saves wall clock only up to the provider's limit. <code>orchestration/SKILL.md:278-289</code></p>
+      </div>
+      <div class="card">
+        <h3><b>Panes persist by design — grid reflows only on close</b> <span class="sev soft">UI</span></h3>
+        <p>A finished lane keeps its pane and scrollback until plan DONE/FAILED; the visible grid is not a task board. <code>orchestration/SKILL.md:225-231</code></p>
+      </div>
+      <div class="card">
+        <h3><b>This exact flow is not yet proven live</b> <span class="sev soft">verify</span></h3>
+        <p>The batch rule and <code>wave-wait.ts</code> are new (uncommitted); the concurrency narrative above is the spec, verified by lint + smoke, not yet by a real three-lane wave. <code>scripts/wave-wait.ts</code></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Static snapshot — 2026-09-29 · sources: <code>config/skills/orchestration/**</code> (SKILL.md §4.2, references/lane-dispatch.md, references/cli-reference.md, references/jev-layer.md, references/edge-cases.md, scripts/wave-wait.ts).
+    Durations are illustrative; the parallel-window claim (max, not sum) follows from batch dispatch + a single multi-file join.
+  </footer>
+</div>
+</body>
+</html>
