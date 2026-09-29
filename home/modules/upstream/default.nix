@@ -142,6 +142,23 @@
       warn "bun missing — skipping jev-mcp"
     fi
 
+    # cf: cloudflare/cf — Cloudflare's agent-oriented unified CLI (open beta
+    # 2026-09-28; 3k+ API ops, JSON by default, `cf cli search`, `cf tools`
+    # MCP dump). Not in nixpkgs (checked 2026-09-29: only the old
+    # `cloudflare-cli` 5.x exists) — upstream install per policy. Bun global
+    # like the other fast-moving tools; re-running installs latest upstream
+    # (pin: cf@X.Y.Z). Needs system node >=22 (bin shim is `#!/usr/bin/env node`).
+    if [ -x "$HOME/.bun/bin/bun" ]; then
+      if is_upstream cf; then
+        info "updating cf..."
+      else
+        info "installing cf (cloudflare/cf)..."
+      fi
+      "$HOME/.bun/bin/bun" install -g --trust cf@latest 2>&1 || warn "cf install/update failed (continuing)"
+    else
+      warn "bun missing — skipping cf"
+    fi
+
     # never block switch
     true
   '';

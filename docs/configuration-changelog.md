@@ -10,6 +10,18 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 - New `scripts/design-systems-sync.sh` (`--sync --add --report --check --index --list`); `--check` wired into `scripts/validate.sh`.
 - `designer` skill: +9-line route section pointing at INDEX.md (<=2 packages per consult).
 
+## 2026-09-29 — Install Cloudflare `cf` CLI via upstream activation
+
+Cloudflare's new agent-oriented CLI (`cloudflare/cf`, open beta 1.0.0-beta.5, announced 2026-09-28) is not in nixpkgs, so it follows the fast-moving-tool policy (upstream installers, not nixpkgs): bun global install in the `upstreamInstall` activation, re-run on every hm-switch for latest upstream. Verified live before wiring: `cf --help`, `cf cli search "deploy a worker"`, `cf tools` (2936 MCP tool definitions), `bun install -g --trust cf@latest` → `~/.bun/bin/cf` 1.0.0-beta.5, bins `cf` + `cloudflare`, running on system node 24.21.0.
+
+- `home/modules/upstream/default.nix` — new `cf` block after `jev-mcp`: `bun install -g --trust cf@latest`, `is_upstream` guard, non-blocking `warn`.
+- `home/modules/manual/default.nix` — activation comment list gains `cf`.
+- `config/opencode/CONFIGURATION.md` — new current-state section (what it is, install path, node >=22 runtime, community-check snapshot, no OpenCode integration yet).
+
+Context: nixpkgs has no `cf` (checked `nix eval nixpkgs#cf` + `nix search nixpkgs 'cloudflare'` 2026-09-29 — only the old `cloudflare-cli` 5.1.7) and lags fast-moving tools, so the existing upstream pattern applies. Community check: `github.com/cloudflare/cf` 209 stars, last push 2026-09-28 (passes 100-star / 3-month bar; repo 1 week old, 1 fork — young beta).
+
+Gates: validate.sh --ci exit 0 (38 passed / 0 failed / 4 skipped); nix fmt clean; hm-switch exit 0 (generation 170); cf 1.0.0-beta.5 runs (--version + cli search). No commit, no push.
+
 ## 2026-09-28 — `architecture-viz` vertical-fit check in overlap checker
 
 The overlap checker only tested horizontal fit, so a node whose last text line sat flush against (or past) the bottom of its own box passed — the vertically-squashed case the 2026-09-28 hardening pass didn't cover. A vertical-fit rule closes it: node text landing within 12px of a node box's top or bottom edge is flagged. The reference file and the skill itself now carry the baseline/height recipe that produces compliant boxes, plus the explicit "boxes sized from the top only" anti-pattern, and SKILL.md routes detail graphs (the denser, tighter case) at the same sizing discipline.
