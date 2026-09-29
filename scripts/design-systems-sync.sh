@@ -208,12 +208,40 @@ render_index() {
 
 mode_index() { render_index "$CORPUS_DIR"; info "index: INDEX.md + index.json written"; }
 
+mode_report() {
+  local up; up="$(fetch_upstream)"
+  local sel_ids local_up_ids id up_sha local_sha
+  sel_ids="$(jq -r '.packages[]' "$SELECTION" | sort)"
+  local_up_ids="$(ls "$up/$UPSTREAM_PATH" 2>/dev/null | sort)"
+
+  while IFS= read -r id; do
+    if ! printf '%s\n' "$local_up_ids" | grep -qx "$id"; then
+      printf '%s\tmissing-upstream\n' "$id"; continue
+    fi
+    local staged; staged="$(mktemp -d)"
+    strip_pkg "$up/$UPSTREAM_PATH/$id" "$staged/pkg"
+    up_sha="$(pkg_sha256 "$staged/pkg")"; rm -rf "$staged"
+    local_sha="$(pkg_sha256 "$PKG_DIR/$id")"
+    if [ "$local_sha" != "$(jq -r --arg id "$id" '.packages[$id].sha256' "$PROVENANCE")" ]; then
+      printf '%s\tlocal-mods\n' "$id"
+    elif [ "$local_sha" != "$up_sha" ]; then
+      printf '%s\tbehind\n' "$id"
+    else
+      printf '%s\tsame\n' "$id"
+    fi
+  done <<< "$sel_ids"
+
+  while IFS= read -r id; do
+    printf '%s\n' "$sel_ids" | grep -qx "$id" || printf '%s\tnew-upstream\n' "$id"
+  done <<< "$local_up_ids"
+}
+
 case "${1:-}" in
   --sync)   mode_sync ;;
   --add)    shift; [ $# -ge 1 ] || usage; mode_add "$@" ;;
   --list)   mode_list ;;
   --check)  mode_check ;;
   --index)  mode_index ;;
-  --report) die "not implemented yet: $1" ;;
+  --report) mode_report ;;
   *) usage ;;
 esac

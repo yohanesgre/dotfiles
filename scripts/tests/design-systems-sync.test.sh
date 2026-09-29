@@ -62,7 +62,7 @@ base="$(new_fixture)"
 export DS_CORPUS_DIR="$base/corpus" DS_UPSTREAM_DIR="$base/upstream"
 bash "$SCRIPT" --sync >/dev/null
 # --index lands in Task 4; here the corpus legitimately lacks INDEX -> expect the index rule
-{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "index: INDEX.md missing" \
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep "index: INDEX.md missing" >/dev/null \
   && ok "t_check_index_missing" || fail "index-missing not reported"
 
 mkdir -p "$base/corpus/packages/orphan"
@@ -70,25 +70,25 @@ bash "$SCRIPT" --check >/dev/null 2>&1 && fail "orphan not caught" || true
 rm -rf "$base/corpus/packages/orphan"
 
 printf 'x\n' > "$base/corpus/packages/alpha/DESIGN-uk.md"
-{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "banned" && ok "t_check_banned" || fail "banned file not caught"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep "banned" >/dev/null && ok "t_check_banned" || fail "banned file not caught"
 rm "$base/corpus/packages/alpha/DESIGN-uk.md"
 
 rm "$base/corpus/packages/alpha/tokens.css"
-{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "required" && ok "t_check_required" || fail "missing required not caught"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep "required" >/dev/null && ok "t_check_required" || fail "missing required not caught"
 DS_UPSTREAM_DIR="$base/upstream" bash "$SCRIPT" --sync >/dev/null
 
 printf 'drift\n' >> "$base/corpus/packages/alpha/DESIGN.md"
-{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "provenance" && ok "t_check_provenance" || fail "drift not caught"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep "provenance" >/dev/null && ok "t_check_provenance" || fail "drift not caught"
 bash "$SCRIPT" --sync >/dev/null
 
 jq '.sizeCapMB = 0.0001' "$base/corpus/selection.json" > "$base/corpus/s.tmp" \
   && mv "$base/corpus/s.tmp" "$base/corpus/selection.json"
-{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "cap" && ok "t_check_cap" || fail "cap not caught"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep "cap" >/dev/null && ok "t_check_cap" || fail "cap not caught"
 jq '.sizeCapMB = 12' "$base/corpus/selection.json" > "$base/corpus/s.tmp" \
   && mv "$base/corpus/s.tmp" "$base/corpus/selection.json"
 
 printf 'stale\n' >> "$base/corpus/INDEX.md"
-{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "index" && ok "t_check_index_stale" || fail "stale index not caught"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep "index" >/dev/null && ok "t_check_index_stale" || fail "stale index not caught"
 unset DS_CORPUS_DIR DS_UPSTREAM_DIR
 rm -rf "$base"
 
@@ -105,6 +105,25 @@ diff -q "$base/corpus/INDEX.md" "$base/INDEX.1" >/dev/null \
 words="$(wc -w < "$base/corpus/INDEX.md")"
 [ "$words" -le 1200 ] && ok "t_index_wordcap ($words words)" || fail "INDEX over cap: $words"
 bash "$SCRIPT" --check >/dev/null && ok "t_check_green" || fail "check green run failed"
+unset DS_CORPUS_DIR DS_UPSTREAM_DIR
+rm -rf "$base"
+
+# --- t_report_classifies ---
+base="$(new_fixture)"
+export DS_CORPUS_DIR="$base/corpus" DS_UPSTREAM_DIR="$base/upstream"
+bash "$SCRIPT" --sync >/dev/null
+bash "$SCRIPT" --report | grep "^alpha	same" >/dev/null && ok "t_report_same" || fail "same not reported"
+printf 'changed upstream\n' >> "$base/upstream/design-systems/beta/DESIGN.md"
+bash "$SCRIPT" --report | grep "^beta	behind" >/dev/null && ok "t_report_behind" || fail "behind not reported"
+printf 'local edit\n' >> "$base/corpus/packages/alpha/DESIGN.md"
+bash "$SCRIPT" --report | grep "^alpha	local-mods" >/dev/null && ok "t_report_localmods" || fail "local-mods not reported"
+mkdir -p "$base/upstream/design-systems/gamma"
+printf '# G\n' > "$base/upstream/design-systems/gamma/DESIGN.md"
+printf '{}\n' > "$base/upstream/design-systems/gamma/manifest.json"
+printf ':root{}\n' > "$base/upstream/design-systems/gamma/tokens.css"
+bash "$SCRIPT" --report | grep "^gamma	new-upstream" >/dev/null && ok "t_report_new" || fail "new-upstream not reported"
+rm -rf "$base/upstream/design-systems/alpha"
+bash "$SCRIPT" --report | grep "^alpha	missing-upstream" >/dev/null && ok "t_report_missing" || fail "missing-upstream not reported"
 unset DS_CORPUS_DIR DS_UPSTREAM_DIR
 rm -rf "$base"
 
