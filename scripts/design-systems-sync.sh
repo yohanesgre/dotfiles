@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Vendor + gate the designer reference corpus.
-# Modes: --sync --add --report --check --index --list
+# Modes: --sync --add --report --check --index --list --rehash
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -12,7 +12,7 @@ UPSTREAM_SLUG="nexu-io/open-design"
 UPSTREAM_PATH="design-systems"
 CLEANUP_DIR=""
 
-usage() { echo "usage: $0 --sync|--add <id>...|--report|--check|--index|--list" >&2; exit 2; }
+usage() { echo "usage: $0 --sync|--add <id>...|--report|--check|--index|--list|--rehash" >&2; exit 2; }
 die()   { echo "FAIL: $*" >&2; exit 1; }
 info()  { echo "$*"; }
 cleanup() { [ -n "$CLEANUP_DIR" ] && rm -rf "$CLEANUP_DIR" || true; }
@@ -47,8 +47,10 @@ strip_pkg() {
 # pkg_sha256 <dir>: deterministic content hash over kept files
 pkg_sha256() {
   local dir="$1"
-  ( cd "$dir" && find . -type f -print0 | sort -z | xargs -0 sha256sum ) \
-    | sha256sum | cut -d' ' -f1
+  # pin LC_ALL=C: sort -z collation is locale-dependent, so an unpinned hash
+  # differs between dev (en_US.UTF-8) and CI (C) — see the 2026-09-29 CI failure
+  ( cd "$dir" && export LC_ALL=C && find . -type f -print0 | sort -z | xargs -0 sha256sum ) \
+    | LC_ALL=C sha256sum | cut -d' ' -f1
 }
 pkg_files() { find "$1" -type f | wc -l | tr -d ' '; }
 pkg_bytes() { find "$1" -type f -printf '%s\n' | awk '{s+=$1} END{print s+0}'; }
@@ -94,6 +96,24 @@ mode_add() {
     info "added: $id"
   done
   mode_sync
+}
+
+mode_rehash() {
+  [ -f "$PROVENANCE" ] || die "provenance missing: $PROVENANCE"
+  [ -d "$PKG_DIR" ] || die "packages dir missing: $PKG_DIR"
+  local tmp; tmp="$(mktemp)"
+  cp "$PROVENANCE" "$tmp"
+  local pj id n=0
+  for pj in "$PKG_DIR"/*/; do
+    [ -d "$pj" ] || die "package dir missing: $pj"
+    id="$(basename "$pj")"
+    jq --arg id "$id" --arg s "$(pkg_sha256 "$pj")" \
+       '.packages[$id].sha256 = $s' "$tmp" > "$tmp.2"
+    mv "$tmp.2" "$tmp"
+    n=$((n + 1))
+  done
+  mv "$tmp" "$PROVENANCE"
+  info "rehash: $n packages updated"
 }
 
 mode_list() {
@@ -242,6 +262,7 @@ case "${1:-}" in
   --list)   mode_list ;;
   --check)  mode_check ;;
   --index)  mode_index ;;
+  --rehash) mode_rehash ;;
   --report) mode_report ;;
   *) usage ;;
 esac

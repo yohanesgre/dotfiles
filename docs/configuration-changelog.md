@@ -26,6 +26,7 @@ The dispatch order read literally serial — `lane-dispatch.md` said "one lane a
 - Vendored 113 OpenDesign design-system packages into `config/skills/designer/references/design-systems/` (7.49 MB stripped; selection.json + PROVENANCE pin + generated INDEX/index.json).
 - New `scripts/design-systems-sync.sh` (`--sync --add --report --check --index --list`); `--check` wired into `scripts/validate.sh`.
 - `designer` skill: +9-line route section pointing at INDEX.md (<=2 packages per consult).
+- Corpus gate fix (same day): `pkg_sha256` pins `LC_ALL=C` (collation-dependent aggregate hash passed in dev en_US.UTF-8 but failed CI under C — 113/113 `sha mismatch`); new `--rehash` regenerates PROVENANCE deterministically (guards against missing/empty package dirs, idempotent); all 113 hashes refreshed. CI-equivalent `LC_ALL=C validate.sh --ci` → 379 passed / 0 failed.
 
 ## 2026-09-29 — Fix `brainstorm-studio` frame-template placeholder collision
 
