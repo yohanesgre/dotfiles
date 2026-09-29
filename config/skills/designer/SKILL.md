@@ -36,6 +36,16 @@ This role owns the process and the deliverable. Load the specialist skill(s) for
 
 One or two skills per task — whichever the request actually needs. Carry their decisions into the artifact; the implementer should not need to load them.
 
+## Design reference library
+
+`references/design-systems/INDEX.md` — 113 brand/system packages (design prose + tokens).
+Consult when choosing a direction or tokens.
+
+1. Read INDEX.md first; select at most 2 packages by category/fit.
+2. Read only their `DESIGN.md`, `tokens.css`, `design-tokens.json` — never bulk-read the library.
+3. Derive the project's tokens into the artifact; never paste a package wholesale.
+   Packages are aesthetic inspirations; attribution lives in each `manifest.json`.
+
 ## Produce
 
 1. **Read the authority** (above): artifact locations, existing system, gate command.
