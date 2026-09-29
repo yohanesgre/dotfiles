@@ -8,6 +8,18 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 Bounded implementation-code changes now dispatch `swe` by default in every project — via the `subagent` tool or the project's orchestration lane. The primary lands docs, tracking, and non-behavior upkeep directly; inline exceptions are category-scoped (comments, formatting, single-literal fixes). Dispatch requires a settled brief (decision ref, exact files, acceptance criteria, test commands) because `swe` denies `question`/`subagent` and cannot clarify mid-task. A project's `AGENTS.md` may override the rule. Files: `config/opencode/{AGENTS.md,CONFIGURATION.md}`.
 
+## 2026-09-29 — orchestration: co-wave lanes run as a batch (concurrency fix)
+
+The dispatch order read literally serial — `lane-dispatch.md` said "one lane at a time", so co-wave lanes the graph declares independent were started and waited one by one (1–2 lanes live at once). Now steps 1–3 run once per wave, step 4 fires EVERY lane before any wait (`luvus pane run` is non-blocking), worktree setups run concurrently, and the wait joins the wave.
+
+- `config/skills/orchestration/references/lane-dispatch.md` — order rewritten: batch dispatch; serialize only shared-file collisions + the `steward` subagent; a wait timeout is not a dead lane (`luvus pane status` first).
+- `config/skills/orchestration/SKILL.md` §4.1/§4.2 — worktrees created before any per-lane setup, setups concurrent; new "Wave dispatch is a BATCH" rule (dispatch-one/wait-one is a deviation).
+- `config/skills/orchestration/references/cli-reference.md` — wait section documents both forms.
+- New `config/skills/orchestration/scripts/wave-wait.ts` — joins N return files (`--any` returns on the first lane so its reviewer can spawn early; default timeout 600000 ms; exit 0/1/2 like `lane-wait.ts`).
+- `config/skills/orchestration/references/jev-layer.md` — dispatch-time checklist gains `batch-dispatched` (all wave lanes fired before any wait).
+- Post-review hardening (same day, `reviewer` approve-with-nits): the canonical lane runner clears stale return files before starting (a present file always belongs to the current run); the concurrent per-worktree setup form is pinned; `wave-wait.ts` guards unreadable files and parses `--timeout` strictly; the wait docs note the shell-timeout ceiling.
+- Viz pages: `docs/architecture-orchestration.html` (dependency map) and `docs/orchestration-wave-running.html` (parallel-wave runtime view) — both checker-clean and render-verified.
+
 ## 2026-09-29 — designer design-systems corpus
 
 - Vendored 113 OpenDesign design-system packages into `config/skills/designer/references/design-systems/` (7.49 MB stripped; selection.json + PROVENANCE pin + generated INDEX/index.json).

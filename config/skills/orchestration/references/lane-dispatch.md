@@ -10,8 +10,14 @@ runs foreground but MUST fan out (foreground `explore` children) for ≥2
 independent lookups; `reviewer` may fan out background/async (one per lane,
 read-only → collision-free).
 
-Order matters — run top to bottom, one lane at a time (review is the one
-async fan-out). Any FAST EXIT stops that lane only; others continue.
+Order matters within a lane; across a wave, lanes run concurrently. Steps
+1–3 run once per wave (guards, worktrees, layout); step 4 fires EVERY lane
+of the wave before the join at the end of step 4 (one `wave-wait.ts` call
+over every return file) — `luvus pane run` is
+non-blocking (it only submits text + Enter), so dispatch is one batch, not
+a per-lane start/wait loop. Serialize only what the graph marks unsafe to
+overlap (shared files) or mandates serial (the `steward` subagent, one at a
+time). Any FAST EXIT stops that lane only; others continue.
 
 All CLI syntax is pinned in `references/cli-reference.md`. Use ONLY those
 signatures; never run `--help` (luvus `help all` is the only discovery
@@ -31,9 +37,12 @@ command, and it is not part of the lane loop).
    `<worktree>` = `.worktrees/<plan>` for the simple route (one lane) or
    `.worktrees/<plan>-<lane>` for complex. `<plan>` = work-plans folder
    name; fails → FAST EXIT naming cause,
-   never proceed unisolated. Then per-lane setup inside it (run the
-   project's declared install/setup; copy secrets only if a smoke needs
-   them — never commit them).
+   never proceed unisolated. Once EVERY worktree exists, per-lane setup
+   runs concurrently across worktrees — pin the form, don't narrate it:
+   `for w in .worktrees/<plan>-*; do ( cd "$w" && <setup> ) & done; wait`
+   (one background job per worktree). Run the project's declared
+   install/setup; copy secrets only if a smoke needs them — never commit
+   them.
    2b. Clean check INSIDE the worktree: `git status --porcelain` — clean
    expected; dirty from an unknown source → WAIT + report.
 3. Layout (once per wave, after all worktrees exist): build the master+grid
@@ -62,7 +71,12 @@ command, and it is not part of the lane loop).
    `<worktree>/../<slug>-runner.sh`, then dispatch with
    `luvus pane run <pane> bash <abs-runner>` so the lane runs foreground
    in that pane — the user watches live progress there; never detach or
-   background a lane. At the end the runner writes the report to
+   background a lane. Fire the whole wave back to back (one pass over the
+   wave's lanes) BEFORE waiting on anything: `pane run` returns
+   immediately, so every lane starts within seconds (each runner clears its
+   own stale `<slug>-return.md` before starting, so a present file always
+   belongs to the current run). At the end the runner
+   writes the report to
    `<slug>-return.md.tmp` and atomically `mv`s it onto
    `<slug>-return.md` as the LAST step; the pane then returns to its own
    interactive shell — the pane persists so scrollback stays and the pane is
@@ -70,10 +84,15 @@ command, and it is not part of the lane loop).
    mid-loop. The return file — not scrollback — is the record; its appearance
    means the runner finished — `rc=0` is real completion, `rc≠0` → FAST
    EXIT/WAIT, never green. Wait
-   with
-   `bun ~/.agents/skills/orchestration/scripts/lane-wait.ts <return-file>
-   [timeout-ms]` (file-sentinel watch + Effect timeout — never fixed
-   `sleep`, never `luvus wait output`).
+   for the wave with
+   `bun ~/.agents/skills/orchestration/scripts/wave-wait.ts [--any]
+   [--timeout <ms>] <return-file>...` (`--any` returns as soon as one lane
+   lands, so its reviewer can spawn early — re-invoke for the rest); the
+   single-lane form is `lane-wait.ts <return-file> [timeout-ms]`
+   (file-sentinel watch + Effect timeout — never fixed `sleep`, never
+   `luvus wait output`). A wait timeout is not a dead lane: check
+   `luvus pane status <pane-id>` and re-wait; only a dead pane with no
+   return file is WAIT + re-dispatch.
    Dispatch invokes exactly
    `opencode run --auto --model <provider/model#variant> --agent <role>
    "<brief>"` (message is positional; there is no `--prompt`). Read

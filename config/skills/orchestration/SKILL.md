@@ -191,9 +191,12 @@ When `jev-mcp` is reachable: a cheap typed pre-filter at the gate, background di
    simple → one plan worktree `git worktree add -b <branch>
    .worktrees/<plan> origin/main`; complex → one per lane
    `.worktrees/<plan>-<lane>` (`<plan>` = work-plans folder name; suffix
-   on collision, never reuse). Set up inside each: run the project's
-   declared install/setup, copy secrets only if a smoke needs them (never
-   commit them), and run the project's baseline check to confirm clean.
+   on collision, never reuse). Create every worktree BEFORE any per-lane
+   setup, then run the setups concurrently (pinned form in
+   `references/lane-dispatch.md` step 2) so lane starts do not serialize
+   behind the slowest install: inside each, run the project's declared
+   install/setup, copy secrets only if a smoke needs them (never commit
+   them), and run the project's baseline check to confirm clean.
    `status/<plan>/` stays in the control checkout (tracking plane) — code
    work never touches control-checkout files after this point.
 3. `git worktree add` failing (branch/path collision) → FAST EXIT naming
@@ -205,7 +208,8 @@ When `jev-mcp` is reachable: a cheap typed pre-filter at the gate, background di
 ### 4.2 Dispatch — the prompt IS the delegated subgraph
 
 Follow `references/lane-dispatch.md` for the exact order (guards →
-worktrees → master+grid layout → agent → prompt → read return file). Lane
+worktrees → master+grid layout → batch-dispatch the wave → join the
+return files). Lane
 roles by DISCOVERY, never hardcoded IDs: `swe` (implement/fix), `designer`
 (design artifacts), `steward` (non-behavior upkeep; behavior change →
 WAIT + re-dispatch). luvus agent kinds name backends, not roles — the role travels
@@ -268,11 +272,21 @@ orchestrator's close point, §5). Completion is still a durable file, not
 pane scrollback:
 the runner atomically writes the lane report/return to `<slug>-return.md`
 LAST (with an `rc=` line — `rc=0` is real completion, `rc≠0` → FAST
-EXIT/WAIT), then exits back to the pane's own shell. Wait with
-`bun ~/.agents/skills/orchestration/scripts/lane-wait.ts <return-file> [timeout-ms]`
-(file-sentinel watch + Effect timeout — never fixed `sleep`, never
-`luvus wait output`); the runner-file vehicle is prescribed in
-`references/lane-dispatch.md` step 4.
+EXIT/WAIT), then exits back to the pane's own shell. The runner-file
+vehicle is prescribed in `references/lane-dispatch.md` step 4.
+
+Wave dispatch is a BATCH, not a loop: fire every lane of the wave
+(`luvus pane run` is non-blocking — text + Enter) before waiting on any
+return file, then join with
+`wave-wait.ts [--any] [--timeout <ms>] <return-file>...` (`--any` returns
+on the first lane that lands, so its reviewer can spawn early;
+`lane-wait.ts` stays the single-lane form). Each runner clears its stale
+return file before starting, so a present file always means the current
+run. Serialize only lanes the graph
+marks unsafe to overlap (shared files) and the `steward` subagent (hardened
+gate, always one at a time); co-wave lanes declared independent run
+concurrently — dispatch-one/wait-one is a deviation. A wait timeout is not
+a dead lane: check `luvus pane status` and re-wait before any re-dispatch.
 
 ### 4.3 Return — the reply IS the implemented graph
 

@@ -17,8 +17,9 @@ primary session is allowed.
 - **Background wave triage (dispatch + return).** Before dispatching a wave
   (background or issued together), one `jev_ask` over the proposed
   lanes/children with the Parallel Execution Checklist as checks (disjoint
-  files, independent outputs, self-contained prompts; non-interactive for
-  script lanes). On return, after the return file appears (`lane-wait.ts`
+  files, independent outputs, self-contained prompts, batch-dispatched —
+  every wave lane fired before any wait, no per-lane start/wait loop;
+  non-interactive for script lanes). On return, after the return file appears (`lane-wait.ts`
   prints only its last ~4000 chars), `jev_triage` the full artifact —
   `report.md`, log files, `path` items read server-side, never entering
   orchestrator context — with checks `failed` / `needs_action` before opening

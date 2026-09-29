@@ -55,8 +55,8 @@ luvus pane read <pane-id>                                    # recent output; EM
 ```
 
 `sleep` is NOT a completion signal. The lane signal is the return file, waited
-on with `lane-wait.ts` (below); `luvus wait output` is only for output text you
-must observe mid-lane.
+on with `lane-wait.ts` (one lane) or `wave-wait.ts` (a wave) — below; `luvus
+wait output` is only for output text you must observe mid-lane.
 
 Native agent kinds (only if the user explicitly asks for a non-opencode agent;
 orchestration lanes use `pane run`, never these):
@@ -132,6 +132,9 @@ TMP="$RETURN.tmp"
 
 cd "$WORKTREE" || { echo "FAST EXIT: no worktree $WORKTREE"; exit 1; }
 
+# clear any prior run's artifact: a return file always belongs to THIS run
+rm -f "$RETURN" "$TMP" "$TMP.out"
+
 # foreground, live output visible in the pane AND captured for the record
 opencode run --auto --model "$MODEL" --agent "$ROLE" "$(cat "$BRIEF")" 2>&1 | tee "$TMP"
 rc=${PIPESTATUS[0]}
@@ -146,8 +149,17 @@ No trailing `exec $SHELL`: `luvus pane run` submits the command line to the
 pane's existing interactive shell, so the pane returns to its prompt (and keeps
 its scrollback) when the runner exits.
 
-Wait for completion from the orchestrator side:
+Wait for completion from the orchestrator side (single lane vs whole wave —
+wave dispatch is a batch):
 
 ```bash
-bun ~/.agents/skills/orchestration/scripts/lane-wait.ts <return-file> [timeout-ms]
+bun ~/.agents/skills/orchestration/scripts/lane-wait.ts <return-file> [timeout-ms]                 # one lane
+bun ~/.agents/skills/orchestration/scripts/wave-wait.ts [--any] [--timeout <ms>] <return-file>...  # a wave
 ```
+
+`wave-wait.ts` default timeout 600000 ms; `--any` returns on the first
+return file that appears (re-invoke with the remaining files so each lane's
+reviewer can spawn early). A wait timeout is not a dead lane — check
+`luvus pane status <pane-id>` and re-wait. Invoke with the shell timeout
+raised (`timeout: 0` or ≥ `--timeout`): the default exceeds a typical
+harness shell timeout, and a killed wait is not a lane failure.
