@@ -50,13 +50,41 @@ function refreshFlag(refresh) {
     return refresh ? " --refresh" : ""
 }
 
-// Command for a typed value. No part of the text appears in this string.
-function typedCommand(binary, text, refresh) {
-    return binary + " lookup --b64 " + utf8ToBase64(text) + refreshFlag(refresh)
+// The widget's own fixed picker list (LanguagePicker.qml), lower-cased, plus
+// the literal `auto`. A language value is interpolated into the command only
+// when it is one of these: never a value read from an envelope, and never
+// anything the model produced. This is the widget half of the language defence;
+// the CLI validates every flag independently (defence in depth).
+var LANGUAGES = ["auto", "en", "id", "nl", "jv", "su", "ar", "es", "fr", "de", "ja", "zh"]
+
+// `--flag code`, or "" when the value is not on the picker list. An omitted
+// flag leaves the CLI on its config default.
+function langFlag(flag, code) {
+    var c = String(code === undefined || code === null ? "" : code).toLowerCase()
+    return LANGUAGES.indexOf(c) >= 0 ? (" " + flag + " " + c) : ""
+}
+
+// Command for a typed value. No part of the text appears in this string; the
+// only interpolated values are base64, `--refresh`, and allow-listed language
+// codes.
+function typedCommand(binary, text, options) {
+    var o = options || {}
+    return binary + " lookup --b64 " + utf8ToBase64(text)
+        + langFlag("--source", o.source)
+        + langFlag("--target", o.target)
+        + langFlag("--explain-in", o.explainIn)
+        + refreshFlag(o.refresh)
 }
 
 // Command for the current selection: the CLI reads the clipboard itself, so the
 // selection never reaches argv (world-readable in ps) and never reaches a shell.
-function selectionCommand(binary, refresh) {
-    return binary + " lookup --selection" + refreshFlag(refresh)
+// Kept for the CLI capability (`gloss lookup --selection` from a shell) — the
+// widget no longer calls it: the card opens empty and reads nothing.
+function selectionCommand(binary, options) {
+    var o = options || {}
+    return binary + " lookup --selection"
+        + langFlag("--source", o.source)
+        + langFlag("--target", o.target)
+        + langFlag("--explain-in", o.explainIn)
+        + refreshFlag(o.refresh)
 }

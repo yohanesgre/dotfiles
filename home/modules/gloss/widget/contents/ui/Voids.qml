@@ -33,11 +33,14 @@ ColumnLayout {
 
     spacing: 0
 
-    // ---- empty: one grey line naming both doors, no illustration --------
+    // ---- empty: one grey line naming the one door, no illustration ------
+    // The widget never reads the clipboard, so the hint must not promise a
+    // lookup of a selection (user decision: "open empty, never read the
+    // clipboard").
     Text {
         Layout.fillWidth: true
         visible: voids.phase === "empty"
-        text: i18n("⏎ look up  ·  or select text anywhere and press Meta+Ctrl+G")
+        text: i18n("⏎ look up  ·  type or paste, then press Enter  ·  Meta+Ctrl+G opens this card")
         font.pixelSize: T.chipSize
         color: Kirigami.Theme.disabledTextColor
         wrapMode: Text.Wrap

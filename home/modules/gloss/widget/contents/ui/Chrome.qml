@@ -59,7 +59,6 @@ RowLayout {
 
         text: chrome.sourceLabel
         font.pixelSize: T.chipSize
-        font.family: "monospace"
         font.bold: !chrome.autoSource
         padding: T.space4
         opacity: chrome.detectedSource ? 0.75 : 1
@@ -125,7 +124,6 @@ RowLayout {
 
         text: chrome.target.toUpperCase()
         font.pixelSize: T.chipSize
-        font.family: "monospace"
         padding: T.space4
         onClicked: picker.openFor("target")
 
@@ -148,8 +146,12 @@ RowLayout {
     Item { Layout.fillWidth: true }
 
     // Refresh needs a rendered result; without one it is absent, not disabled.
+    // `visible` mirrors `active`: a Loader with active:false builds nothing, but
+    // it is still an item in the RowLayout, so its row spacing would leave a
+    // phantom gap. QtQuick Layouts skip invisible items.
     Loader {
         active: chrome.actionsVisible
+        visible: chrome.actionsVisible
         sourceComponent: PlasmaComponents.ToolButton {
             id: refreshButton
             icon.name: "view-refresh"
@@ -168,6 +170,7 @@ RowLayout {
     // Copy needs a result with a non-empty translation.
     Loader {
         active: chrome.actionsVisible
+        visible: chrome.actionsVisible
         sourceComponent: PlasmaComponents.ToolButton {
             id: copyButton
             icon.name: "edit-copy"
@@ -187,6 +190,7 @@ RowLayout {
     // flow. It needs a result that came from the local cache.
     Loader {
         active: chrome.actionsVisible && chrome.cached
+        visible: chrome.actionsVisible && chrome.cached
         sourceComponent: Rectangle {
             id: cachedPill
             radius: T.radiusPill
@@ -203,7 +207,6 @@ RowLayout {
                 anchors.centerIn: parent
                 text: i18n("CACHED")
                 font.pixelSize: T.pillSize
-                font.family: "monospace"
                 color: Kirigami.Theme.disabledTextColor
             }
 
