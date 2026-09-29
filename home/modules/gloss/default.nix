@@ -60,17 +60,22 @@ in
     PY
     )
           if [ -n "$_key" ]; then
-            _tmp=$(mktemp)
-            trap 'rm -f "$_tmp"' EXIT
-            printf '%s\n' "$_key" > "$_tmp"
+            # Temp file lives in the destination dir and is uniquely named: no
+            # global EXIT trap (a later activation block's trap would overwrite
+            # it, and the shared shell namespace can unset the variable it
+            # references), and mktemp is 0600 so the key is never readable
+            # mid-flight — a leftover on the failure path stays 0600 in the
+            # user's own config dir instead of world-traversable /tmp.
+            $DRY_RUN_CMD mkdir -p "$HOME/.config/gloss"
+            _gloss_tmp="$(mktemp "$HOME/.config/gloss/.key.XXXXXX")"
+            printf '%s\n' "$_key" > "$_gloss_tmp"
             # Repair a world-readable key file even when its content matches.
             $DRY_RUN_CMD chmod 600 "$HOME/.config/gloss/key" 2>/dev/null || true
-            if ! cmp -s "$_tmp" "$HOME/.config/gloss/key" 2>/dev/null; then
-              $DRY_RUN_CMD mkdir -p "$HOME/.config/gloss"
-              $DRY_RUN_CMD install -m 600 "$_tmp" "$HOME/.config/gloss/key"
+            if ! cmp -s "$_gloss_tmp" "$HOME/.config/gloss/key" 2>/dev/null; then
+              $DRY_RUN_CMD install -m 600 "$_gloss_tmp" "$HOME/.config/gloss/key"
               echo "gloss: wrote key file ~/.config/gloss/key (0600)"
             fi
-            rm -f "$_tmp"
+            rm -f "$_gloss_tmp"
           else
             echo "gloss: GEMINI_API_KEY empty in $_toml — key file untouched" >&2
           fi
