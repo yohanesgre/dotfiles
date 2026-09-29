@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "upstream": "nexu-io/open-design",
+  "pathPrefix": "design-systems",
+  "sizeCapMB": 12,
+  "keep": [
+    "DESIGN.md",
+    "manifest.json",
+    "tokens.css",
+    "components.html",
+    "USAGE.md",
+    "components.manifest.json",
+    "design-tokens.json",
+    "tailwind-v4.css"
+  ],
+  "banned": [
+    "DESIGN-*.md",
+    "preview/",
+    "source/",
+    "assets/",
+    "fonts/",
+    "*.png",
+    "*.jpg",
+    "*.webp",
+    "*.woff",
+    "*.woff2",
+    "*.ttf",
+    "*.otf"
+  ],
+  "packages": [
+    "airbnb", "airtable", "ant", "apple", "application", "arc", "atelier-zero",
+    "bento", "brutalism", "cal", "canva", "cisco", "claude", "clay", "clean",
+    "clickhouse", "cloudflare-kumo", "cohere", "composio", "contemporary",
+    "corporate", "cursor", "dashboard", "default", "discord", "dithered",
+    "duolingo", "elegant", "editorial", "elevenlabs", "enterprise", "expo",
+    "figma", "flat", "framer", "github", "glassmorphism", "hashicorp", "hud",
+    "huggingface", "ibm", "intercom", "kami", "linear-app", "loom", "lovable",
+    "luxury", "material", "meta", "minimal", "minimax", "mintlify",
+    "mission-control", "miro", "mistral-ai", "modern", "mono", "mongodb",
+    "neobrutalism", "neon", "nike", "notion", "nvidia", "ollama", "openai",
+    "opencode-ai", "pacman", "paper", "perplexity", "pinterest", "playstation",
+    "posthog", "premium", "professional", "raycast", "refined", "replicate",
+    "resend", "retro", "runwayml", "sanity", "sentry", "shadcn", "shopify",
+    "simple", "sleek", "slack", "spacex", "spotify", "starbucks", "stripe",
+    "superhuman", "supabase", "tetris", "theverge", "together-ai", "tom-modern",
+    "totality-festival", "trading-terminal", "uber", "urdu", "vercel",
+    "vodafone", "voltagent", "warm-editorial", "warp", "webex", "webflow",
+    "wechat", "wired", "x-ai", "xiaohongshu", "zapier"
+  ]
+}
