@@ -1,0 +1,11 @@
+# gloss — quick translation and word study
+model = "gemini-3.5-flash-lite"
+
+# Graphemes, not bytes. Over this the lookup is refused, never truncated.
+cap = 1000
+
+# "auto" lets the model detect the source; naming it is more accurate
+# for short inputs, which are often ambiguous between languages.
+source = "auto"
+target = "id"
+explain_in = "id"
