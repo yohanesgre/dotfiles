@@ -178,8 +178,35 @@ mode_check() {
   [ "$CHECK_FAILED" -eq 0 ] && info "check: OK" || exit 1
 }
 
-render_index() { die "render_index not implemented yet"; }
-mode_index()   { die "not implemented yet: --index"; }
+# render_index <destdir>: write INDEX.md + index.json deterministically
+render_index() {
+  local dest="$1"; mkdir -p "$dest"
+  local norm='def norm: if . == "Editorial / Personal / Publication" or . == "Editorial · Studio"
+    then "Editorial & Print" elif . == "Social & Messaging" then "Media & Consumer" else . end;'
+
+  jq -s "$norm"'
+    map({id, name, category: (.category | norm),
+         tags: ((.craft.suggested // []) | sort)}) | sort_by(.id)
+  ' "$PKG_DIR"/*/manifest.json > "$dest/index.json"
+
+  {
+    echo "# Design reference library"
+    echo
+    echo "Vendored from OpenDesign (nexu-io/open-design). Brand packages are aesthetic inspirations, not official assets; attribution lives in each \`manifest.json\`."
+    echo
+    echo "Read INDEX first; select <=2 packages; read only \`DESIGN.md\`, \`tokens.css\`, \`design-tokens.json\`."
+    echo
+    jq -r "$norm"'
+      group_by(.category) | .[]
+      | "## \(.[0].category)\n\n" + (map(.id) | join(", ")) + "\n"
+    ' "$dest/index.json"
+  } > "$dest/INDEX.md"
+
+  local words; words="$(wc -w < "$dest/INDEX.md")"
+  [ "$words" -le 1200 ] || die "INDEX over word cap: $words"
+}
+
+mode_index() { render_index "$CORPUS_DIR"; info "index: INDEX.md + index.json written"; }
 
 case "${1:-}" in
   --sync)   mode_sync ;;

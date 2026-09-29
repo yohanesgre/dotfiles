@@ -92,5 +92,21 @@ printf 'stale\n' >> "$base/corpus/INDEX.md"
 unset DS_CORPUS_DIR DS_UPSTREAM_DIR
 rm -rf "$base"
 
+# --- t_index_deterministic_and_green ---
+base="$(new_fixture)"
+export DS_CORPUS_DIR="$base/corpus" DS_UPSTREAM_DIR="$base/upstream"
+bash "$SCRIPT" --sync >/dev/null
+bash "$SCRIPT" --index >/dev/null || fail "--index exited non-zero"
+bash "$SCRIPT" --index >/dev/null
+cp "$base/corpus/INDEX.md" "$base/INDEX.1"
+bash "$SCRIPT" --index >/dev/null
+diff -q "$base/corpus/INDEX.md" "$base/INDEX.1" >/dev/null \
+  && ok "t_index_deterministic" || fail "INDEX.md not deterministic"
+words="$(wc -w < "$base/corpus/INDEX.md")"
+[ "$words" -le 1200 ] && ok "t_index_wordcap ($words words)" || fail "INDEX over cap: $words"
+bash "$SCRIPT" --check >/dev/null && ok "t_check_green" || fail "check green run failed"
+unset DS_CORPUS_DIR DS_UPSTREAM_DIR
+rm -rf "$base"
+
 if [ "$FAILED" -ne 0 ]; then echo "tests failed"; exit 1; fi
 echo "all tests passed"
