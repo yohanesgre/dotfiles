@@ -10,7 +10,19 @@ pub fn detect_direction(text: &str, cfg: &Config) -> Query {
         text: text.to_string(),
         source: cfg.source.clone(),
         target: cfg.target.clone(),
-        explain_in: cfg.explain_in.clone(),
+        explain_in: resolve_explain_in(&cfg.explain_in, &cfg.target),
+    }
+}
+
+/// The explanation should follow the target language by default. `explain_in`
+/// is empty (the shipped default) or the literal `"target"` to mean exactly
+/// that; any other value is an explicit override and is honoured as-is, so
+/// someone translating into English can still ask for Indonesian explanations.
+fn resolve_explain_in(explain_in: &str, target: &str) -> String {
+    if explain_in.is_empty() || explain_in == "target" {
+        target.to_string()
+    } else {
+        explain_in.to_string()
     }
 }
 
@@ -98,6 +110,25 @@ mod tests {
     #[test]
     fn explain_language_defaults_to_indonesian() {
         assert_eq!(detect_direction("x", &Config::default()).explain_in, "id");
+    }
+
+    #[test]
+    fn an_empty_explain_in_follows_the_target() {
+        let cfg = Config { target: "en".into(), explain_in: String::new(), ..Config::default() };
+        assert_eq!(detect_direction("x", &cfg).explain_in, "en");
+    }
+
+    #[test]
+    fn the_literal_target_resolves_to_the_target() {
+        let cfg = Config { target: "nl".into(), explain_in: "target".into(), ..Config::default() };
+        assert_eq!(detect_direction("x", &cfg).explain_in, "nl");
+    }
+
+    #[test]
+    fn an_explicit_explain_in_is_not_overwritten_by_the_target() {
+        let cfg = Config { target: "en".into(), explain_in: "id".into(), ..Config::default() };
+        assert_eq!(detect_direction("x", &cfg).explain_in, "id",
+                   "translating into English may still want Indonesian explanations");
     }
 
     #[test]

@@ -21,7 +21,7 @@ impl Default for Config {
             cap: 1000,
             source: "auto".into(),
             target: "id".into(),
-            explain_in: "id".into(),
+            explain_in: String::new(),
             key_path: PathBuf::from(&home).join(".config/gloss/key"),
             cache_path: PathBuf::from(&home).join(".cache/gloss/cache.redb"),
         }
@@ -76,7 +76,7 @@ mod tests {
         assert_eq!(c.model, "gemini-3.5-flash-lite");
         assert_eq!(c.cap, 1000);
         assert_eq!(c.target, "id");
-        assert_eq!(c.explain_in, "id");
+        assert_eq!(c.explain_in, "", "an empty explain_in means follow the target");
         assert_eq!(c.source, "auto");
     }
 
