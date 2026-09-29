@@ -329,6 +329,17 @@ else
 fi
 echo ""
 
+# ── Check 11: Design-Systems Corpus Gate ───────────────────────────────────
+echo -e "${BOLD}Check 11: Design-Systems Corpus Gate${NC}"
+
+if [ -d "$REPO_ROOT/config/skills/designer/references/design-systems" ]; then
+    check "design-systems corpus gate (--check)" \
+        bash "$REPO_ROOT/scripts/design-systems-sync.sh" --check
+else
+    skip "design-systems corpus not present"
+fi
+echo ""
+
 # ── Additional Checks ──────────────────────────────────────────────────────
 echo -e "${BOLD}Additional Checks${NC}"
 
