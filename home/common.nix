@@ -23,6 +23,7 @@
     ./modules/luvus
     ./modules/neovim
     ./modules/nix
+    ./modules/gloss
     ./modules/skills
   ];
 }
