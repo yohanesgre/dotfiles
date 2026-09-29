@@ -10,6 +10,14 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 - New `scripts/design-systems-sync.sh` (`--sync --add --report --check --index --list`); `--check` wired into `scripts/validate.sh`.
 - `designer` skill: +9-line route section pointing at INDEX.md (<=2 packages per consult).
 
+## 2026-09-29 — Fix `brainstorm-studio` frame-template placeholder collision
+
+`scripts/frame-template.html` carried a second `<!-- CONTENT -->` token inside its own CSS comment header. `server.cjs` replaces only the *first* occurrence, so that one won: pushed screens were injected into the CSS comment block and every companion page rendered blank. Both comment lines now say "the CONTENT marker" in plain prose, leaving exactly one occurrence — the real placeholder.
+
+- `config/skills/brainstorm-studio/scripts/frame-template.html` — 2 comment lines reworded (no behavior/template change).
+
+Local patch to an externalized skill; `CONFIGURATION.md` unchanged (it inventories skill *sets* and wiring, not per-file patches — that belongs in this log). No commit, no push.
+
 ## 2026-09-29 — Install Cloudflare `cf` CLI via upstream activation
 
 Cloudflare's new agent-oriented CLI (`cloudflare/cf`, open beta 1.0.0-beta.5, announced 2026-09-28) is not in nixpkgs, so it follows the fast-moving-tool policy (upstream installers, not nixpkgs): bun global install in the `upstreamInstall` activation, re-run on every hm-switch for latest upstream. Verified live before wiring: `cf --help`, `cf cli search "deploy a worker"`, `cf tools` (2936 MCP tool definitions), `bun install -g --trust cf@latest` → `~/.bun/bin/cf` 1.0.0-beta.5, bins `cf` + `cloudflare`, running on system node 24.21.0.
