@@ -1,0 +1,1016 @@
+[
+  {
+    "id": "airbnb",
+    "name": "Airbnb",
+    "category": "E-Commerce & Retail",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "airtable",
+    "name": "Airtable",
+    "category": "Design & Creative",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "ant",
+    "name": "Ant",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "apple",
+    "name": "Apple",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "application",
+    "name": "Application",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "arc",
+    "name": "Arc Browser",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "atelier-zero",
+    "name": "Atelier Zero",
+    "category": "Editorial & Print",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "bento",
+    "name": "Bento",
+    "category": "Layout & Structure",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "brutalism",
+    "name": "Brutalism",
+    "category": "Bold & Expressive",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "cal",
+    "name": "Cal.com",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "canva",
+    "name": "Canva",
+    "category": "Design & Creative",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "cisco",
+    "name": "Cisco",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "claude",
+    "name": "Claude (Anthropic)",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "clay",
+    "name": "Clay",
+    "category": "Design & Creative",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "clean",
+    "name": "Clean",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "clickhouse",
+    "name": "ClickHouse",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "cloudflare-kumo",
+    "name": "Cloudflare Kumo UI",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "cohere",
+    "name": "Cohere",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "composio",
+    "name": "Composio",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "contemporary",
+    "name": "Contemporary",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "corporate",
+    "name": "Corporate",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "cursor",
+    "name": "Cursor",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "dashboard",
+    "name": "Dashboard",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "default",
+    "name": "Neutral Modern",
+    "category": "Starter",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "discord",
+    "name": "Discord",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "dithered",
+    "name": "Dithered",
+    "category": "Retro & Nostalgic",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "duolingo",
+    "name": "Duolingo",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "editorial",
+    "name": "Editorial",
+    "category": "Creative & Artistic",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "elegant",
+    "name": "Elegant",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "elevenlabs",
+    "name": "ElevenLabs",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "enterprise",
+    "name": "Enterprise",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "expo",
+    "name": "Expo",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "figma",
+    "name": "Figma",
+    "category": "Design & Creative",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "flat",
+    "name": "Flat",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "framer",
+    "name": "Framer",
+    "category": "Design & Creative",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "github",
+    "name": "GitHub",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "glassmorphism",
+    "name": "Glassmorphism",
+    "category": "Morphism & Effects",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "hashicorp",
+    "name": "HashiCorp",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "hud",
+    "name": "HUD Design System",
+    "category": "Themed & Unique",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "huggingface",
+    "name": "Hugging Face",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "ibm",
+    "name": "IBM",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "intercom",
+    "name": "Intercom",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "kami",
+    "name": "kami (紙 / 纸)",
+    "category": "Editorial & Print",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "linear-app",
+    "name": "Linear",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "loom",
+    "name": "Loom Design System",
+    "category": "Themed & Unique",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "lovable",
+    "name": "Lovable",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "luxury",
+    "name": "Luxury",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "material",
+    "name": "Material",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "meta",
+    "name": "Meta (Store)",
+    "category": "E-Commerce & Retail",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "minimal",
+    "name": "Minimal",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "minimax",
+    "name": "MiniMax",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "mintlify",
+    "name": "Mintlify",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "miro",
+    "name": "Miro",
+    "category": "Design & Creative",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "mission-control",
+    "name": "Mission Control Design System",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "mistral-ai",
+    "name": "Mistral AI",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "modern",
+    "name": "Modern",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "mongodb",
+    "name": "MongoDB",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "mono",
+    "name": "Mono",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "neobrutalism",
+    "name": "Neobrutalism",
+    "category": "Bold & Expressive",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "neon",
+    "name": "Neon",
+    "category": "Morphism & Effects",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "nike",
+    "name": "Nike",
+    "category": "E-Commerce & Retail",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "notion",
+    "name": "Notion",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "nvidia",
+    "name": "NVIDIA",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "ollama",
+    "name": "Ollama",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "openai",
+    "name": "OpenAI",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "opencode-ai",
+    "name": "OpenCode",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "pacman",
+    "name": "Pacman",
+    "category": "Themed & Unique",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "paper",
+    "name": "Paper",
+    "category": "Retro & Nostalgic",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "perplexity",
+    "name": "Perplexity AI",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "pinterest",
+    "name": "Pinterest",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "playstation",
+    "name": "PlayStation",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "posthog",
+    "name": "PostHog",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "premium",
+    "name": "Premium",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "professional",
+    "name": "Professional",
+    "category": "Professional & Corporate",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "raycast",
+    "name": "Raycast",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "refined",
+    "name": "Refined",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "replicate",
+    "name": "Replicate",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "resend",
+    "name": "Resend",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "retro",
+    "name": "Retro",
+    "category": "Retro & Nostalgic",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "runwayml",
+    "name": "Runway",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "sanity",
+    "name": "Sanity",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "sentry",
+    "name": "Sentry",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "shadcn",
+    "name": "Shadcn",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "shopify",
+    "name": "Shopify",
+    "category": "E-Commerce & Retail",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "simple",
+    "name": "Simple",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "slack",
+    "name": "Slack",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "sleek",
+    "name": "Sleek",
+    "category": "Modern & Minimal",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "spacex",
+    "name": "SpaceX",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "spotify",
+    "name": "Spotify",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "starbucks",
+    "name": "Starbucks",
+    "category": "E-Commerce & Retail",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "stripe",
+    "name": "Stripe",
+    "category": "Fintech & Crypto",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "supabase",
+    "name": "Supabase",
+    "category": "Backend & Data",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "superhuman",
+    "name": "Superhuman",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "tetris",
+    "name": "Tetris",
+    "category": "Themed & Unique",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "theverge",
+    "name": "The Verge",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "together-ai",
+    "name": "Together AI",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "tom-modern",
+    "name": "Tom Modern Design",
+    "category": "Starter",
+    "tags": []
+  },
+  {
+    "id": "totality-festival",
+    "name": "Totality Festival",
+    "category": "Themed & Unique",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "trading-terminal",
+    "name": "Trading Terminal Design System",
+    "category": "Themed & Unique",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "uber",
+    "name": "Uber",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "urdu",
+    "name": "Urdu Modern (Indus Script System)",
+    "category": "Editorial & Print",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "vercel",
+    "name": "Vercel",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "vodafone",
+    "name": "Vodafone",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "voltagent",
+    "name": "VoltAgent",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "warm-editorial",
+    "name": "Warm Editorial",
+    "category": "Starter",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "warp",
+    "name": "Warp",
+    "category": "Developer Tools",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "webex",
+    "name": "Webex",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "webflow",
+    "name": "Webflow",
+    "category": "Design & Creative",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "wechat",
+    "name": "WeChat Design System",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "wired",
+    "name": "WIRED",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "x-ai",
+    "name": "xAI",
+    "category": "AI & LLM",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "xiaohongshu",
+    "name": "Xiaohongshu",
+    "category": "Media & Consumer",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  },
+  {
+    "id": "zapier",
+    "name": "Zapier",
+    "category": "Productivity & SaaS",
+    "tags": [
+      "accessibility-baseline",
+      "color"
+    ]
+  }
+]
