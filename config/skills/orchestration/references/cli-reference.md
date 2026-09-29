@@ -139,6 +139,10 @@ rm -f "$RETURN" "$TMP" "$TMP.out"
 opencode run --auto --model "$MODEL" --agent "$ROLE" "$(cat "$BRIEF")" 2>&1 | tee "$TMP"
 rc=${PIPESTATUS[0]}
 
+# strip ANSI SGR from the captured record (the pane keeps its colors; the
+# durable return file must stay plain text for greps, diffs, and jev_triage)
+sed -i -r 's/\x1b\[[0-9;]*[mK]//g' "$TMP"
+
 # atomic: the file's appearance means the runner FINISHED, not that the lane
 # succeeded. rc=0 is real completion; rc!=0 -> FAST EXIT/WAIT, never green.
 { printf 'rc=%s\n' "$rc"; cat "$TMP"; } > "$TMP.out" && mv "$TMP.out" "$RETURN"

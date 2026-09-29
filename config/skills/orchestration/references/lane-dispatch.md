@@ -49,7 +49,10 @@ command, and it is not part of the lane loop).
    with
    `bun ~/.agents/skills/orchestration/scripts/lane-layout.ts --anchor "$LUVUS_PANE_ID"
    --lanes '<json>'`, where `<json>` = `[{"name":"<lane>","cwd":"<worktree>"}]`
-   per lane. It keeps the orchestrator pane as a fixed left master column
+   per lane. The anchor tab must hold ONLY the orchestrator pane — the script
+   preflights and fails fast (exit 1) on foreign panes, before creating any
+   pane; move them out or close them first. It keeps the orchestrator pane as a
+   fixed left master column
    (full height, `--master-ratio`, default 0.34) and tiles the lanes in a
    balanced grid to the right — never repeated same-axis splits into skinny
    columns. Geometry is applied by one atomic UHP `layout.apply` per tab;

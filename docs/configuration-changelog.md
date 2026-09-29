@@ -18,6 +18,7 @@ The dispatch order read literally serial — `lane-dispatch.md` said "one lane a
 - New `config/skills/orchestration/scripts/wave-wait.ts` — joins N return files (`--any` returns on the first lane so its reviewer can spawn early; default timeout 600000 ms; exit 0/1/2 like `lane-wait.ts`).
 - `config/skills/orchestration/references/jev-layer.md` — dispatch-time checklist gains `batch-dispatched` (all wave lanes fired before any wait).
 - Post-review hardening (same day, `reviewer` approve-with-nits): the canonical lane runner clears stale return files before starting (a present file always belongs to the current run); the concurrent per-worktree setup form is pinned; `wave-wait.ts` guards unreadable files and parses `--timeout` strictly; the wait docs note the shell-timeout ceiling.
+- Smoke follow-ups (same day): the canonical lane runner strips ANSI SGR from lane return captures; `lane-layout.ts` preflights foreign tab panes (fail-fast, zero mutations) and gains a best-effort rollback with empty-id guards; lane-dispatch step 3 documents the anchor-tab invariant.
 - Viz pages: `docs/architecture-orchestration.html` (dependency map) and `docs/orchestration-wave-running.html` (parallel-wave runtime view) — both checker-clean and render-verified.
 
 ## 2026-09-29 — designer design-systems corpus

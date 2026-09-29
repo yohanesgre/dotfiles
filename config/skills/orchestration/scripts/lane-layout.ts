@@ -213,55 +213,86 @@ const main = (): void => {
   const where = a.dryRun ? { workspaceName: "", workspaceCwd: "", tab: "1" } : locateAnchor(a.anchor);
   focusAnchorContext(where, a.dryRun);
 
+  // layout.apply needs every pane of the tab exactly once; fail BEFORE
+  // creating any pane so a foreign pane cannot leave a half-built grid.
+  if (!a.dryRun) {
+    const tabPanes = asArray(asObject(luvus(["pane", "list"]).result).panes).map((p) => asText(asObject(p).pane));
+    if (!(tabPanes.length === 1 && tabPanes[0] === a.anchor)) {
+      throw new Error(
+        `anchor tab holds ${tabPanes.length} pane(s) [${tabPanes.join(",")}] — layout.apply needs every pane in the tree. ` +
+          `Move foreign panes out (luvus pane move <id> --new-tab), close them, or re-run with the tab holding only the anchor pane.`,
+      );
+    }
+  }
+
   const tabs: Array<{ tab: string; grid: { cols: number; cols_rows: Array<number> }; lanes: Array<Tile> }> = [];
+  const createdPanes: Array<string> = [];
 
   chunks.forEach((chunk, ci) => {
-    // chunk 0 grows around the orchestrator pane; later chunks get a fresh tab
-    let base = a.anchor;
-    let tab = where.tab;
-    if (ci > 0) {
-      tab = asText(asObject(luvus(["tab", "new"], a.dryRun).result).tab);
-      const panes = asArray(asObject(luvus(["pane", "list"], a.dryRun).result).panes);
-      if (!a.dryRun && panes.length !== 1) {
-        throw new Error(`new tab ${tab} should hold exactly 1 pane, saw ${panes.length}`);
+    try {
+      // chunk 0 grows around the orchestrator pane; later chunks get a fresh tab
+      let base = a.anchor;
+      let tab = where.tab;
+      if (ci > 0) {
+        tab = asText(asObject(luvus(["tab", "new"], a.dryRun).result).tab);
+        const panes = asArray(asObject(luvus(["pane", "list"], a.dryRun).result).panes);
+        base = asText(asObject(panes[0]).pane);
+        if (!a.dryRun && (panes.length !== 1 || base === "")) {
+          // this tab is fresh and still at its known position — close it here,
+          // never from a stale position later
+          try { luvus(["tab", "close", tab]); } catch { /* best-effort */ }
+          throw new Error(`new tab ${tab} should hold exactly 1 pane with an id, saw ${panes.length} pane(s)`);
+        }
+        if (base !== "") createdPanes.push(base);
       }
-      base = asText(asObject(panes[0]).pane);
-    }
 
-    const tiles: Array<Tile> = [];
-    // an overflow tab's root pane is itself a lane (no master column there), so it
-    // is reused instead of split — layout.apply requires every tab pane exactly once
-    let reusable = ci > 0 ? base : "";
-    for (const lane of chunk) {
-      const pane =
-        reusable !== ""
-          ? reusable
-          : asText(asObject(luvus(["pane", "split", base, "--auto", "--no-focus"], a.dryRun).result).pane);
-      reusable = "";
-      if (!a.dryRun && pane === "") throw new Error(`pane split returned no pane for lane ${lane.name}`);
-      const id = pane === "" ? "0" : pane;
-      luvus(["pane", "run", id, `cd '${lane.cwd.replaceAll("'", `'\\''`)}'`], a.dryRun);
-      tiles.push({ name: lane.name, cwd: lane.cwd, pane: id, col: 0, row: 0 });
-    }
-
-    const laneAreaW = ci === 0 ? Math.round(160 * (1 - a.masterRatio)) : 160;
-    const { C } = chooseGrid(tiles.length, laneAreaW, 48);
-    const cols = distribute(tiles.length, C);
-    let acc = 0;
-    cols.forEach((count, j) => {
-      for (let r = 0; r < count; r++) {
-        tiles[acc + r].col = j;
-        tiles[acc + r].row = r;
+      const tiles: Array<Tile> = [];
+      // an overflow tab's root pane is itself a lane (no master column there), so it
+      // is reused instead of split — layout.apply requires every tab pane exactly once
+      let reusable = ci > 0 ? base : "";
+      for (const lane of chunk) {
+        const pane =
+          reusable !== ""
+            ? reusable
+            : asText(asObject(luvus(["pane", "split", base, "--auto", "--no-focus"], a.dryRun).result).pane);
+        if (reusable === "" && pane !== "") createdPanes.push(pane);
+        reusable = "";
+        if (!a.dryRun && pane === "") throw new Error(`pane split returned no pane for lane ${lane.name}`);
+        const id = pane === "" ? "0" : pane;
+        luvus(["pane", "run", id, `cd '${lane.cwd.replaceAll("'", `'\\''`)}'`], a.dryRun);
+        tiles.push({ name: lane.name, cwd: lane.cwd, pane: id, col: 0, row: 0 });
       }
-      acc += count;
-    });
 
-    const grid = buildTree(tiles, cols);
-    const tree: Node =
-      ci === 0 ? { Split: { a: { Leaf: Number(a.anchor) }, axis: 0, b: grid, ratio: a.masterRatio } } : grid;
-    uhp("layout.apply", { tab, tree }, a.dryRun);
+      const laneAreaW = ci === 0 ? Math.round(160 * (1 - a.masterRatio)) : 160;
+      const { C } = chooseGrid(tiles.length, laneAreaW, 48);
+      const cols = distribute(tiles.length, C);
+      let acc = 0;
+      cols.forEach((count, j) => {
+        for (let r = 0; r < count; r++) {
+          tiles[acc + r].col = j;
+          tiles[acc + r].row = r;
+        }
+        acc += count;
+      });
 
-    tabs.push({ tab, grid: { cols: C, cols_rows: cols }, lanes: tiles });
+      const grid = buildTree(tiles, cols);
+      const tree: Node =
+        ci === 0 ? { Split: { a: { Leaf: Number(a.anchor) }, axis: 0, b: grid, ratio: a.masterRatio } } : grid;
+      uhp("layout.apply", { tab, tree }, a.dryRun);
+
+      tabs.push({ tab, grid: { cols: C, cols_rows: cols }, lanes: tiles });
+    } catch (e) {
+      if (!a.dryRun) {
+        for (const p of createdPanes) {
+          try {
+            luvus(["pane", "close", p]);
+          } catch {
+            /* best-effort */
+          }
+        }
+      }
+      throw e;
+    }
   });
 
   console.log(
