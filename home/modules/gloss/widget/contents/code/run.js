@@ -43,13 +43,20 @@ function utf8ToBase64(str) {
     return out
 }
 
+// `refresh` is a bare flag, never built from user text: a refresh re-rolls a
+// bad answer by skipping the CLI's cache read (the CLI still writes the fresh
+// result). Everything interpolated is base64 or this literal.
+function refreshFlag(refresh) {
+    return refresh ? " --refresh" : ""
+}
+
 // Command for a typed value. No part of the text appears in this string.
-function typedCommand(binary, text) {
-    return binary + " lookup --b64 " + utf8ToBase64(text)
+function typedCommand(binary, text, refresh) {
+    return binary + " lookup --b64 " + utf8ToBase64(text) + refreshFlag(refresh)
 }
 
 // Command for the current selection: the CLI reads the clipboard itself, so the
 // selection never reaches argv (world-readable in ps) and never reaches a shell.
-function selectionCommand(binary) {
-    return binary + " lookup --selection"
+function selectionCommand(binary, refresh) {
+    return binary + " lookup --selection" + refreshFlag(refresh)
 }

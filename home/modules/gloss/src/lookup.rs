@@ -9,6 +9,10 @@ pub struct LookupRequest {
     pub text: String,
     pub config: Config,
     pub key: String,
+    /// `--refresh`: skip `cache_get` and ask again. The stochastic escape hatch —
+    /// without it a bad answer is permanent for that input. Still writes, so the
+    /// fresh answer is the one later plain lookups serve.
+    pub refresh: bool,
 }
 
 /// The whole graph. Returns a Card for every outcome — errors are values.
@@ -25,12 +29,16 @@ fn try_lookup(req: &LookupRequest, t: &dyn Transport, cache: &Cache) -> Result<C
     let q = crate::lang::detect_direction(&text, &req.config);
     let key_hash = cache_key(&q, &req.config.model, SYSTEM_PROMPT, RESPONSE_SCHEMA);
 
-    // Cache first: a hit must work with no API key present at all.
-    if let Some(mut card) = cache.get(&key_hash) {
-        if let Card::Word { meta, .. } | Card::Phrase { meta, .. } = &mut card {
-            meta.cached = true;
+    // Cache first — unless `--refresh` asked for a re-roll. A hit must work
+    // with no API key present at all; refresh is the one path that deliberately
+    // misses, so it still needs a key below.
+    if !req.refresh {
+        if let Some(mut card) = cache.get(&key_hash) {
+            if let Card::Word { meta, .. } | Card::Phrase { meta, .. } = &mut card {
+                meta.cached = true;
+            }
+            return Ok(card);
         }
-        return Ok(card);
     }
 
     if req.key.trim().is_empty() {

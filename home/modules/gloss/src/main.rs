@@ -11,6 +11,7 @@ fn main() {
         Some("lookup") => {
             let mut text = String::new();
             let mut dry_run = false;
+            let mut refresh = false;
             let mut i = 1;
             while i < args.len() {
                 match args[i].as_str() {
@@ -33,6 +34,8 @@ fn main() {
                         i += 1;
                     }
                     "--dry-run" => { dry_run = true; i += 1; }
+                    // Re-roll: skip the cache read, still write the fresh answer.
+                    "--refresh" => { refresh = true; i += 1; }
                     other => {
                         match gloss::input::read_input(std::path::Path::new(other), cfg.cap) {
                             Ok(t) => text = t,
@@ -45,7 +48,7 @@ fn main() {
             if dry_run { println!("{text}"); return; }
             let api_key = key::load_key(&cfg.key_path).unwrap_or_default();
             let cache = Cache::open(&cfg.cache_path);
-            let req = LookupRequest { text, key: api_key, config: cfg };
+            let req = LookupRequest { text, key: api_key, config: cfg, refresh };
             emit(&lookup(&req, &real_transport(), &cache));
         }
         Some("cache") => {
@@ -66,7 +69,8 @@ fn main() {
             }
         }
         _ => eprintln!("usage: gloss lookup <file> | gloss lookup --b64 <b64> \
-                        | gloss lookup --selection | gloss cache --stats | gloss cache --clear"),
+                        | gloss lookup --selection | gloss lookup --refresh \
+                        | gloss cache --stats | gloss cache --clear"),
     }
 }
 
