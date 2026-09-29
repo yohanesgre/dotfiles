@@ -54,12 +54,14 @@ PlasmoidItem {
     }
 
     // The typed path. Base64 only — no shell metacharacter can survive it.
-    function lookUpTyped(text) {
+    // `refresh` is the deliberate cache bypass; a normal lookup leaves it false,
+    // so a warm cache still serves instantly.
+    function lookUpTyped(text, refresh) {
         if (text === undefined || text === null || String(text).trim() === "")
             return
         root.fieldText = String(text)
         root.phase = "loading"
-        root.run(Run.typedCommand(root.binary, String(text)))
+        root.run(Run.typedCommand(root.binary, String(text), refresh === true))
     }
 
     function relook() {
@@ -204,8 +206,12 @@ PlasmoidItem {
                 root.relook()
             }
             onSwapRequested: root.swap()
-            onRefreshRequested: root.lookUpTyped(root.fieldText)
+            // Refresh re-rolls: it must bypass the cache for the same text.
+            onRefreshRequested: root.lookUpTyped(root.fieldText, true)
             onCopyRequested: root.copyTranslation()
+            // Retry is deliberately a plain re-run: errors are never cached, so
+            // there is nothing to bypass — and `--refresh` here would be a no-op
+            // that only muddies the difference between the two controls.
             onRetryRequested: root.lookUpTyped(root.fieldText)
         }
     }

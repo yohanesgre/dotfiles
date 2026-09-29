@@ -27,6 +27,7 @@ fn req(text: &str) -> LookupRequest {
         text: text.into(),
         config: gloss::config::Config::default(),
         key: "test-key".into(),
+        refresh: false,
     }
 }
 
@@ -71,6 +72,49 @@ fn a_cache_hit_needs_no_api_key() {
         Card::Word { meta, .. } => assert!(meta.cached),
         other => panic!("a hit must work with no key at all, got {other:?}"),
     }
+}
+
+#[test]
+fn refresh_bypasses_the_cache_and_makes_a_request() {
+    let dir = tempfile::tempdir().unwrap();
+    let http = FakeHttp { replies: RefCell::new(vec![WORD.into(), WORD.into()]),
+                          calls: RefCell::new(0) };
+    let cache = Cache::open(&dir.path().join("c.redb"));
+    let mut r = req("nevertheless");
+    let _ = lookup(&r, &http, &cache);            // populates the cache
+    assert_eq!(*http.calls.borrow(), 1);
+
+    r.refresh = true;
+    match lookup(&r, &http, &cache) {
+        Card::Word { meta, .. } => assert!(!meta.cached, "a refresh is never served from cache"),
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(*http.calls.borrow(), 2, "refresh must reach the network despite a warm cache");
+
+    r.refresh = false;
+    match lookup(&r, &http, &cache) {
+        Card::Word { meta, .. } => assert!(meta.cached, "the refresh write is what a plain lookup hits"),
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(*http.calls.borrow(), 2, "a plain lookup with a warm cache makes no call");
+}
+
+#[test]
+fn refresh_on_a_cold_cache_still_writes() {
+    let dir = tempfile::tempdir().unwrap();
+    let http = FakeHttp { replies: RefCell::new(vec![WORD.into()]), calls: RefCell::new(0) };
+    let cache = Cache::open(&dir.path().join("c.redb"));
+    let mut r = req("nevertheless");
+    r.refresh = true;
+    let _ = lookup(&r, &http, &cache);
+    assert_eq!(*http.calls.borrow(), 1);
+
+    r.refresh = false;
+    match lookup(&r, &http, &cache) {
+        Card::Word { meta, .. } => assert!(meta.cached, "refresh still writes, so the next plain lookup hits"),
+        other => panic!("{other:?}"),
+    }
+    assert_eq!(*http.calls.borrow(), 1, "the following plain lookup must not call");
 }
 
 #[test]

@@ -5,6 +5,7 @@ use serde::Deserialize;
 use serde_json::json;
 use std::thread::sleep;
 use std::time::Duration;
+use unicode_segmentation::UnicodeSegmentation;
 
 pub struct HttpRequest {
     pub method: String,
@@ -18,10 +19,19 @@ pub const SYSTEM_PROMPT: &str = "\
 You are a translation and vocabulary assistant for an Indonesian speaker.
 Decide from the input alone whether it is a WORD (a single word or short phrase) \
 or a PHRASE (a sentence or longer passage), and set \"kind\" accordingly.
-For a WORD: give ipa (IPA, no slashes), pos, translation, meaning, and two examples \
-with the source and its Indonesian translation. Leave explanation empty.
+For a WORD: give ipa (IPA, no slashes), pos, translation, meaning, and exactly two \
+examples. Leave explanation empty.
+  - pos is a short grammatical label only — e.g. adverb, noun, phrasal verb. Never a \
+definition, never a sentence, never prose. Anything worth saying about usage or \
+register belongs in notes, not in pos.
+  - meaning is a one-line gloss of the term in the source language, e.g. \
+\"in spite of that; however\". It is never empty for a word.
+  - each example has src (a sentence in the source language) and dst (that sentence \
+translated into the target language).
 For a PHRASE: give the full translation and an explanation of the parts worth knowing \
 (phrasal verbs, idioms, register), each as a term and a note. Leave the word fields empty.
+translation is in the target language; ipa, pos, meaning and every example's src are in \
+the source language.
 Write notes only when there is something genuinely useful to say about register or usage.
 Produce no commentary outside the JSON.";
 
@@ -31,12 +41,13 @@ pub const RESPONSE_SCHEMA: &str = r#"{
   "properties": {
     "kind": { "type": "STRING", "enum": ["word", "phrase"] },
     "detected_source": { "type": "STRING", "description": "BCP-47 code of the input language" },
-    "translation": { "type": "STRING" },
-    "ipa": { "type": "STRING" },
-    "pos": { "type": "STRING" },
-    "meaning": { "type": "STRING" },
+    "translation": { "type": "STRING", "description": "The translation, in the target language" },
+    "ipa": { "type": "STRING", "description": "IPA for the word, no slashes" },
+    "pos": { "type": "STRING", "description": "A short grammatical label only — e.g. adverb, noun, phrasal verb. Never a definition, a sentence, or prose; explanations belong in notes." },
+    "meaning": { "type": "STRING", "description": "A one-line gloss of the term in the source language, e.g. \"in spite of that; however\". Never empty for a word." },
     "examples": {
       "type": "ARRAY",
+      "description": "Exactly two entries for a word. src is a sentence in the source language; dst is its translation into the target language.",
       "items": { "type": "OBJECT",
         "properties": { "src": { "type": "STRING" }, "dst": { "type": "STRING" } },
         "required": ["src", "dst"] }
@@ -49,7 +60,7 @@ pub const RESPONSE_SCHEMA: &str = r#"{
     },
     "notes": { "type": "STRING" }
   },
-  "required": ["kind", "detected_source", "translation"]
+  "required": ["kind", "detected_source", "translation", "meaning", "examples"]
 }"#;
 
 fn language_name(code: &str) -> &str {
@@ -286,6 +297,26 @@ pub fn parse_card(resp: &RawResponse, q: &Query, model: &str) -> Result<Card, Er
     }
 
     let kind = out.kind.trim().to_string();
+
+    // Shape validation is not enough: the model's JSON is syntactically valid
+    // without being semantically correct (spec §3.2). A word with no definition
+    // or no examples is as useless as a malformed one, so it earns the same
+    // retry-once as any other bad output. Phrase mode has no such fields.
+    if kind == "word" {
+        if out.meaning.trim().is_empty() {
+            return Err(bad());
+        }
+        if out.examples.is_empty() {
+            return Err(bad());
+        }
+        // `pos` is a label, not prose: anything longer than a handful of words
+        // means the model answered a different question. Graphemes, not bytes,
+        // so an accented label is measured like any other.
+        if out.pos.trim().graphemes(true).count() > 40 {
+            return Err(bad());
+        }
+    }
+
     let detected = if q.source == "auto" && !out.detected_source.trim().is_empty() {
         // The trimmed kind, so `"word "` cannot leak into the widget's mode.
         Some(Detected { source: out.detected_source.trim().to_string(), mode: kind.clone() })
@@ -824,6 +855,42 @@ mod parse_tests {
         assert_eq!(e.code, ErrorCode::BadOutput);
     }
 
+    fn word_json(pos: &str, meaning: &str, examples: serde_json::Value) -> String {
+        serde_json::json!({
+            "kind": "word", "detected_source": "en",
+            "translation": "meskipun demikian", "pos": pos,
+            "meaning": meaning, "examples": examples,
+        }).to_string()
+    }
+
+    #[test]
+    fn a_word_with_no_meaning_is_bad_output() {
+        let body = word_json("adverb", "", serde_json::json!([{"src": "a", "dst": "b"}]));
+        assert_eq!(parse_card(&resp(&body), &q(), "m").unwrap_err().code, ErrorCode::BadOutput);
+    }
+
+    #[test]
+    fn a_word_with_no_examples_is_bad_output() {
+        let body = word_json("adverb", "in spite of that; however", serde_json::json!([]));
+        assert_eq!(parse_card(&resp(&body), &q(), "m").unwrap_err().code, ErrorCode::BadOutput);
+    }
+
+    #[test]
+    fn a_pos_that_is_prose_is_bad_output() {
+        // The live defect: a long Indonesian explanation crammed into the label.
+        let body = word_json(&"x".repeat(41), "in spite of that; however",
+                             serde_json::json!([{"src": "a", "dst": "b"}]));
+        assert_eq!(parse_card(&resp(&body), &q(), "m").unwrap_err().code, ErrorCode::BadOutput);
+    }
+
+    #[test]
+    fn a_pos_is_measured_in_graphemes_not_bytes() {
+        // Forty graphemes, eighty bytes: a byte cap would reject a valid label.
+        let pos: String = "e\u{0301}".repeat(40);
+        let body = word_json(&pos, "a gloss", serde_json::json!([{"src": "a", "dst": "b"}]));
+        assert!(parse_card(&resp(&body), &q(), "m").is_ok(), "40 graphemes is still a label");
+    }
+
     #[test]
     fn auto_source_records_what_was_detected() {
         let mut qq = q(); qq.source = "auto".into();
@@ -838,7 +905,10 @@ mod parse_tests {
     #[test]
     fn the_detected_mode_is_trimmed() {
         let mut qq = q(); qq.source = "auto".into();
-        let body = r#"{"kind":"word ","detected_source":"en","translation":"x"}"#;
+        // A word payload must now carry a meaning and examples to be accepted;
+        // the trailing space in `kind` is the only thing this test exercises.
+        let body = r#"{"kind":"word ","detected_source":"en","translation":"x",
+          "meaning":"a gloss","examples":[{"src":"a","dst":"b"}]}"#;
         match parse_card(&resp(body), &qq, "m").unwrap() {
             Card::Word { detected, .. } => assert_eq!(detected.unwrap().mode, "word"),
             other => panic!("{other:?}"),
