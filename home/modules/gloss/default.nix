@@ -1,5 +1,4 @@
 {
-  config,
   lib,
   pkgs,
   ...
@@ -7,16 +6,21 @@
 
 let
   # The repo's first derivation. The crate lives in this directory next to the
-  # module, the QML widget, and the shipped config.toml; only the Rust sources
-  # belong in the build.
+  # module, the QML widget, and the shipped config.toml; only the Rust inputs
+  # enter the build, so a widget edit does not rehash src and recompile.
   gloss = pkgs.rustPlatform.buildRustPackage {
     pname = "gloss";
-    version = "0.1.0";
-    src = ./.;
+    version = (lib.importTOML ./Cargo.toml).package.version;
+    src = lib.fileset.toSource {
+      root = ./.;
+      fileset = lib.fileset.unions [
+        ./Cargo.toml
+        ./Cargo.lock
+        ./src
+        ./tests
+      ];
+    };
     cargoLock.lockFile = ./Cargo.lock;
-    # widget/ is QML, not Rust source. Drop it so it stays out of the build and
-    # out of the binary's closure.
-    postUnpack = "rm -rf $sourceRoot/widget || true";
     meta = {
       description = "Quick translation and word study";
       license = lib.licenses.mit;
@@ -30,9 +34,12 @@ in
   xdg.configFile."gloss/config.toml".source = ./config.toml;
 
   # The API key is read from the gitignored .env.toml and written here as a 0600
-  # file — never a session variable. gloss is also launched by the plasmoid out
-  # of plasmashell's environment, which is not the shell's, so an env var would
-  # not reliably arrive. Pattern matches home/modules/env.
+  # file — the file is the reliable path. home/modules/env's loadDotEnv also
+  # imports every top-level .env.toml key into the systemd user environment, so
+  # once GEMINI_API_KEY exists it is likely an env var too; gloss does not depend
+  # on that. gloss is also launched by the plasmoid out of plasmashell's
+  # environment, which is not the shell's, so an env var would not reliably
+  # arrive. Pattern matches home/modules/env.
   home.activation.writeGlossKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         _py=${pkgs.python3}/bin/python3
         if ! [ -x "$_py" ]; then _py=python3; fi
@@ -54,7 +61,10 @@ in
     )
           if [ -n "$_key" ]; then
             _tmp=$(mktemp)
+            trap 'rm -f "$_tmp"' EXIT
             printf '%s\n' "$_key" > "$_tmp"
+            # Repair a world-readable key file even when its content matches.
+            $DRY_RUN_CMD chmod 600 "$HOME/.config/gloss/key" 2>/dev/null || true
             if ! cmp -s "$_tmp" "$HOME/.config/gloss/key" 2>/dev/null; then
               $DRY_RUN_CMD mkdir -p "$HOME/.config/gloss"
               $DRY_RUN_CMD install -m 600 "$_tmp" "$HOME/.config/gloss/key"
@@ -65,14 +75,16 @@ in
             echo "gloss: GEMINI_API_KEY empty in $_toml — key file untouched" >&2
           fi
         fi
-        unset _py _toml _key _tmp _base
+        unset _py _toml _key _base
   '';
 
   # The plasmoid is copied, never symlinked: KPackage needs a writable directory
-  # and /nix/store is read-only. Files are enough only after the plugin index is
-  # refreshed — kpackagetool6 in KF6 has no --generate-index, so the real
-  # KF6/KService cache rebuild is kbuildsycoca6 --noincremental. A running
-  # plasmashell picks the package up on its next start.
+  # and /nix/store is read-only. No index step is needed — Plasma 6 discovers
+  # applets by scanning ~/.local/share/plasma/plasmoids/ (kpackagetool6
+  # -t Plasma/Applet --list reads that directory directly; KSycoca does not
+  # index applets), and a running plasmashell picks the package up on its next
+  # start. The plan's original kpackagetool6 --generate-index does not exist in
+  # KF6.
   #
   # Placement is deliberately NOT declarative: this flake has no plasma-manager
   # input, and one widget is not worth a new input. The manual steps, once per
@@ -81,11 +93,14 @@ in
   #      applet in ~/.config/plasma-org.kde.plasma.desktop-appletsrc, not in this
   #      repo — that is why the panel position cannot drift into a Nix diff.
   #   2. hotkey: right-click the widget → "Configure Gloss" → "Keyboard
-  #      Shortcuts". Accepted constraint: Plasmoid.globalShortcut fires
-  #      activated(), so the widget translates the selection when it opens; a
-  #      shortcut bound to arbitrary code would need C++, which this design
-  #      deliberately avoids. The chosen sequence lives in Plasma's own config,
-  #      next to the applet entry above.
+  #      Shortcuts". The shell injects that page for every applet
+  #      (plasma-desktop's AppletConfiguration.qml adds ConfigurationShortcuts
+  #      .qml to its global config model); it writes Plasmoid.globalShortcut,
+  #      which main.qml defaults to Meta+Ctrl+G while it is empty. The shortcut
+  #      only fires Plasmoid.activated(), which toggles the popup — the widget
+  #      cannot bind code to it, so it translates the selection when the popup
+  #      expands. The chosen sequence lives in Plasma's own config, next to the
+  #      applet entry above.
   home.activation.installGlossPlasmoid = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     dest="$HOME/.local/share/plasma/plasmoids/org.gloss.translator"
     src="${./widget}"
@@ -97,6 +112,5 @@ in
       $DRY_RUN_CMD chmod -R u+w "$dest"
       echo "gloss: installed plasmoid org.gloss.translator"
     fi
-    $DRY_RUN_CMD ${pkgs.kdePackages.kservice}/bin/kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
   '';
 }
