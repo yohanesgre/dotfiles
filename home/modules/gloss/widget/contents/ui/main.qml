@@ -22,6 +22,10 @@ PlasmoidItem {
     property string source: "auto"
     property string target: "id"
     property string fieldText: ""
+    // A recorded envelope was rendered. The popup-open lookup is suppressed so
+    // the GLOSS_FIXTURE door keeps its card (the fixture is a dev render path,
+    // not a live one).
+    property bool fixtureAccepted: false
 
     // Fixture door (deferred acceptance item): when GLOSS_FIXTURE names a
     // recorded envelope on disk, the widget renders it through the same Card
@@ -42,7 +46,8 @@ PlasmoidItem {
     // ---- the two doors ---------------------------------------------------
 
     // The hotkey path. The CLI reads the primary selection itself, so the text
-    // never enters the widget and never becomes part of a shell command.
+    // never enters the widget and never becomes part of a shell command. Called
+    // when the popup expands (below).
     function lookUpSelection() {
         root.phase = "loading"
         root.run(Run.selectionCommand(root.binary))
@@ -85,10 +90,30 @@ PlasmoidItem {
         // leave phase and envelope exactly as they were.
         if ((data.stdout || "").trim() === "")
             return
+        root.fixtureAccepted = true
         root.accept(root.fixtureSource, data)
     }
 
-    Component.onCompleted: root.loadFixture()
+    // The shell turns the global shortcut (and keyboard activation) into
+    // Plasmoid.activated(), which expands the popup; the shortcut cannot be bound
+    // to code, so the selection is translated when the popup opens — the same
+    // toggle the panel icon performs. A rendered fixture is left alone.
+    onExpandedChanged: {
+        if (root.expanded && !root.fixtureAccepted)
+            root.lookUpSelection()
+    }
+
+    // The global shortcut default. plasma-desktop's AppletConfiguration.qml
+    // injects a "Keyboard Shortcuts" page (ConfigurationShortcuts.qml) into every
+    // applet's config dialog; it writes this same property. Applied only while the
+    // property is empty, so a sequence the user picked is never overwritten. Set
+    // imperatively: a property binding on the attached Plasmoid is not available
+    // while the applet is being built.
+    Component.onCompleted: {
+        if (!Plasmoid.globalShortcut)
+            Plasmoid.globalShortcut = "Meta+Ctrl+G"
+        root.loadFixture()
+    }
 
     // One envelope. No exit codes, no stderr, no partial objects: a parse
     // failure keeps the last card rather than blanking the field or the result.

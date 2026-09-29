@@ -4,6 +4,17 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-30 — gloss module review fixes: drop the sycoca step, wire the hotkey
+
+Adversarial review of the gloss Nix module (approve-with-nits) left two user-facing MEDs plus code NITs and required docs.
+
+- **MED-1** — `home/modules/gloss/default.nix` ran `kbuildsycoca6 --noincremental` after copying the plasmoid, justified by a false premise. Plasma 6 applet discovery does not go through KSycoca (the live `ksycoca6_*` DB carries no applet IDs; `kpackagetool6 -t Plasma/Applet --list` scans `~/.local/share/plasma/plasmoids/` directly). The call is deleted; the comment now says a new directory is picked up on plasmashell's next start, and that the plan's original `kpackagetool6 --generate-index` does not exist in KF6.
+- **MED-2** — the widget promised `Meta+Ctrl+G` but set no `globalShortcut` and never called `lookUpSelection()`. `main.qml` now defaults `Plasmoid.globalShortcut` to `Meta+Ctrl+G` (imperatively, only while empty, so a user-picked sequence survives) and runs the selection lookup when the popup expands; a rendered `GLOSS_FIXTURE` is left alone. The "Configure Gloss → Keyboard Shortcuts" page is real — plasma-desktop's `AppletConfiguration.qml` injects `ConfigurationShortcuts.qml` for every applet.
+- **Code NITs** — `src` is now a `lib.fileset.toSource` union (a widget/test edit no longer rehashes the crate; `postUnpack` dropped); unused `config` module arg dropped; `version` read from `Cargo.toml`; the key activation gained `trap 'rm -f "$_tmp"' EXIT`, a `chmod 600` repair before the `cmp`, and a corrected comment (the env var may also exist via the env module).
+- **Docs** — `README.md` module list gains `gloss`; `config/opencode/CONFIGURATION.md` gains a Gloss section.
+
+Gates: `nix flake check --no-build`, `nix fmt -- --check flake.nix home/`, `deadnix -L --fail flake.nix home/`, and `nix build --offline '.#homeConfigurations."yohanes@laptop".activationPackage'` (100 tests in-sandbox); `qmllint` rc 0 on all widget `.qml` and the offscreen `qml6` smoke clean. No hm-switch, no commit, no push.
+
 ## 2026-09-29 — implementation delegation upgraded to a global MUST
 
 Bounded implementation-code changes now dispatch `swe` by default in every project — via the `subagent` tool or the project's orchestration lane. The primary lands docs, tracking, and non-behavior upkeep directly; inline exceptions are category-scoped (comments, formatting, single-literal fixes). Dispatch requires a settled brief (decision ref, exact files, acceptance criteria, test commands) because `swe` denies `question`/`subagent` and cannot clarify mid-task. A project's `AGENTS.md` may override the rule. Files: `config/opencode/{AGENTS.md,CONFIGURATION.md}`.
