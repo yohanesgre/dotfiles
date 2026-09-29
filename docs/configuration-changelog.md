@@ -4,6 +4,10 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-29 — implementation delegation upgraded to a global MUST
+
+Bounded implementation-code changes now dispatch `swe` by default in every project — via the `subagent` tool or the project's orchestration lane. The primary lands docs, tracking, and non-behavior upkeep directly; inline exceptions are category-scoped (comments, formatting, single-literal fixes). Dispatch requires a settled brief (decision ref, exact files, acceptance criteria, test commands) because `swe` denies `question`/`subagent` and cannot clarify mid-task. A project's `AGENTS.md` may override the rule. Files: `config/opencode/{AGENTS.md,CONFIGURATION.md}`.
+
 ## 2026-09-29 — designer design-systems corpus
 
 - Vendored 113 OpenDesign design-system packages into `config/skills/designer/references/design-systems/` (7.49 MB stripped; selection.json + PROVENANCE pin + generated INDEX/index.json).
