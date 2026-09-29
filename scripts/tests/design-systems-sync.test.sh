@@ -57,5 +57,40 @@ jq -e '.packages | index("gamma")' "$base/corpus/selection.json" >/dev/null \
   && ok "t_add_and_list" || fail "gamma not in selection"
 rm -rf "$base"
 
+# --- t_check_rules ---
+base="$(new_fixture)"
+export DS_CORPUS_DIR="$base/corpus" DS_UPSTREAM_DIR="$base/upstream"
+bash "$SCRIPT" --sync >/dev/null
+# --index lands in Task 4; here the corpus legitimately lacks INDEX -> expect the index rule
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "index: INDEX.md missing" \
+  && ok "t_check_index_missing" || fail "index-missing not reported"
+
+mkdir -p "$base/corpus/packages/orphan"
+bash "$SCRIPT" --check >/dev/null 2>&1 && fail "orphan not caught" || true
+rm -rf "$base/corpus/packages/orphan"
+
+printf 'x\n' > "$base/corpus/packages/alpha/DESIGN-uk.md"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "banned" && ok "t_check_banned" || fail "banned file not caught"
+rm "$base/corpus/packages/alpha/DESIGN-uk.md"
+
+rm "$base/corpus/packages/alpha/tokens.css"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "required" && ok "t_check_required" || fail "missing required not caught"
+DS_UPSTREAM_DIR="$base/upstream" bash "$SCRIPT" --sync >/dev/null
+
+printf 'drift\n' >> "$base/corpus/packages/alpha/DESIGN.md"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "provenance" && ok "t_check_provenance" || fail "drift not caught"
+bash "$SCRIPT" --sync >/dev/null
+
+jq '.sizeCapMB = 0.0001' "$base/corpus/selection.json" > "$base/corpus/s.tmp" \
+  && mv "$base/corpus/s.tmp" "$base/corpus/selection.json"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "cap" && ok "t_check_cap" || fail "cap not caught"
+jq '.sizeCapMB = 12' "$base/corpus/selection.json" > "$base/corpus/s.tmp" \
+  && mv "$base/corpus/s.tmp" "$base/corpus/selection.json"
+
+printf 'stale\n' >> "$base/corpus/INDEX.md"
+{ bash "$SCRIPT" --check 2>&1 || true; } | grep -q "index" && ok "t_check_index_stale" || fail "stale index not caught"
+unset DS_CORPUS_DIR DS_UPSTREAM_DIR
+rm -rf "$base"
+
 if [ "$FAILED" -ne 0 ]; then echo "tests failed"; exit 1; fi
 echo "all tests passed"

@@ -103,10 +103,90 @@ mode_list() {
   jq -r '.packages[]' "$SELECTION" | sort | paste -sd' '
 }
 
+check_fail() { echo "FAIL: $*" >&2; CHECK_FAILED=1; }
+
+mode_check() {
+  [ -f "$SELECTION" ] || die "selection missing: $SELECTION"
+  CHECK_FAILED=0
+  local id d
+
+  # rule 1: parity both ways
+  while IFS= read -r id; do
+    [ -d "$PKG_DIR/$id" ] || check_fail "parity: selection id not on disk: $id"
+  done < <(jq -r '.packages[]' "$SELECTION")
+  if [ -d "$PKG_DIR" ]; then
+    while IFS= read -r d; do
+      jq -e --arg d "$d" '.packages | index($d)' "$SELECTION" >/dev/null \
+        || check_fail "parity: disk package not in selection: $d"
+    done < <(find "$PKG_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%f\n')
+  fi
+
+  # rule 2: required files
+  while IFS= read -r id; do
+    for f in manifest.json DESIGN.md tokens.css; do
+      [ -f "$PKG_DIR/$id/$f" ] || check_fail "required: $id missing $f"
+    done
+  done < <(jq -r '.packages[]' "$SELECTION")
+
+  # rule 3: banned files
+  if [ -d "$PKG_DIR" ]; then
+    while IFS= read -r p; do
+      check_fail "banned: $p"
+    done < <(cd "$PKG_DIR" && {
+      find . -name 'DESIGN-*.md' ! -name 'DESIGN.md'
+      find . \( -name '*.png' -o -name '*.jpg' -o -name '*.webp' -o -name '*.woff' \
+             -o -name '*.woff2' -o -name '*.ttf' -o -name '*.otf' \)
+      find . -type d \( -name preview -o -name source -o -name assets -o -name fonts \) -print
+    } | sed 's|^\./||')
+  fi
+
+  # rule 4: size cap
+  if [ -d "$PKG_DIR" ]; then
+    local cap bytes
+    cap="$(jq -r '.sizeCapMB' "$SELECTION")"
+    bytes="$(find "$PKG_DIR" -type f -printf '%s\n' | awk '{s+=$1} END{print s+0}')"
+    awk -v b="$bytes" -v c="$cap" 'BEGIN{exit !(b <= c*1048576)}' \
+      || check_fail "cap: corpus ${bytes}B exceeds ${cap}MB"
+  fi
+
+  # rule 5: index freshness (regenerate to a temp copy and diff)
+  if [ -d "$PKG_DIR" ] && [ -f "$CORPUS_DIR/INDEX.md" ]; then
+    local t; t="$(mktemp -d)"
+    render_index "$t" >/dev/null
+    diff -q "$t/INDEX.md" "$CORPUS_DIR/INDEX.md" >/dev/null \
+      || check_fail "index: INDEX.md stale; run --index"
+    diff -q "$t/index.json" "$CORPUS_DIR/index.json" >/dev/null \
+      || check_fail "index: index.json stale; run --index"
+    rm -rf "$t"
+  elif [ -d "$PKG_DIR" ]; then
+    check_fail "index: INDEX.md missing; run --index"
+  fi
+
+  # rule 6: provenance integrity
+  if [ -f "$PROVENANCE" ]; then
+    while IFS= read -r id; do
+      local want got
+      want="$(jq -r --arg id "$id" '.packages[$id].sha256 // empty' "$PROVENANCE")"
+      [ -n "$want" ] || { check_fail "provenance: no entry for $id"; continue; }
+      got="$(pkg_sha256 "$PKG_DIR/$id")"
+      [ "$want" = "$got" ] || check_fail "provenance: $id modified (sha mismatch)"
+    done < <(jq -r '.packages[]' "$SELECTION")
+  else
+    [ -d "$PKG_DIR" ] && check_fail "provenance: PROVENANCE.json missing"
+  fi
+
+  [ "$CHECK_FAILED" -eq 0 ] && info "check: OK" || exit 1
+}
+
+render_index() { die "render_index not implemented yet"; }
+mode_index()   { die "not implemented yet: --index"; }
+
 case "${1:-}" in
   --sync)   mode_sync ;;
   --add)    shift; [ $# -ge 1 ] || usage; mode_add "$@" ;;
   --list)   mode_list ;;
-  --check|--index|--report) die "not implemented yet: $1" ;;
+  --check)  mode_check ;;
+  --index)  mode_index ;;
+  --report) die "not implemented yet: $1" ;;
   *) usage ;;
 esac
