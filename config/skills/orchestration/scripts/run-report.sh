@@ -9,6 +9,9 @@
 #             runners cd into worktrees); a relative $1 stays cwd-relative.
 #   out-file  default: stdout only
 #   ORCH_REPO env  filter to one repo (empty/unset = all repos)
+#   ORCH_SINCE env filter to a recent window: <N>d / <N>h (relative to now) or a
+#                  literal YYYY-MM-DD (inclusive lower bound on ts). Composes
+#                  with ORCH_REPO. Empty/unset = no time filter.
 set -uo pipefail
 
 command -v jq >/dev/null 2>&1 || { echo "run-report.sh: jq not found" >&2; exit 0; }
@@ -28,6 +31,27 @@ fi
 OUT=${2:-}
 REPO_F=${ORCH_REPO:-}
 
+# ORCH_SINCE -> ISO cutoff ("" = no filter). Unsupported value: warn + ignore
+# (advisory script — never fail on a bad filter).
+SINCE=${ORCH_SINCE:-}
+CUTOFF=""
+if [ -n "$SINCE" ]; then
+  BAD=""
+  case "$SINCE" in
+    *d) N=${SINCE%d}
+        case "$N" in ''|*[!0-9]*) BAD=1 ;; *) CUTOFF=$(date -u -d "-$N days" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || true) ;; esac ;;
+    *h) N=${SINCE%h}
+        case "$N" in ''|*[!0-9]*) BAD=1 ;; *) CUTOFF=$(date -u -d "-$N hours" +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || true) ;; esac ;;
+    [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) CUTOFF="${SINCE}T00:00:00Z" ;;
+    *) BAD=1 ;;
+  esac
+  [ -n "$CUTOFF" ] || BAD=1
+  if [ -n "$BAD" ]; then
+    CUTOFF=""
+    echo "run-report.sh: ignoring invalid ORCH_SINCE '$SINCE' (want <N>d, <N>h, or YYYY-MM-DD)" >&2
+  fi
+fi
+
 if [ ! -s "$LOG" ]; then
   echo "no runs logged yet"
   exit 0
@@ -35,25 +59,37 @@ fi
 
 # shared jq helpers: every logged field is a STRING -> cast explicitly.
 # rc/dur absent or unparseable must not abort the whole report.
-# $repo (--arg) applies the ORCH_REPO filter to every section.
+# $repo (--arg) applies the ORCH_REPO filter and $since (--arg) the ORCH_SINCE
+# time window ("" = no filter) to every section.
 JQ_DEFS='
   def rcnum: ((.rc // "0") | tonumber? // -1);
   def dur_s: (if .dur_s != null then (.dur_s | tonumber?)
               else (((.dur_ms // "0") | tonumber?) / 1000) end // 0);
   def rkeep: ($repo == "") or (.repo == $repo);
+  def skeep: ($since == "") or ((.ts // "") >= $since);
 '
+
+# window leaves nothing -> advisory no-op
+if [ -n "$CUTOFF" ]; then
+  n_in=$(jq -rs --arg repo "$REPO_F" --arg since "$CUTOFF" "$JQ_DEFS"'[.[] | select(rkeep and skeep)] | length' \
+    "$LOG" 2>/dev/null || echo 0)
+  if [ "${n_in:-0}" -eq 0 ]; then
+    echo "no runs in window"
+    exit 0
+  fi
+fi
 
 gen() {
   echo "# Orchestration run report"
   echo
-  echo "source: $LOG · repo: ${REPO_F:-all} · generated: $(date -u +%Y-%m-%dT%H:%MZ) · entries: $(wc -l < "$LOG")"
+  echo "source: $LOG · repo: ${REPO_F:-all} · since: ${SINCE:-all} · generated: $(date -u +%Y-%m-%dT%H:%MZ) · entries: $(wc -l < "$LOG")"
   echo
   echo "## Lanes by repo/plan (kind=lane)"
   echo
   echo "| repo | plan | n | rc=0 | rc!=0 | mean dur | max dur |"
   echo "|---|---|---|---|---|---|---|"
-  jq -rs --arg repo "$REPO_F" "$JQ_DEFS"'
-    [.[] | select(.kind=="lane") | select(rkeep)] | group_by([.repo, .plan])[] |
+  jq -rs --arg repo "$REPO_F" --arg since "$CUTOFF" "$JQ_DEFS"'
+    [.[] | select(.kind=="lane") | select(rkeep and skeep)] | group_by([.repo, .plan])[] |
     .[0].repo as $r | .[0].plan as $p |
     "| \($r) | \($p) | \(length) | \([.[]|select(rcnum==0)]|length) | \([.[]|select(rcnum!=0)]|length) | \((map(dur_s)|add/length*10|round/10))s | \((map(dur_s)|max*10|round/10))s |"
   ' "$LOG"
@@ -62,13 +98,13 @@ gen() {
   echo
   echo "| repo | plan | verdict | wall_s | lanes | prs | iter |"
   echo "|---|---|---|---|---|---|---|"
-  jq -rs --arg repo "$REPO_F" "$JQ_DEFS"'[.[] | select(.kind=="plan") | select(rkeep)][] |
+  jq -rs --arg repo "$REPO_F" --arg since "$CUTOFF" "$JQ_DEFS"'[.[] | select(.kind=="plan") | select(rkeep and skeep)][] |
     "| \(.repo) | \(.plan) | \(.verdict) | \(.wall_s) | \(.lanes) | \(.prs) | \(.iter) |"' "$LOG"
   echo
   echo "## Failures (lanes rc!=0, plans verdict != DONE)"
   echo
-  jq -rs --arg repo "$REPO_F" "$JQ_DEFS"'
-    [.[] | select(rkeep) | select((.kind=="lane" and rcnum!=0) or (.kind=="plan" and .verdict != "DONE"))] |
+  jq -rs --arg repo "$REPO_F" --arg since "$CUTOFF" "$JQ_DEFS"'
+    [.[] | select(rkeep and skeep) | select((.kind=="lane" and rcnum!=0) or (.kind=="plan" and .verdict != "DONE"))] |
     if length==0 then "- none"
     else (.[] | "- \(.repo)/\(.plan // "-")/\(.lane // "-"): \(if .rc != null then "rc=\(.rc)" else "verdict=\(.verdict)" end)")
     end
@@ -76,14 +112,14 @@ gen() {
   echo
   echo "## Signals (improve/fix candidates)"
   echo
-  jq -rs --arg repo "$REPO_F" "$JQ_DEFS"'
-    ([.[] | select(.kind=="lane") | select(rkeep) | select(rcnum!=0)]
+  jq -rs --arg repo "$REPO_F" --arg since "$CUTOFF" "$JQ_DEFS"'
+    ([.[] | select(.kind=="lane") | select(rkeep and skeep) | select(rcnum!=0)]
       | group_by([.repo,.plan,.lane])
       | map(select(length>=2))
       | sort_by([.[0].repo,.[0].plan,.[0].lane])
       | map("- repeated: \(.[0].repo)/\(.[0].plan // "-")/\(.[0].lane // "-") (\(length))"))
     +
-    ([.[] | select(.kind=="plan") | select(rkeep) | select(((.iter // "0") | tonumber?) > 1)]
+    ([.[] | select(.kind=="plan") | select(rkeep and skeep) | select(((.iter // "0") | tonumber?) > 1)]
       | sort_by([.repo,.plan])
       | map("- \(.repo)/\(.plan) iter=\(.iter)"))
     | if length == 0 then "- none" else .[] end
@@ -91,15 +127,15 @@ gen() {
   echo
   echo "## Slowest lanes (top 10)"
   echo
-  jq -rs --arg repo "$REPO_F" "$JQ_DEFS"'
-    [.[] | select(.kind=="lane") | select(rkeep)] | sort_by(dur_s) | reverse | .[0:10][] |
+  jq -rs --arg repo "$REPO_F" --arg since "$CUTOFF" "$JQ_DEFS"'
+    [.[] | select(.kind=="lane") | select(rkeep and skeep)] | sort_by(dur_s) | reverse | .[0:10][] |
     "- \(.repo)/\(.plan // "-")/\(.lane // "-"): \(((dur_s)*10|round/10))s rc=\(.rc // "?")"
   ' "$LOG"
   echo
   echo "## Recent fixes (kind=fix)"
   echo
-  jq -rs --arg repo "$REPO_F" "$JQ_DEFS"'
-    [.[] | select(.kind=="fix") | select(rkeep)] | .[-10:] | reverse |
+  jq -rs --arg repo "$REPO_F" --arg since "$CUTOFF" "$JQ_DEFS"'
+    [.[] | select(.kind=="fix") | select(rkeep and skeep)] | .[-10:] | reverse |
     map("- \(.repo)/\(.plan // "-"): \(.symptom // "-") — \(.change // "-") (\(.ts // "-"))")
     | if length == 0 then "- none" else .[] end
   ' "$LOG"

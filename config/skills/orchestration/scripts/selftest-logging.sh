@@ -78,6 +78,41 @@ D_OUT=$(ORCH_LOG="$E_LOG" bash "$REPORT" 2>&1) || fail "(d) empty-log report exi
 [ "$D_OUT" = "no runs logged yet" ] || fail "(d) expected 'no runs logged yet', got: $D_OUT"
 ok "(d) empty log prints 'no runs logged yet' and exits 0"
 
+# --- (e) ORCH_SINCE narrows the report to a recent window -------------------
+SFIX="$TMP/fixture-since.jsonl"
+NOW_TS=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+cat > "$SFIX" <<EOF
+{"kind":"lane","ts":"2020-01-01T00:00:00Z","repo":"gamma","plan":"pold","lane":"api","rc":"0","dur_ms":"1000"}
+{"kind":"lane","ts":"$NOW_TS","repo":"gamma","plan":"pnew","lane":"api","rc":"0","dur_ms":"1000"}
+EOF
+
+E_ALL=$(ORCH_LOG="$SFIX" bash "$REPORT" 2>&1) || fail "(e) unfiltered since-fixture report exited non-zero"
+contains "$E_ALL" "pold" || fail "(e) fixture sanity: old row missing without ORCH_SINCE"
+contains "$E_ALL" "pnew" || fail "(e) fixture sanity: recent row missing without ORCH_SINCE"
+
+E_1D=$(ORCH_SINCE=1d ORCH_LOG="$SFIX" bash "$REPORT" 2>&1) || fail "(e) ORCH_SINCE=1d report exited non-zero"
+contains "$E_1D" "pnew" || fail "(e) ORCH_SINCE=1d dropped the recent row"
+contains "$E_1D" "pold" && fail "(e) ORCH_SINCE=1d leaked the old row"
+ok "(e) ORCH_SINCE=1d keeps the recent row and drops the old one"
+
+# --- (f) ORCH_SINCE accepts <N>h and a literal YYYY-MM-DD -------------------
+E_1H=$(ORCH_SINCE=1h ORCH_LOG="$SFIX" bash "$REPORT" 2>&1) || fail "(f) ORCH_SINCE=1h report exited non-zero"
+contains "$E_1H" "pnew" || fail "(f) ORCH_SINCE=1h dropped the recent row"
+
+E_LIT=$(ORCH_SINCE=2021-01-01 ORCH_LOG="$SFIX" bash "$REPORT" 2>&1) || fail "(f) literal-date report exited non-zero"
+contains "$E_LIT" "pnew" || fail "(f) ORCH_SINCE=2021-01-01 dropped the recent row"
+contains "$E_LIT" "pold" && fail "(f) ORCH_SINCE=2021-01-01 leaked the 2020 row"
+ok "(f) ORCH_SINCE accepts <N>h and a literal YYYY-MM-DD cutoff"
+
+# --- (g) window with no runs prints 'no runs in window' ---------------------
+OFIX="$TMP/fixture-old-only.jsonl"
+printf '%s\n' \
+  '{"kind":"lane","ts":"2020-01-01T00:00:00Z","repo":"gamma","plan":"pold","lane":"api","rc":"0","dur_ms":"1000"}' \
+  > "$OFIX"
+G_OUT=$(ORCH_SINCE=1d ORCH_LOG="$OFIX" bash "$REPORT" 2>&1) || fail "(g) empty-window report exited non-zero"
+[ "$G_OUT" = "no runs in window" ] || fail "(g) expected 'no runs in window', got: $G_OUT"
+ok "(g) window with no matching runs prints 'no runs in window' and exits 0"
+
 echo
 echo "all $PASS checks passed"
 exit 0
