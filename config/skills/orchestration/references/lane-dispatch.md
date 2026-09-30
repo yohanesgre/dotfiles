@@ -108,6 +108,11 @@ command, and it is not part of the lane loop).
    once up front; a fresh `opencode` boot can fail with a postinstall
    error — record it and switch paths instead of retrying blindly.
    Approved model errors here → FAST EXIT naming the model, never substitute.
+   Crumb sub-waves (plan declares `## Tasks`): dispatch as file/resource-disjoint
+   sub-waves — fire the maximal ready set (one worker pane per crumb) →
+   `wave-wait.ts` → `scripts/lane-verify.sh check <worktree> <snapdir> <manifest>`
+   → next set. Full mechanics: `references/crumb-execution.md`. No `## Tasks` →
+   the lane behaves exactly as today (one runner, one return).
 5. The lane exits at DONE, the runner persists the return and the pane
    returns to its prompt; the pane stays open through the loop — no live
    agent afterward, but the scrollback and the pane itself persist for

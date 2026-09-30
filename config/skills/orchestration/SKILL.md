@@ -216,19 +216,19 @@ WAIT + re-dispatch). luvus agent kinds name backends, not roles — the role tra
 in the brief. If no fitting agent exists, keep the lane WAIT and report the
 gap; never invent an agent name.
 
+A lane whose plan declares `## Tasks` runs crumb sub-waves per
+`references/crumb-execution.md` (disjoint ready set → `wave-wait.ts` →
+`lane-verify` per join → next set); no `## Tasks` → the path below.
+
 Layout (design-thinking variant C, built once per wave by
-`scripts/lane-layout.ts`): the orchestrator keeps a fixed left master column
-at full height; lanes tile a balanced grid to the right (target tile aspect
-~2:1), never a widening row of skinny columns. luvus exposes no pane
-geometry, so the grid is chosen from a nominal 160x48 area and lanes beyond
-`--max-per-tab` (default 6) move to extra lane-only tabs — never squeezed.
-One lane, one pane, one owner; each pane's cwd is its worktree.
-`lane-layout.ts` requires ≥1 lane; at N=0 it is not called (planning: no lane
-panes, master full width). The grid holds across N=1 (master + one lane) and
-overflow; a finished lane's pane persists through the loop
-(scrollback for inspection, reusable for a follow-up), so the grid reflows
-only when a pane closes — and the orchestrator closes every lane pane at
-plan DONE/FAILED (the only close point), never leaving an orphan tile.
+`scripts/lane-layout.ts`): fixed left master column at full height; lanes
+tile a balanced grid to the right (~2:1 tiles), never a widening row of
+skinny columns; lanes beyond `--max-per-tab` (default 6) move to extra
+lane-only tabs — never squeezed. One lane, one pane, one owner; each pane's
+cwd is its worktree. Requires ≥1 lane; at N=0 it is not called (master full
+width). The grid reflows only when a pane closes, and the orchestrator closes
+every lane pane at plan DONE/FAILED (the only close point), never an orphan
+tile.
 
 Brief (subgraph IN — every lane, self-contained):
 ```

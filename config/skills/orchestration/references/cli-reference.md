@@ -45,6 +45,16 @@ luvus pane run <pane-id> "cd '<abs-worktree>'"             # park the lane shell
 luvus pane close <pane-id>                                 # only panes YOU created
 ```
 
+Worker panes (crumb sub-waves, `references/crumb-execution.md`): one pane per
+crumb, split off the LANE pane, parked in the SAME worktree, run with the same
+canonical runner (slug `<prefix>-<crumb>`); close each once its set verifies.
+
+```bash
+luvus pane split <lane-pane> --auto --no-focus   # -> .result.pane (new worker pane)
+luvus pane run <worker-pane> "cd '<worktree>'"   # park the worker shell in the worktree
+luvus pane run <worker-pane> bash <abs-runner>   # submit the crumb runner (text + Enter)
+```
+
 Output inspection:
 
 ```bash
@@ -115,7 +125,9 @@ opencode run --auto --model <provider/model#variant> --agent <role> "<prompt>"
 ## Canonical lane runner (copy verbatim, fill the `<>`)
 
 Write the brief to `<slug>-brief.md` and this runner to `<slug>-runner.sh`
-(both beside the worktree, or `/tmp/opencode/`). One lane, one runner.
+(both beside the worktree, or `/tmp/opencode/`). One lane, one runner. A crumb
+sub-wave reuses this SAME runner, one per crumb, with slug `<prefix>-<crumb>`
+(`references/crumb-execution.md`).
 
 ```bash
 #!/usr/bin/env bash
@@ -175,6 +187,28 @@ reviewer can spawn early). A wait timeout is not a dead lane — check
 `luvus pane status <pane-id>` and re-wait. Invoke with the shell timeout
 raised (`timeout: 0` or ≥ `--timeout`): the default exceeds a typical
 harness shell timeout, and a killed wait is not a lane failure.
+
+## lane-verify (crumb sub-wave verification)
+
+Re-runs each crumb's gate, scope-checks its files, and — when the crumb's return
+file exists — appends `verified rc=` markers to
+`<worktree>/../<prefix>-<crumb>-return.md`, against a snapshot taken BEFORE the
+sub-wave fires:
+
+```bash
+bash scripts/lane-verify.sh snapshot <worktree> <snapdir> <manifest>   # before the set fires
+bash scripts/lane-verify.sh check    <worktree> <snapdir> <manifest>   # after the join
+bash scripts/lane-verify.sh rollback <worktree> <snapdir> <manifest>   # on red; NEVER git-restore-to-HEAD
+```
+
+Manifest: `<worktree>/../<prefix>-tasks.tsv` — one crumb per line,
+TAB-separated: `lane<TAB>crumb<TAB>files(space)<TAB>resources(space|-)<TAB>gate`.
+The orchestrator RE-RENDERS it per ready set (same path, only that set's crumbs);
+`resources` is informational (never acted on); the optional `[lane]` argument
+filters which GATES run, not the declared-files union. After a set verifies
+GREEN, the lane agent COMMITS that set's paths before the next set fires (the
+lane agent owns git; workers never commit) — an uncommitted green set is absent
+from the next re-rendered manifest and would be flagged UNCLAIMED.
 
 ## Run log (always-on, advisory)
 

@@ -51,6 +51,16 @@ artifacts produced elsewhere (a `writing-plans` document, specs, ADRs,
 project plan docs) are inputs — link them, never duplicate them here. The
 `writing-plans` skill authors the plan document; this skill tracks it.
 
+`## Acceptance` carries plan-level criteria, one per line, each ending
+`— verify: <runnable command>`. `## Tasks` maps the atomic crumbs of each splitting lane
+(one table per lane under a `### <lane>` heading): `id` unique per lane (`T1`…);
+`files` comma-separated real paths (never `—`); `resources`
+(lockfiles/artifacts/env/ports) space- or comma-separated, `—` for none;
+`acceptance` non-empty; `gate` an exact command; `edges` direct predecessor ids only.
+Two crumbs in one lane without a direct edge must stay file- and resource-disjoint —
+that is what makes them parallelizable. Delete `## Tasks` unless a lane actually splits;
+`## Acceptance` stays always.
+
 Then write `status/<plan>/status.md`:
 
 ```
@@ -141,7 +151,10 @@ just backfill it when noticed.
 Run `bash ~/.agents/skills/work-plans/scripts/plan-check.sh <plan>` at
 open and before flipping DONE/FAILED. It checks scope Out, 3-line
 heartbeats, TIMELINE entry, no loose files, the state enum
-(`PLAN|WAIT|WORKING|DONE|FAILED`), and DONE/FAILED-has-report.
+(`PLAN|WAIT|WORKING|DONE|FAILED`), and DONE/FAILED-has-report. When a plan
+declares `## Tasks` it also checks crumb rows, edge targets,
+Acceptance/`verify:` coverage, and per-lane file/resource disjointness;
+plans without `## Tasks` are unaffected.
 Red → fix the artifact, then re-run.
 
 ## Jev judgment (advisory — when `jev-mcp` is reachable)
@@ -156,8 +169,10 @@ verdict never opens, blocks, or closes a plan.
   `scope_bounded` (In and Out both concrete), `acceptance_verifiable`
   (every criterion names a runnable verify command), `graph_valid` (waves
   ordered by dependency; one owner per node; no shared-file collision),
-  `no_placeholders` (no TBD/TODO/empty sections). A `no` is fixed before the
-  execution gate — never executed past.
+  `crumb_disjoint` (parallel crumbs in one lane share no file/resource and no
+  missing edge), `acceptance_coverage` (each frozen criterion carries a verify
+  command and a matching gate row), `no_placeholders` (no TBD/TODO/empty
+  sections). A `no` is fixed before the execution gate — never executed past.
 - **Close (before flipping DONE/FAILED).** `jev_check` on a small assembled
   state — the frozen acceptance list from `plan.md` plus `report.md` and
   `status.md`: "does every frozen criterion have matching evidence in the

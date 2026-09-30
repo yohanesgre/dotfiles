@@ -12,6 +12,9 @@ iter: <W<n>i<m> current position>
 - In: ...
 - Out (explicit non-scope): ...
 
+## Acceptance
+- <criterion> — verify: <runnable command>
+
 ## Graph A (happy path)
 ```ts
 step 1 → step 2 → DONE
@@ -27,6 +30,19 @@ step 1 → step 2 → DONE
 
 ## Lanes (only when parallel — else delete this section)
 - <lane>: <files touched> — <content owned>
+
+## Tasks (only when a lane splits into crumbs — else delete this section)
+One table per splitting lane; the lane name is the `###` heading above its table.
+Rules: `id` unique per lane (`T1`…); `files` comma-separated real paths (never `—`); `resources`
+`—` or space-/comma-separated tokens (lockfiles/artifacts/env/ports); `acceptance` non-empty; `gate` exact
+command; `edges` `—` or comma-separated predecessor ids (DIRECT dependency only). Two crumbs in
+one lane without a direct edge between them must stay file- and resource-disjoint (that is what
+makes them parallelizable).
+
+### <lane>
+| id | owner | files | resources | acceptance | gate | edges |
+|---|---|---|---|---|---|---|
+| T1 | <owner> | <paths> | — | <criterion> | <gate cmd> | — |
 
 ## Memory
 - `icm_memory_store` on DONE: summary + paths to plan.md and report.md

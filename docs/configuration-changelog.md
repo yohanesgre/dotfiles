@@ -4,6 +4,21 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-30 — atomic-task dispatch: crumbs in lanes
+
+A lane used to be one opaque task: one worker, one worktree, one shot at a vague "done". That makes disjoint work sequential, and it makes an over-broad failure expensive — a single bad edit costs the whole lane. This lands atomic-task dispatch, where a lane carries several **crumbs** (atomic tasks) whose file sets are provably disjoint, so they can run in parallel and fail independently. It went design → POC → real build: the design pass fixed the granularity unit and the rollback unit, the POC proved the sub-wave dispatch shape, and only then did the skill text change.
+
+- **work-plans**: plans now document `## Acceptance` + `## Tasks` as crumb tables (id, files, done-when). `scripts/plan-check.sh` enforces what prose cannot — crumb file sets must be mutually disjoint, ids unique, every acceptance criterion reachable from some crumb, every crumb assigned to a lane. The declared-vs-enforced split is the point: the plan declares, `plan-check` refuses to pass a plan that lies.
+- **orchestration**: `references/crumb-execution.md` is the execution contract — **sub-wave** dispatch (a wave is a set of crumbs that are disjoint from each other), one worker pane per crumb, a `lane-verify.sh` run on **each** join, and the **commit-between-sets** rule: a wave's crumbs are committed before the next wave begins, so rollback never has to disentangle another crumb's commits.
+- **lane-verify**: `scripts/lane-verify.sh` is the per-join gate — snapshot, scoped gates, verdict, and rollback on failure. `--lane` filters gates to the declared crumb union; manifest paths must be contained in the worktree, and `..` manifests, non-git worktrees, and malformed manifests are refused (exit 2) with nothing executed. One joining crumb failing rolls back that join and fails the lane; siblings are untouched.
+- **Failure policy**: snapshot-then-verify-then-rollback per join, never a blind `git reset`. New files absent from the snapshot are deleted on rollback; a refused or interrupted verify leaves the prior snapshot state intact rather than half-reverted.
+
+**Adversarial review chain**: the build went through review, which found 1 SEV on the destructive path plus 6 MED findings and a batch of NITs — all fixed, re-review approved. The destructive-path SEV is why rollback is snapshot-scoped and containment-guarded at all. `scripts/selftest-lane-verify.sh` (scenarios a–i) is the standing evidence that those fixes hold: out-of-scope file caught with a RED verdict, clean tree GREEN with `rc=` markers, rollback restoring modified + deleted files, `..`/malformed/non-git refusals, `--lane` gate filtering with the declared union honored, containment guards, and both refused-snapshot cases.
+
+The logging selftest from the demo lane is folded in as a separate commit: `scripts/selftest-logging.sh` closes the standing watch item "no automated test for runlog/report" and was itself produced by the first live lane run through the new logging loop — the feature dogfooding its own observability path.
+
+Evidence: `bash scripts/validate-skills.sh` → rc 0 (37 skills, 5 pre-existing warnings); `selftest-lane-verify.sh` scenarios a–i all `ok` → exit 0; `selftest-logging.sh` all 4 checks pass → exit 0; `bash -n` clean on `plan-check.sh`, `lane-verify.sh`, `selftest-lane-verify.sh`; plan compat check 9/9 status plans GREEN. Committed, **not pushed**.
+
 ## 2026-09-30 — orchestration run logging: central log, report, diagnosis loop
 
 Orchestration runs had no cross-run observability: nothing recorded which repo, plan, or lane a run belonged to, so slow or repeatedly-failing lanes could only be diagnosed from memory. This adds an always-on but **advisory** run log plus a report and a written improvement loop. Advisory means the logger can never fail a lane — `runlog.sh` exits 0 on any error (missing `jq`, unwritable path, no git) and every step is guarded.
