@@ -36,11 +36,12 @@ ColumnLayout {
     // ---- empty: one grey line naming the one door, no illustration ------
     // The widget never reads the clipboard, so the hint must not promise a
     // lookup of a selection (user decision: "open empty, never read the
-    // clipboard").
+    // clipboard"). One line, not a paragraph: the card opens at content
+    // height, and the hotkey fact already lives in the compact tooltip.
     Text {
         Layout.fillWidth: true
         visible: voids.phase === "empty"
-        text: i18n("⏎ look up  ·  type or paste, then press Enter  ·  Meta+Ctrl+G opens this card")
+        text: i18n("Type or paste, then press Enter")
         font.pixelSize: T.chipSize
         color: Kirigami.Theme.disabledTextColor
         wrapMode: Text.Wrap

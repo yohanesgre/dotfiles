@@ -35,6 +35,12 @@ Item {
     readonly property bool bodyVisible: hasResult && !busy
     readonly property bool voidsVisible: busy || !hasResult
 
+    // The field-to-region gap. With a result above it the void region needs the
+    // full 16 px to separate from the field; in the empty state there is
+    // nothing above the hint, so it takes one step on the 4-px scale (8 px) and
+    // the card opens at the height of its content.
+    readonly property int voidsGap: voidsVisible && voidPhase === "empty" ? T.space8 : T.space16
+
     readonly property string voidPhase: {
         if (busy)
             return "loading"
@@ -152,7 +158,7 @@ Item {
 
                 Voids {
                     Layout.fillWidth: true
-                    Layout.topMargin: T.space16
+                    Layout.topMargin: card.voidsGap
                     visible: card.voidsVisible
                     phase: card.voidsVisible ? card.voidPhase : "empty"
                     message: card.errorMessage
