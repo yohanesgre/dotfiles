@@ -29,6 +29,7 @@ file/resource-disjoint.
 
 1. Snapshot BEFORE the set fires (the manifest holds only this set):
    `bash scripts/lane-verify.sh snapshot <worktree> <snapdir> <manifest>`
+   Clear the set's expected return files (`<worktree>/../<prefix>-<crumb>-return.md`) before firing (or re-firing) the set — a stale return from a previous attempt satisfies the join instantly, so the per-join verify then runs against unfinished work.
 2. Fire the set — one WORKER PANE per crumb, split off the LANE pane:
    ```bash
    luvus pane split <lane-pane> --auto --no-focus    # -> .result.pane
