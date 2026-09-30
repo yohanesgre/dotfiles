@@ -196,6 +196,24 @@ PlasmoidItem {
         Layout.maximumWidth: 420
         Layout.minimumHeight: card.implicitHeight
         Layout.preferredHeight: card.implicitHeight
+        // The popup's ceiling is the content, so a remembered per-applet size
+        // can never inflate it. Plasma's popup container sizes the window from
+        // THIS representation's Layout values — CompactApplet.qml:255-280:
+        //
+        //   Layout.minimumHeight: root.fullRepresentation ? root.fullRepresentation.Layout.minimumHeight + extraHeight : 0
+        //   Layout.maximumHeight: root.fullRepresentation ? root.fullRepresentation.Layout.maximumHeight + extraHeight : Infinity
+        //   implicitHeight: {
+        //       if (root.fullRepresentation.Layout.preferredHeight > 0)
+        //           return root.fullRepresentation.Layout.preferredHeight + extraHeight;
+        //       …
+        //
+        // `extraHeight` is 0 outside the separator state, and plasmashell keeps
+        // a remembered `popupHeight` per applet in the appletsrc (a C++ value no
+        // QML reads). With minimum and preferred pinned to card.implicitHeight
+        // but maximum left at its default Infinity, the popup's ceiling was
+        // unbounded and that stale value held the 101 px card open at 201 px.
+        // Pinning maximum to the content caps it.
+        Layout.maximumHeight: card.implicitHeight
 
         Card {
             id: card

@@ -55,6 +55,13 @@ RowLayout {
     signal refreshRequested()
     signal copyRequested()
 
+    // The picker is a separate window, so a press on the card behind it never
+    // reaches that window. Card.qml's dismissal catcher (below the card's
+    // content, non-consuming) asks here: `pickerVisible` gates it and
+    // `dismissPicker()` closes the window. A read and a call only.
+    readonly property bool pickerVisible: picker.visible
+    function dismissPicker() { picker.dismiss() }
+
     spacing: T.space8
 
     // Source: a dotted border means "detected, not chosen"; a solid one means
