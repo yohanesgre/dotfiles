@@ -22,6 +22,11 @@ RowLayout {
     property bool hasResult: false
     property bool busy: false
 
+    // Whether the applet's own popup is open. The picker is a separate window
+    // and would outlive the card, so it needs to be told; passed down from
+    // main.qml through Card.
+    property bool appletExpanded: true
+
     readonly property bool autoSource: source === "auto"
     readonly property bool detectedSource: autoSource
         && detected !== null && detected !== undefined
@@ -220,6 +225,10 @@ RowLayout {
 
     LanguagePicker {
         id: picker
+        // The window is anchored to the control it was opened from.
+        sourceControl: sourceButton
+        targetControl: targetButton
+        appletExpanded: chrome.appletExpanded
         currentSource: chrome.source
         currentTarget: chrome.target
         onPicked: function (which, code) { chrome.languageChosen(which, code) }

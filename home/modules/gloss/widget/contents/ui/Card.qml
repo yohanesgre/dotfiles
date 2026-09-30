@@ -17,6 +17,11 @@ Item {
     property string target: "id"
     property int cap: T.cap
 
+    // Whether the applet's own popup is open. Passed to Chrome so the picker's
+    // window — a separate top level that would otherwise outlive the card —
+    // closes with it. main.qml binds this to the applet's `expanded`.
+    property bool appletExpanded: true
+
     // The field's text is a local echo owned outside the card, so a failure can
     // never clear it and typing never fights the model's answer.
     property string text: ""
@@ -107,6 +112,7 @@ Item {
             Layout.bottomMargin: T.space12
             source: card.source
             target: card.target
+            appletExpanded: card.appletExpanded
             detected: card.detected
             cached: card.cached
             fetchedAt: card.fetchedAt
