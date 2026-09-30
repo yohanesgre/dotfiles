@@ -104,6 +104,25 @@ PlasmaCore.Dialog {
     // elsewhere — closes it instead.
     hideOnWindowDeactivate: true
 
+    // hideOnWindowDeactivate hides on *deactivation*, and PlasmaQuick::Dialog
+    // only ever hides in focusOutEvent (`dialog.h`: "Whether the dialog should
+    // be hidden when the dialog loses focus"). setHideOnWindowDeactivate just
+    // stores the flag — it neither activates the window nor sets
+    // Qt::WindowDoesNotAcceptFocus — so a window that never takes focus can
+    // never deactivate, and the property is inert. A window shown with
+    // setVisible() is not guaranteed activation either, which is why Plasma
+    // activates its own applet dialogs explicitly: CompactApplet.qml calls
+    // `dialog.requestActivate()` when its popup becomes visible, and Desktop.qml
+    // does `KX11Extras.forceActiveWindow(sidePanel)` / `sidePanel.requestActivate()`.
+    // The window's visualParent makes it a transient child of the applet popup
+    // (setVisualParent() sets the transient parent), and that popup's
+    // hideOnWindowDeactivate is false by default (AppletQuickItem doc), so
+    // taking focus here does not close the card.
+    onVisibleChanged: {
+        if (visible)
+            requestActivate()
+    }
+
     // The window resizes to its main item, so the item carries the size (the
     // same shape FolderViewDialog uses). 224 px of list cap plus the search
     // field and the gap between them, which is the ~284 px the Popup could
