@@ -379,4 +379,39 @@ Item {
             }
         }
     }
+
+    // A press anywhere on the card closes the open language picker.
+    //
+    // The picker is a separate window (LanguagePicker.qml), so a click on the
+    // card behind it never reaches that window and `hideOnWindowDeactivate`
+    // cannot fire — that is the case this covers. It must NOT swallow the
+    // press: the source and target controls open the picker, so a layer that
+    // consumed the press would leave them dead. `mouse.accepted = false` on the
+    // press and the release propagates the event to the item underneath (the
+    // control), so the press both dismisses and is delivered. `enabled` is tied
+    // to the picker's visibility, so the catcher is completely inert whenever
+    // the picker is closed and cannot interfere with normal interaction.
+    //
+    // What this does NOT cover: a click on the desktop or another window. That
+    // case is the applet popup's own dismissal, which already reaches the
+    // picker through the appletExpanded plumbing (main.qml -> Card -> Chrome).
+    // The picker also stays anchored under its control and still closes on
+    // picking a row, on Escape, and when the applet popup closes; requestActivate()
+    // and hideOnWindowDeactivate are untouched and may carry the other compositors.
+    MouseArea {
+        id: pickerDismissCatcher
+
+        anchors.fill: parent
+        enabled: chromeRow.pickerVisible
+        // Lets the composed events (clicked) reach the control below when this
+        // catcher does not accept them.
+        propagateComposedEvents: true
+
+        onPressed: function (mouse) {
+            chromeRow.dismissPicker()
+            mouse.accepted = false
+        }
+        onReleased: function (mouse) { mouse.accepted = false }
+        onClicked: function (mouse) { mouse.accepted = false }
+    }
 }
