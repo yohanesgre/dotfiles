@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<!--
+  Architecture map — orchestration run logging (runlog.sh → status/log/runs.jsonl → run-report.sh).
+  Static, hand-authored snapshot 2026-09-30 from the uncommitted skill working tree.
+  Verify with architecture-viz scripts: check-svg-overlaps.py + render-check.sh.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>orchestration — Run Logging Map</title>
+<style>
+  :root{
+    --bg:#0a0e14; --panel:#101826; --panel2:#0c121c; --line:#1e2a3a;
+    --text:#e8eef6; --muted:#8fa0b5; --faint:#5b6b80;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono",Menlo,Consolas,monospace;
+    --a:#f2b344; --b:#a78bfa; --c:#38bdf8; --d:#2dd4bf; --e:#4ade80; --f:#f472b6;
+    --g:#94a3b8; --h:#60a5fa; --danger:#f87171;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;color:var(--text);font:15px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    background:radial-gradient(1100px 480px at 12% -8%, rgba(56,189,248,.10), transparent 60%),
+               radial-gradient(900px 460px at 92% -4%, rgba(167,139,250,.10), transparent 60%), var(--bg);}
+  .wrap{max-width:1340px;margin:0 auto;padding:44px 28px 90px}
+  code,.mono{font-family:var(--mono);font-size:.86em;color:#cfe0f2}
+  h1{font-size:34px;letter-spacing:-.02em;margin:6px 0}
+  h2{font-size:19px;margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  h2 .dot{width:9px;height:9px;border-radius:50%;background:var(--c)}
+  .kicker{font:600 11.5px/1 var(--mono);letter-spacing:.22em;text-transform:uppercase;color:var(--c)}
+  .sub{color:var(--muted);font-size:15.5px;margin:0 0 22px}
+  .hint{color:var(--faint);font-size:12.5px;margin:-6px 0 16px}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:34px}
+  .chip{font:12px/1 var(--mono);color:var(--muted);background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 12px}
+  .chip b{color:var(--text);font-weight:600}
+  section{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;margin-bottom:18px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.grid2{grid-template-columns:1fr}}
+  .graph{width:100%;height:auto;display:block;border-radius:12px;background:var(--panel2);border:1px solid var(--line)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px 20px;margin-top:16px;font-size:12.5px;color:var(--muted)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .legend i{width:10px;height:10px;border-radius:3px}
+  .swatch{width:26px;height:0;border-top:2px solid #7c8ea6}
+  .swatch.dash{border-top-style:dashed}
+  .n rect{fill:var(--g);stroke:var(--g);fill-opacity:.07;stroke-width:1.3}
+  .n .t{font:600 14px system-ui,-apple-system,"Segoe UI",sans-serif;fill:#f2f6fb}
+  .n .s{font:11px var(--mono);fill:var(--muted)}
+  .n.boot rect{fill:var(--a);stroke:var(--a)} .n.boot .t{fill:var(--a)}
+  .n.svc rect{fill:var(--c);stroke:var(--c)}   .n.svc .t{fill:var(--c)}
+  .n.cons rect{fill:var(--e);stroke:var(--e)}  .n.cons .t{fill:var(--e)}
+  .n.eng rect{fill:var(--b);stroke:var(--b)}   .n.eng .t{fill:var(--b)}
+  .n.cfg rect{fill:var(--d);stroke:var(--d)}   .n.cfg .t{fill:var(--d)}
+  .n.tool rect{fill:var(--g);stroke:var(--g)}  .n.tool .t{fill:var(--g)}
+  .n.test rect{fill:var(--h);stroke:var(--h)}  .n.test .t{fill:var(--h)}
+  .edge{fill:none;stroke:#7c8ea6;stroke-width:1.6}
+  .edge.dash{stroke-dasharray:6 5}
+  .elabel{font:11px var(--mono);fill:#a9bacd;paint-order:stroke;stroke:var(--panel2);stroke-width:4px;stroke-linejoin:round}
+  .steps{list-style:none;margin:0;padding:0;counter-reset:step}
+  .steps li{position:relative;padding:0 0 18px 46px;counter-increment:step}
+  .steps li::before{content:counter(step);position:absolute;left:0;top:1px;width:26px;height:26px;border-radius:8px;
+    background:rgba(242,179,68,.12);border:1px solid rgba(242,179,68,.5);color:var(--a);font:600 12px/25px var(--mono);text-align:center}
+  .steps li::after{content:"";position:absolute;left:13px;top:31px;bottom:2px;width:1px;background:var(--line)}
+  .steps li:last-child::after{display:none}
+  .steps .st{font-weight:600;font-size:14px}
+  .steps .note{color:var(--muted);font-size:13px;margin-top:2px}
+  .tag{display:inline-block;font:10.5px/1 var(--mono);padding:4px 7px;border-radius:6px;margin:0 6px 4px 0;
+    background:rgba(148,163,184,.10);border:1px solid rgba(148,163,184,.35);color:#b8c4d4}
+  .rulelist{margin:0;padding:0 0 0 18px;color:var(--muted);font-size:13.5px}
+  .rulelist li{margin:0 0 6px}
+  .rulelist b{color:var(--text)}
+  .cards{display:grid;gap:12px}
+  .card{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--g);border-radius:10px;padding:14px 16px}
+  .card h3{font-size:14px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+  .card h3 .who{font:10.5px var(--mono);color:var(--muted);font-weight:400}
+  .card p{color:var(--muted);font-size:13.5px;margin:0 0 8px}
+  .card ul{margin:0;padding-left:16px;color:var(--muted);font-size:13px}
+  .card.danger{border-left-color:var(--danger)}
+  .card.danger h3 b{color:var(--danger)}
+  .sev{font:10.5px/1 var(--mono);padding:4px 7px;border-radius:6px;white-space:nowrap}
+  .sev.warn{background:rgba(248,113,113,.10);border:1px solid rgba(248,113,113,.4);color:var(--danger)}
+  .sev.soft{background:rgba(148,163,184,.10);border:1px solid rgba(148,163,184,.35);color:#b8c4d4}
+  pre.log{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;
+    font:11.5px/1.7 var(--mono);color:#cfe0f2;margin:10px 0 0}
+  footer{color:var(--faint);font-size:12.5px;border-top:1px solid var(--line);margin-top:26px;padding-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="kicker">Architecture Map</div>
+    <h1>orchestration — run logging &amp; report</h1>
+    <p class="sub">Every real lane and plan run appends one JSONL event — tagged with its repo. One central report turns runs across all projects into improve/fix signals. Always-on but advisory — a logging failure can never fail a lane.</p>
+    <div class="chips">
+      <span class="chip"><b>2</b> scripts · <b>2</b> event kinds</span>
+      <span class="chip">advisory: jq-guarded, <b>never fatal</b></span>
+      <span class="chip">log: <b>~/.local/state/orchestration/runs.jsonl</b> · all repos</span>
+      <span class="chip">skill <b>500/500</b> lines · validate-skills rc 0</span>
+    </div>
+  </header>
+
+  <section>
+    <h2><span class="dot"></span>Runtime dependency graph</h2>
+    <p class="hint">Runtime only — the wiring edits live in the skill's docs (steps below). Arrows point caller → callee / dependency.</p>
+    <svg class="graph" viewBox="0 0 1440 440" role="img" aria-label="run logging dependency graph">
+      <defs>
+        <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+          <circle cx="1.3" cy="1.3" r="1.3" fill="#182234"/>
+        </pattern>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7.5" markerHeight="7.5" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#7c8ea6"/>
+        </marker>
+      </defs>
+      <rect width="1440" height="440" fill="url(#dots)"/>
+
+      <!-- edges first (under nodes) -->
+      <path class="edge" d="M400,130 H520" marker-end="url(#ah)"/>
+      <text class="elabel" x="460" y="122" text-anchor="middle">lane event</text>
+
+      <path class="edge" d="M400,274 H470 V190 H520" marker-end="url(#ah)"/>
+      <text class="elabel" x="482" y="236" text-anchor="start">plan event</text>
+
+      <path class="edge" d="M700,220 V280" marker-end="url(#ah)"/>
+      <text class="elabel" x="712" y="254" text-anchor="start">persists</text>
+
+      <path class="edge" d="M880,300 H970 V154 H1060" marker-end="url(#ah)"/>
+      <text class="elabel" x="925" y="292" text-anchor="middle">aggregates</text>
+
+      <path class="edge" d="M1240,220 V280" marker-end="url(#ah)"/>
+      <text class="elabel" x="1252" y="254" text-anchor="start">renders report</text>
+
+      <!-- nodes -->
+      <g class="n boot" transform="translate(60,88)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Canonical lane runner</text>
+        <text class="s" x="20" y="50">cli-reference.md § Canonical lane runner</text>
+        <text class="s" x="20" y="68">emits lane event after the return file</text>
+      </g>
+      <g class="n boot" transform="translate(60,232)">
+        <rect width="340" height="84" rx="12"/>
+        <text class="t" x="20" y="28">Plan close-out (step 8)</text>
+        <text class="s" x="20" y="50">orchestration/SKILL.md:420-421</text>
+        <text class="s" x="20" y="68">emits plan event at DONE | FAILED</text>
+      </g>
+      <g class="n svc" transform="translate(520,88)">
+        <rect width="360" height="132" rx="12"/>
+        <text class="t" x="20" y="28">runlog.sh</text>
+        <text class="s" x="20" y="50">scripts/runlog.sh:1-39 · kind + k=v args</text>
+        <text class="s" x="20" y="72">jq escaping via $ARGS.named · safe keys only</text>
+        <text class="s" x="20" y="94">ts + repo auto-tagged · ORCH_LOG override</text>
+        <text class="s" x="20" y="116">no jq → silent no-op, exit 0 (advisory)</text>
+      </g>
+      <g class="n cfg" transform="translate(520,280)">
+        <rect width="360" height="110" rx="12"/>
+        <text class="t" x="20" y="28">runs.jsonl (central)</text>
+        <text class="s" x="20" y="50">~/.local/state/orchestration/ · all repos</text>
+        <text class="s" x="20" y="72">one compact JSON line per event</text>
+        <text class="s" x="20" y="94">kinds: lane · plan · repo auto-tagged</text>
+      </g>
+      <g class="n svc" transform="translate(1060,88)">
+        <rect width="360" height="132" rx="12"/>
+        <text class="t" x="20" y="28">run-report.sh</text>
+        <text class="s" x="20" y="50">scripts/run-report.sh:1-74 · read-only</text>
+        <text class="s" x="20" y="72">lanes by plan · rc=0/rc!=0 · mean/max dur</text>
+        <text class="s" x="20" y="94">plans: verdict · wall · lanes · prs · iter</text>
+        <text class="s" x="20" y="116">failures + slowest top 10 · empty-state safe</text>
+      </g>
+      <g class="n cons" transform="translate(1060,280)">
+        <rect width="360" height="110" rx="12"/>
+        <text class="t" x="20" y="28">Improve / fix loop</text>
+        <text class="s" x="20" y="50">humans + orchestrator read the report</text>
+        <text class="s" x="20" y="72">signals → smallest fix → re-measure</text>
+        <text class="s" x="20" y="94">evidence trail stays with the repo</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><i style="background:#f2b344"></i> event producers</span>
+      <span><i style="background:#38bdf8"></i> logging scripts</span>
+      <span><i style="background:#2dd4bf"></i> log artifact</span>
+      <span><i style="background:#4ade80"></i> consumer</span>
+      <span><span class="swatch"></span> calls / persists / reads</span>
+    </div>
+  </section>
+
+  <section>
+    <h2><span class="dot" style="background:var(--a)"></span>Event lifecycle — one real run</h2>
+    <ol class="steps">
+      <li>
+        <div class="st"><span class="tag">dispatch</span> Runner records timing around the agent</div>
+        <div class="note">The orchestrator writes brief + runner from the canonical template; the runner captures <code>START</code>/<code>END</code> ms around <code>opencode run</code>. <code>cli-reference.md:140-144</code></div>
+      </li>
+      <li>
+        <div class="st">Lane return — atomic, then the log call</div>
+        <div class="note">The return file lands (rc semantics unchanged), then the runner appends the <code>lane</code> event — wrapped in <code>|| true</code> so logging can never fail the lane. <code>cli-reference.md:153-156</code></div>
+      </li>
+      <li>
+        <div class="st">Event write — guarded JSONL</div>
+        <div class="note">runlog.sh validates key names (reserved <code>ts</code>/<code>kind</code>/<code>repo</code> skipped), tags the event with the main repo name (worktree-correct), builds one line with jq, appends to <code>~/.local/state/orchestration/runs.jsonl</code>; missing jq or any failure → silent skip, exit 0. <code>scripts/runlog.sh:22,28-48</code></div>
+      </li>
+      <li>
+        <div class="st">Plan close-out — the plan event</div>
+        <div class="note">At DONE/FAILED the orchestrator appends <code>plan</code> with wall, lanes, prs, iter. <code>SKILL.md:420-421</code></div>
+      </li>
+      <li>
+        <div class="st">Report — aggregate, don't judge</div>
+        <div class="note">run-report.sh casts string fields and renders lanes/plans/failures/slowest; an empty log prints “no runs logged yet” (exit 0). <code>scripts/run-report.sh:16-23,40-71</code></div>
+      </li>
+      <li>
+        <div class="st">Improve / fix</div>
+        <div class="note">Failures become rework items; slowest lanes become tuning targets. Evidence stays per-repo, next to the plans it describes.</div>
+      </li>
+    </ol>
+  </section>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--c)"></span>runlog.sh — writer invariants</h2>
+      <ul class="rulelist">
+        <li><b>Advisory, never fatal:</b> guarded on <code>jq</code>, every step swallows errors, exit 0 — a logging failure never fails a lane/run. <code>scripts/runlog.sh:1-4,22</code></li>
+        <li><b>Reserved keys skipped:</b> <code>ts</code>, <code>kind</code> and <code>repo</code> are added by the writer; unsafe key names are ignored by an allow-list. <code>scripts/runlog.sh:42</code></li>
+        <li><b>jq does all escaping:</b> the line is built from <code>--arg</code> pairs via <code>$ARGS.named</code> — no hand-rolled JSON. <code>scripts/runlog.sh:47-48</code></li>
+        <li><b>Central path:</b> <code>$ORCH_LOG</code> override, else <code>~/.local/state/orchestration/runs.jsonl</code>; the <code>repo</code> field resolves via <code>git-common-dir</code> (worktree-correct) — lanes in worktrees tag the main repo. <code>scripts/runlog.sh:28-35</code></li>
+      </ul>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--c)"></span>run-report.sh — reader invariants</h2>
+      <ul class="rulelist">
+        <li><b>Read-only + advisory:</b> missing jq → message + exit 0; never mutates the log. <code>scripts/run-report.sh:12</code></li>
+        <li><b>Every field is a string:</b> explicit casts (<code>rcnum</code>, <code>dur_s</code>); malformed values fall back instead of aborting the report. <code>scripts/run-report.sh:26-30</code></li>
+        <li><b>Sections:</b> lanes by repo/plan · plans · failures · <b>signals</b> (repeated failures, iter&gt;1) · slowest top-10 · <b>recent fixes</b>. <code>scripts/run-report.sh:38-99</code></li>
+        <li><b>Out-file optional:</b> writes and cats when given, stdout otherwise; <code>ORCH_LOG</code> wins over the positional log arg, <code>ORCH_REPO</code> filters to one repo. <code>scripts/run-report.sh:14-16,110</code></li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--d)"></span>Log file — status/log/runs.jsonl</h2>
+      <ul class="rulelist">
+        <li><b>Central by design:</b> one file for all repos — a single report diagnoses every project; the report itself needs no git. <code>cli-reference.md § Run log</code></li>
+        <li><b>Kinds:</b> <code>lane</code> (plan, lane, slug, role, model, worktree, start_ms/end_ms/dur_ms, rc) and <code>plan</code> (verdict, wall_s, lanes, prs, iter); new kinds are additive.</li>
+        <li><b>Attribution:</b> every event carries <code>repo</code> — the main repo name, worktree-correct; non-git dirs fall back to the cwd basename. Override the path with <code>ORCH_LOG</code>. <code>runlog.sh:28-35</code></li>
+      </ul>
+      <pre class="log">{"ts":"2026-09-30T12:00:03Z","kind":"lane","repo":"lexa","plan":"p","lane":"a","slug":"p-a","role":"swe","model":"opencode-go/deepseek-v4.1-flash#high","worktree":"/repo/.worktrees/p-a","start_ms":"…","end_ms":"…","dur_ms":"18422","rc":"0"}</pre>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--muted)"></span>Wiring points — where the calls live</h2>
+      <ul class="rulelist">
+        <li><b>Runner template:</b> timing + log call inside the canonical runner. <code>references/cli-reference.md:140-156</code></li>
+        <li><b>Dispatch note:</b> one line that the runner logs a <code>lane</code> event. <code>references/lane-dispatch.md:87-88</code></li>
+        <li><b>Close-out:</b> one line + report pointer in step 8. <code>SKILL.md:420-421</code></li>
+        <li><b>Diagnosis loop:</b> <code>references/run-diagnosis.md</code> — report → root cause → smallest fix → re-measure same query → log a <code>fix</code> event (surfaced under Recent fixes).</li>
+        <li><b>Live now:</b> <code>config/skills/orchestration</code> is symlinked at <code>~/.agents/skills/orchestration</code> — the next real lane dispatch logs automatically. Uncommitted working tree.</li>
+      </ul>
+    </section>
+  </div>
+
+  <div class="grid2">
+    <section>
+      <h2><span class="dot" style="background:var(--g)"></span>Tooling</h2>
+      <div class="cards">
+        <div class="card">
+          <h3><b>scripts/validate-skills.sh</b> <span class="who">repo gate</span></h3>
+          <p>rc 0 — 37 skills, 5 pre-existing warnings; orchestration not flagged at 500/500 lines.</p>
+        </div>
+        <div class="card">
+          <h3><b>bash -n</b> <span class="who">runlog · run-report · extracted runner</span></h3>
+          <p>All clean; the canonical runner was extracted from cli-reference.md and syntax-checked as part of delivery.</p>
+        </div>
+        <div class="card">
+          <h3><b>jq</b> <span class="who">hard dep of the report, soft dep of the writer</span></h3>
+          <p>Writer skips silently without it; report prints a message and exits 0. Neither can break a run.</p>
+        </div>
+      </div>
+    </section>
+    <section>
+      <h2><span class="dot" style="background:var(--h)"></span>Tests &amp; seams</h2>
+      <div class="cards">
+        <div class="card">
+          <h3><b>E2E sample</b> <span class="who">swe verification</span></h3>
+          <ul>
+            <li>2 lane events (one rc=1) + 1 plan → rc!=0 counts correct; failure listed; slowest ordered.</li>
+            <li>Repo attribution: dotfiles from a linked worktree → <code>repo=dotfiles</code>; scratch repo → <code>repo=demo-proj</code>.</li>
+            <li>Central default proved: one real write landed in <code>~/.local/state/orchestration/</code> (test line removed; dir cleaned).</li>
+            <li><code>ORCH_REPO</code> filter isolates one repo; unfiltered shows all with repo columns.</li>
+            <li>Diagnosis sections verified on a fixture: repeated failure, iter=2 plan, and a <code>fix</code> event all surface correctly.</li>
+            <li>Not covered: no in-repo automated test for the two scripts — verification is this manual e2e.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section>
+    <h2><span class="dot" style="background:var(--danger)"></span>Watch items</h2>
+    <div class="cards">
+      <div class="card danger">
+        <h3><b>No automated test for runlog/report</b> <span class="sev warn">quality</span></h3>
+        <p>Verification today is the manual e2e sample. A tiny fixture log + expected-report check would make regressions detectable. <code>config/skills/orchestration/scripts/</code></p>
+      </div>
+      <div class="card danger">
+        <h3><b>Malformed numeric fields cast silently</b> <span class="sev soft">data</span></h3>
+        <p><code>rcnum</code>/<code>dur_s</code> fall back to 0/-1 on unparseable values — a corrupted <code>dur_ms</code> could read as “fast”. Fields are machine-written, so treat suspicious zeros as anomalies. <code>run-report.sh:22-27</code></p>
+      </div>
+      <div class="card danger">
+        <h3><b>No rotation / time filter</b> <span class="sev soft">growth</span></h3>
+        <p>The central <code>runs.jsonl</code> grows across all repos monotonically; the report always reads the whole log. Lines are tiny, but long-lived setups deserve rotation.</p>
+      </div>
+      <div class="card danger">
+        <h3><b>Plan event is convention, not enforced</b> <span class="sev soft">completeness</span></h3>
+        <p>A skipped close-out line = a missing plan row; lanes still log. Enforcement would need a plan-check addition. <code>SKILL.md:420-421</code></p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    Static snapshot — 2026-09-30 · sources: <code>config/skills/orchestration/{scripts/runlog.sh, scripts/run-report.sh, references/cli-reference.md, references/lane-dispatch.md, SKILL.md}</code>, <code>config/skills/work-plans/scripts/plan-check.sh</code>. Uncommitted working tree. Re-run the analysis after structural changes.
+  </footer>
+</div>
+</body>
+</html>

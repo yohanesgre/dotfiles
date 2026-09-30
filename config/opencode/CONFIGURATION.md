@@ -169,6 +169,7 @@ All custom; `researcher`/`steward`/`vision` are `mode: subagent` (never primary)
 - Caveman mode now in all 3 harnesses: opencode AGENTS.md, `~/.commandcode/AGENTS.md`, `~/.hermes/SOUL.md` (seeded 2026-08-13).
 - Cross-harness scan: opencode/hermes/commandcode recursive; Claude Code/Gemini/Cline/Roo shallow — irrelevant (unused).
 - `nix/` skill replaced 2026-09-10 with `r17x/universe:.claude/skills/nix` (SKILL.md + debug/flake/module/service sub-skills; eval/debug/build/service focused). Old generic skill backed up at `/tmp/opencode/nix-backup-2026-09-10/`.
+- **Orchestration run logging (2026-09-30)**: the `orchestration` skill ships two advisory scripts — `scripts/runlog.sh` (one compact JSON line per `lane`/`plan` event, appended to the central `~/.local/state/orchestration/runs.jsonl`, `ORCH_LOG` overrides the path) and `scripts/run-report.sh` (report over that log: lanes by repo/plan, plans, failures, signals — repeated failures and `iter>1`, slowest top-10, recent fixes — filterable via `ORCH_REPO`). Every event carries an auto `repo` attributed through `git rev-parse --git-common-dir`, so a lane running in a linked worktree logs the main repo name. Advisory only: `runlog.sh` exits 0 on any failure, never fails a lane. The improvement loop is documented in `references/run-diagnosis.md` (report → root cause → smallest fix → re-measure → log a `fix` event); `SKILL.md` is at its 500/500 line cap.
 
 ## Design-systems corpus (`designer` reference library, 2026-09-29)
 

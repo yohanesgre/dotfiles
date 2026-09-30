@@ -121,6 +121,8 @@ Write the brief to `<slug>-brief.md` and this runner to `<slug>-runner.sh`
 #!/usr/bin/env bash
 # orchestration lane runner — generated, do not hand-edit. <slug>
 set -uo pipefail
+PLAN="<plan>"
+LANE="<lane>"
 ROLE="<swe|designer>"
 MODEL="<provider/model#variant>"      # read from ~/.config/opencode/agents/<role>.md model:
 WORKTREE="<abs worktree path>"
@@ -136,8 +138,10 @@ cd "$WORKTREE" || { echo "FAST EXIT: no worktree $WORKTREE"; exit 1; }
 rm -f "$RETURN" "$TMP" "$TMP.out"
 
 # foreground, live output visible in the pane AND captured for the record
+START=$(date +%s%3N)
 opencode run --auto --model "$MODEL" --agent "$ROLE" "$(cat "$BRIEF")" 2>&1 | tee "$TMP"
 rc=${PIPESTATUS[0]}
+END=$(date +%s%3N)
 
 # strip ANSI SGR from the captured record (the pane keeps its colors; the
 # durable return file must stay plain text for greps, diffs, and jev_triage)
@@ -146,6 +150,10 @@ sed -i -r 's/\x1b\[[0-9;]*[mK]//g' "$TMP"
 # atomic: the file's appearance means the runner FINISHED, not that the lane
 # succeeded. rc=0 is real completion; rc!=0 -> FAST EXIT/WAIT, never green.
 { printf 'rc=%s\n' "$rc"; cat "$TMP"; } > "$TMP.out" && mv "$TMP.out" "$RETURN"
+# advisory run log (always-on; any failure here must never fail the lane)
+~/.agents/skills/orchestration/scripts/runlog.sh lane plan="$PLAN" lane="$LANE" \
+  slug="$SLUG" role="$ROLE" model="$MODEL" worktree="$WORKTREE" \
+  start_ms="$START" end_ms="$END" dur_ms="$((END-START))" rc="$rc" || true
 echo "lane $SLUG done rc=$rc -> $RETURN"
 ```
 
@@ -167,3 +175,24 @@ reviewer can spawn early). A wait timeout is not a dead lane — check
 `luvus pane status <pane-id>` and re-wait. Invoke with the shell timeout
 raised (`timeout: 0` or ≥ `--timeout`): the default exceeds a typical
 harness shell timeout, and a killed wait is not a lane failure.
+
+## Run log (always-on, advisory)
+
+Every runner appends one compact JSON line to the CENTRAL log
+`~/.local/state/orchestration/runs.jsonl` (one log for ALL projects; override
+with `ORCH_LOG`). Each event carries `repo` automatically — the basename of the
+MAIN repo root (resolved via `git-common-dir`), so a lane running in
+`.worktrees/<plan>-<lane>` is attributed to the main repo, not the worktree;
+outside a git repo it is `basename $PWD`. `repo` is reserved (like `ts`), so
+callers cannot override it. Kinds: `lane` (one per dispatched lane — plan, lane,
+slug, role, model, worktree, start_ms/end_ms/dur_ms, rc) and `plan` (one per
+plan close-out — plan, verdict, wall_s, lanes, prs, iter). Writes are guarded
+(`command -v jq … || true`): a logging failure never fails a lane/run.
+`runlog.sh <kind> k=v …` appends; `run-report.sh [log-file] [out-file]` renders
+the aggregate report (lanes grouped by repo/plan, plans, failures, signals,
+slowest lanes, recent fixes). `ORCH_REPO=<name>` filters the report to one repo
+(unset = all). No log → "no runs logged yet". The diagnosis loop
+(report → root cause → smallest fix → re-measure) lives in
+`references/run-diagnosis.md`; when it lands a change, log it as a `fix` event
+(`runlog.sh fix plan=… symptom=… change=… before=… after=…`) so the report's
+Recent fixes section carries the history.

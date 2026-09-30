@@ -84,7 +84,8 @@ command, and it is not part of the lane loop).
    `<slug>-return.md` as the LAST step; the pane then returns to its own
    interactive shell — the pane persists so scrollback stays and the pane is
    reusable; close it only at plan DONE/FAILED (step 8), never per lane
-   mid-loop. The return file — not scrollback — is the record; its appearance
+   mid-loop. The runner also appends a `lane` line to the advisory run log
+   (`references/cli-reference.md` § Run log). The return file — not scrollback — is the record; its appearance
    means the runner finished — `rc=0` is real completion, `rc≠0` → FAST
    EXIT/WAIT, never green. Wait
    for the wave with

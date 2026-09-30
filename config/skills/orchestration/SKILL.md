@@ -417,6 +417,8 @@ tracking plane — the single owner: run
 DONE/FAILED close-out — never leave lane panes open once the goal is
 reached or the plan is closed. A pane-close failure is non-fatal: report it
 and continue cleanup. The plan is not DONE until its panes are closed.
+Append the plan event with `runlog.sh plan plan=<plan> verdict=<DONE|FAILED>
+wall_s=<n> lanes=<n> prs=<n> iter=<n>`; view runs with `scripts/run-report.sh`.
 
 Report progress per wave as: state, commit sha, one-line test summary,
 concerns (if any) — nothing else.

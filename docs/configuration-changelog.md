@@ -4,6 +4,27 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-30 — orchestration run logging: central log, report, diagnosis loop
+
+Orchestration runs had no cross-run observability: nothing recorded which repo, plan, or lane a run belonged to, so slow or repeatedly-failing lanes could only be diagnosed from memory. This adds an always-on but **advisory** run log plus a report and a written improvement loop. Advisory means the logger can never fail a lane — `runlog.sh` exits 0 on any error (missing `jq`, unwritable path, no git) and every step is guarded.
+
+- **Central log**: `config/skills/orchestration/scripts/runlog.sh <lane|plan> key=value ...` appends one compact JSON line per event to `~/.local/state/orchestration/runs.jsonl` — a single log for all projects, overridable with `ORCH_LOG`. A relative `ORCH_LOG` is hardened: it is not resolved against the caller's cwd, so a lane running in a worktree cannot scatter the log.
+- **Repo attribution**: every event carries a `repo` field computed from `git rev-parse --git-common-dir` (with a `--show-toplevel` fallback for the main worktree, where the common dir is the relative `.git`). This is the worktree-correctness fix — a lane in `.worktrees/<plan>-<lane>` logs the main repo name, not the worktree name. `repo` is reserved; callers cannot override it.
+- **Report**: `scripts/run-report.sh` reads that one log and prints lanes grouped by repo/plan, plans, failures, and signals (repeated failures for the same repo/plan/lane, `iter>1` rework churn, slowest top-10 lanes, recent `fix` events), with the `ORCH_REPO` env filter applying to every section. The `fix` event type is the convention that closes the loop: a diagnosis that changes behavior is logged as a `fix`, so the next report shows what was already corrected.
+- **Diagnosis loop**: new `config/skills/orchestration/references/run-diagnosis.md` — report → root cause → smallest fix → re-measure → log the `fix`. It maps each signal (lane `rc≠0`, plan `verdict != DONE`, repeated failures, `iter>1`, stable slow lanes) to the owning text and its evidence file, and restates the single-writer discipline so a rule is never duplicated across two files.
+- **Wiring**: the `cli-reference.md` runner template plus a new § Run log, `lane-dispatch.md` dispatch logging, and the `SKILL.md` close-out step. `SKILL.md` is now at its 500/500 line cap.
+- **Architecture viz**: `docs/architecture-orchestration-logging.html` (hand-authored SVG subsystem/flow/risk panels) — checker and `vision` verified.
+
+Evidence: `bash scripts/validate-skills.sh` → rc 0, 37 skills, 5 pre-existing warnings; `bash -n` clean on both new scripts. E2E samples: a cross-repo demo log producing dotfiles + lexa rows, and a fixture exercising repeated-failure, `iter>1`, and `fix` detection. No push; no other files touched.
+
+## 2026-09-30 — swe skill + agent prompt compression
+
+Prompt-compression pass on the two `swe` prompts. Wording-only: dedupe plus prose tightening, **zero rules or behavior removed** (verified by line diff). Skill `config/skills/swe/SKILL.md` 4586 → 4059 B (−11.5%); agent `config/opencode/agents/swe.md` 2348 → 2303 B. No permission change, no `steps` change, no routing change — the jg-first line, memory two-tier contract, design-authority rule, and deny-by-default envelope are intact.
+
+Jev advisory scores, before → after: skill efficiency 1.20 → 2.07 (the intended win), skill quality 2.99 → 2.97 (noise-level, still max); agent efficiency 1.95, agent quality 2.98 (advisory only, no regression signal).
+
+Gate: `bash scripts/validate.sh` → 940 passed / 0 failed / 4 skipped, exit 0. YAML frontmatter re-parsed on both files (`name`/`description`; `description`/`mode`/`model`/`steps: 60`/`permissions` 18 rules unchanged). Installed copies (`~/.config/opencode/agents/swe.md`, `~/.agents/skills/swe/SKILL.md`) are nix-store symlinks into this repo and still serve the old bytes until the next home-manager activation. No CONFIGURATION.md change needed (its `swe` row documents behavior and permissions, both unchanged). No commit, no push.
+
 ## 2026-09-30 — gloss module review fixes: drop the sycoca step, wire the hotkey
 
 Adversarial review of the gloss Nix module (approve-with-nits) left two user-facing MEDs plus code NITs and required docs.
