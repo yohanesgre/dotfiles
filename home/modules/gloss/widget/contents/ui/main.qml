@@ -202,6 +202,10 @@ PlasmoidItem {
             anchors.left: parent.left
             anchors.right: parent.right
             anchors.top: parent.top
+            // The card's box must equal what it paints. Left/right/top anchors
+            // give it its width and its origin but no height, so the height is
+            // bound to the content's own measure — never a fixed value.
+            height: implicitHeight
             envelope: root.envelope
             phase: root.phase
             source: root.source
