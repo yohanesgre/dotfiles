@@ -52,7 +52,14 @@ Item {
         onTextEdited: field.textEdited(field.text)
 
         background: Rectangle {
-            radius: T.radiusInput
+            // Word mode keeps the text at the content edge (padding 0) so the
+            // headword stays flush with the translation, meaning and notes
+            // below it. The frame is therefore drawn *outward* from the text
+            // bounds — 3 px — and the text never sits on it. Phrase mode keeps
+            // the frame at the bounds, around its 8 px inset text.
+            anchors.fill: parent
+            anchors.margins: field.mode === "word" ? -3 : 0
+            radius: T.radiusInput + (field.mode === "word" ? 3 : 0)
             color: (field.mode !== "word" || input.activeFocus) && !field.overCap
                    ? Kirigami.Theme.alternateBackgroundColor
                    : "transparent"
@@ -62,11 +69,12 @@ Item {
                         : Kirigami.Theme.disabledTextColor
         }
 
-        // The 2 px focus ring sits outside the 1 px accent border.
+        // The 2 px focus ring sits outside the 1 px accent border — 3 px in
+        // word mode, where the border itself is already 3 px out from the text.
         Rectangle {
             anchors.fill: parent
-            anchors.margins: -3
-            radius: T.radiusInput + 3
+            anchors.margins: field.mode === "word" ? -6 : -3
+            radius: T.radiusInput + (field.mode === "word" ? 6 : 3)
             color: "transparent"
             border.width: 2
             border.color: Kirigami.Theme.highlightColor
