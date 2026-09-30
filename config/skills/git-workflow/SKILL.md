@@ -33,7 +33,7 @@ These are never negotiable — report conflict, don't "fix" it yourself:
 5. **No scope creep.** Only files/changes in the brief. If something missing, report — don't add tables/columns/endpoints/error codes.
 6. **Names exact.** Table/column/error code/route/config key must match the project's docs verbatim.
 7. **Submodules are commit-inside-first.** See §6.
-8. **No secrets.** Never commit `.env`, `*.pem`, `*.private-key.pem`, credential/config tokens, or any secret. CI runs secret scanning — it will block.
+8. **No secrets.** Never commit `.env`, `*.pem`, `*.private-key.pem`, credential/config tokens, or any secret. Secret scanning runs in the release CI; locally the gate checks staged filenames (`git diff --cached --name-only`). A leaked secret is caught at release — never worth committing.
 9. **Phase gates green before commit/PR/tag.** See §3.2 and the project's declared gate.
 10. **Authorization is per-action, never transitive.** "commit dan push" covers exactly commit + push — never branch create, worktree add, PR open, merge, rebase, or force-push. Each mutating step needs its own explicit ask. Approval envelopes (e.g. `/goal` execution gates) must enumerate every lifecycle step they pre-authorize, including the branch name.
 
@@ -110,7 +110,7 @@ Run the project's one-shot gate script if it declares one (e.g. a `scripts/` gat
   git diff origin/main...HEAD --stat
   ```
 - PR: base = `main` (confirm if plan says otherwise), title = conventional commit style, description = what/why, docs conflicts (if any), gate outputs, testing notes. Use template if repo has one.
-- After PR approved and CI green, merge via GitHub (squash or merge commit per repo setting — don't force-push to `main`). After `git merge <feature>` locally (only when user picks local merge), re-run the project's gate on the merged result before pushing.
+- After PR approved, merge via GitHub (squash or merge commit per repo setting — don't force-push to `main`). Before waiting on CI, check the repo's CI triggers: if CI runs on PRs, wait for it; if it runs only at release preparation (no PR trigger), the project's local gate green is the merge precondition. After `git merge <feature>` locally (only when user picks local merge), re-run the project's gate on the merged result before pushing.
 - Never delete worktree/branch until PR merged or user typed `discard` (integration-menu rule). Keep worktree for PR feedback.
 
 ## 6. Submodules

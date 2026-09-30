@@ -4,6 +4,10 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-01 — git-workflow skill: merge instructions now reference the local gate (CI runs at release prep only); gitleaks rationale updated.
+
+Global `config/skills/git-workflow/SKILL.md` synced with the Lexa CI change (Lexa PR #163): CI no longer runs on PRs there, release-prep only. Two claims made false were fixed and made generic across repos — the merge precondition is now the project's local gate (with an instruction to check the repo's CI triggers instead of assuming a PR gate), and the no-secrets rationale now says secret scanning runs in release CI while the local gate checks staged filenames.
+
 ## 2026-09-30 — crumb pilot: the sub-wave, run for real
 
 The crumb execution contract shipped as design and selftests; this is the first live run of it. One lane, two disjoint crumbs, two worker panes. Wall **119s vs 289s** serial — **−58.8%**, clearing the ≥25% gate. Zero scope violations. Per-join lane-verify GREEN on both crumbs. The green set is committed at `d59bee0` and landed to `main` in this change.
