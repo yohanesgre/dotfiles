@@ -225,7 +225,10 @@ plan close-out — plan, verdict, wall_s, lanes, prs, iter). Writes are guarded
 `runlog.sh <kind> k=v …` appends; `run-report.sh [log-file] [out-file]` renders
 the aggregate report (lanes grouped by repo/plan, plans, failures, signals,
 slowest lanes, recent fixes). `ORCH_REPO=<name>` filters the report to one repo
-(unset = all). No log → "no runs logged yet". The diagnosis loop
+(unset = all). `ORCH_SINCE=<N>d|<N>h|YYYY-MM-DD` scopes the report to events with
+`ts >= cutoff` (composes with `ORCH_REPO`); an empty window prints
+"no runs in window" (exit 0), and an invalid value warns and is ignored. No log →
+"no runs logged yet". The diagnosis loop
 (report → root cause → smallest fix → re-measure) lives in
 `references/run-diagnosis.md`; when it lands a change, log it as a `fix` event
 (`runlog.sh fix plan=… symptom=… change=… before=… after=…`) so the report's

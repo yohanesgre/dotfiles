@@ -4,6 +4,14 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-09-30 — crumb pilot: the sub-wave, run for real
+
+The crumb execution contract shipped as design and selftests; this is the first live run of it. One lane, two disjoint crumbs, two worker panes. Wall **119s vs 289s** serial — **−58.8%**, clearing the ≥25% gate. Zero scope violations. Per-join lane-verify GREEN on both crumbs. The green set is committed at `d59bee0` and landed to `main` in this change.
+
+What it ships: `work-plans/scripts/selftest-plan-check.sh` (8 checks: well-formed crumb plan, shared file with and without a direct edge, edge to a missing id, missing gate, `files: —` placeholder, space-separated resource overlap, legacy plan without `## Tasks`) and `ORCH_SINCE` in `run-report.sh` (+3 selftest checks: `1d` window, `<N>h` and literal `YYYY-MM-DD` cutoffs, empty window).
+
+Evidence: `selftest-logging.sh` 7/7 → exit 0, `selftest-plan-check.sh` 8/8 → exit 0, `selftest-lane-verify.sh` a–i → exit 0, `bash scripts/validate-skills.sh` rc 0 (37 skills, 5 pre-existing warnings). Committed, **not pushed**.
+
 ## 2026-09-30 — atomic-task dispatch: crumbs in lanes
 
 A lane used to be one opaque task: one worker, one worktree, one shot at a vague "done". That makes disjoint work sequential, and it makes an over-broad failure expensive — a single bad edit costs the whole lane. This lands atomic-task dispatch, where a lane carries several **crumbs** (atomic tasks) whose file sets are provably disjoint, so they can run in parallel and fail independently. It went design → POC → real build: the design pass fixed the granularity unit and the rollback unit, the POC proved the sub-wave dispatch shape, and only then did the skill text change.
