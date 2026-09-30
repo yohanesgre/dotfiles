@@ -210,6 +210,9 @@ PlasmoidItem {
             phase: root.phase
             source: root.source
             target: root.target
+            // The picker's window outlives the card: tell it when the applet
+            // popup closes so it cannot be left floating.
+            appletExpanded: root.expanded
             text: root.fieldText
             onTextEdited: function (text) { root.fieldText = text }
             onSubmitted: function (text) { root.lookUpTyped(text) }

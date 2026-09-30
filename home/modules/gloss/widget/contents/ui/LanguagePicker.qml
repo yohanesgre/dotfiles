@@ -3,18 +3,42 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls as QQC2
 import QtQuick.Layouts
+import org.kde.plasma.core as PlasmaCore
 import "Theme.js" as T
 
 // The language picker: a searchable list of real languages, the current choice
 // marked. Opened under the source or the target control; choosing a row sets
 // the language by hand.
-QQC2.Popup {
+//
+// A window, not a Popup. Qt reparents a Popup into the window's overlay layer,
+// so it can never be taller than the applet window — and that window is sized
+// to the card (`main.qml`'s Layout.preferredHeight is card.implicitHeight),
+// as little as ~101 px in the empty state, against a picker that needs ~284.
+// PlasmaCore.Dialog is a real top-level window (PlasmaQuick::Dialog :
+// QQuickWindow, exported as org.kde.plasma.core/Dialog), so the card's size
+// cannot clip it: the card stays compact and the picker floats over it.
+//
+// Deliberately `org.kde.plasma.core`, never `org.kde.plasma.components`: the
+// latter has a different Dialog.qml with in-window Popup semantics, which
+// would chop exactly as before.
+PlasmaCore.Dialog {
     id: picker
 
     // "source" | "target"
     property string which: "source"
     property string currentSource: "auto"
     property string currentTarget: "id"
+
+    // The controls this picker belongs to. The window is positioned relative
+    // to whichever one opened it, so the list hangs under the control rather
+    // than at Qt's default centre for an unparented overlay.
+    property Item sourceControl
+    property Item targetControl
+
+    // The applet's own popup. A separate window outlives the card, so main.qml
+    // reports when that popup closes and this one closes with it — see
+    // `onAppletExpandedChanged` below.
+    property bool appletExpanded: true
 
     property alias search: searchField.text
 
@@ -53,18 +77,47 @@ QQC2.Popup {
     function openFor(w) {
         which = w
         search = ""
-        searchField.forceActiveFocus()
-        open()
+        // Anchors the window to the control it belongs to.
+        visualParent = w === "target" ? targetControl : sourceControl
+        visible = true
+        // A window has to exist before a child can hold active focus; the
+        // Popup got this for free from `focus: true`.
+        Qt.callLater(function () { searchField.forceActiveFocus() })
     }
 
-    modal: true
-    focus: true
-    closePolicy: QQC2.Popup.CloseOnEscape | QQC2.Popup.CloseOnPressOutside
-    width: 260
-    padding: T.space8
+    function dismiss() {
+        visible = false
+    }
 
-    contentItem: ColumnLayout {
+    onAppletExpandedChanged: {
+        if (!appletExpanded)
+            dismiss()
+    }
+
+    // The controls sit in the card's top chrome row, so the list opens
+    // downward from the control.
+    location: PlasmaCore.Types.TopEdge
+    // A themed panel behind the list — the Popup's background, in a window.
+    backgroundHints: PlasmaCore.Dialog.StandardBackground
+    // No `modal: true`: a separate window cannot dim the card, so the dim is
+    // dropped. Losing activation — the card's popup closing, a click
+    // elsewhere — closes it instead.
+    hideOnWindowDeactivate: true
+
+    // The window resizes to its main item, so the item carries the size (the
+    // same shape FolderViewDialog uses). 224 px of list cap plus the search
+    // field and the gap between them, which is the ~284 px the Popup could
+    // never fit.
+    ColumnLayout {
+        width: 260
+        height: implicitHeight
         spacing: T.space8
+
+        // Escape anywhere in the window, whichever row holds the focus.
+        Shortcut {
+            sequence: "Escape"
+            onActivated: picker.dismiss()
+        }
 
         QQC2.TextField {
             id: searchField
@@ -88,7 +141,7 @@ QQC2.Popup {
                 highlighted: picker.current === modelData.code.toLowerCase()
                 onClicked: {
                     picker.picked(picker.which, modelData.code.toLowerCase())
-                    picker.close()
+                    picker.dismiss()
                 }
             }
         }
