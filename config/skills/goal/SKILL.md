@@ -221,8 +221,9 @@ archived; archiving is outside `/goal`.
 - The main session writes ONLY the `status/` tracking plane
   (`status/<plan>/**`, `status/TIMELINE.md`) + memory. It never edits
   implementation code, design docs, or skill/config files — behavior
-  mutation goes to a luvus lane, non-behavior upkeep to `steward`, read-only
-  work to a `subagent`. A self-made edit is a violation: revert + re-dispatch.
+  mutation goes to a luvus lane, non-behavior upkeep to `steward` (worktree
+  chore → lane, in-place → subagent), read-only work to a `subagent`. A
+  self-made edit is a violation: revert + re-dispatch.
   Full execution guardrails (worktree isolation, lane roles, destructive-step
   policy, git guardrails) are owned by `orchestration`.
 - Repo bindings, before touching code: load the project's declared design

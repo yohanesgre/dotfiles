@@ -20,12 +20,10 @@ already exists.
 
 Autonomy: full-auto AFTER the execution gate. Human gates exist only
 before execution (goal clarity, design direction, protocol + model/effort
-approval). Once execution starts, the loop never waits for a human. Safety
-after the gate comes from the automated rails below. The user reads wave
-reports async; the loop never blocks on them. Approving the execution gate
-pre-authorizes exactly the lifecycle it enumerates (branch → commit → push
-→ PR → auto-merge on green CI) for exactly the named lanes/branches. The
-gate approves scope and waves.
+approval); once execution starts the loop never waits for a human — wave
+reports are read async, the rails below replace further gates. Approving
+the gate pre-authorizes exactly the lifecycle it enumerates (branch →
+commit → push → PR → auto-merge on green CI) for the named lanes/branches.
 
 Runtime: opencode (v2) only. Assumed surfaces: luvus CLI and opencode
 flags — exact pinned signatures live in `references/cli-reference.md` and
@@ -100,28 +98,28 @@ Delegation by node type (matches the graph):
   loop for inspection + reuse (never detached, never background) and is
   closed only when the plan reaches DONE/FAILED (§5 plan close-out); its
   return still lands on disk first (§4.2).
-- **Non-behavior upkeep mutation nodes → `steward` subagent** (steward is
-  subagent-only, so it is never a lane). Runs foreground, ONE at a time
-  (never alongside another mutating subagent), scoped to its node's named
-  files, never commits/pushes/tags. It edits the shared control checkout
-  (no worktree isolation), so the gate is hardened — see "Hardened gate for
-  mutating subagents" in Phase 5. A behavior change discovered mid-node →
-  WAIT + re-dispatch to a `swe`/`designer` lane.
+- **Non-behavior upkeep mutation nodes → `steward`.** Worktree/branch
+  chores (release prep) run as a **steward LANE** — same vehicle as
+  `swe`/`designer` (canonical runner, visible pane, `luvus pane run` only).
+  In-place upkeep (docs sync, hygiene, dep bumps) runs as the **`steward`
+  subagent**: foreground, ONE at a time (never alongside another mutating
+  subagent), named files, never commits/pushes/tags, hardened gate (shared
+  control checkout — Phase 5). Behavior change mid-node → WAIT + re-dispatch
+  to a `swe`/`designer` lane.
 - **Read-only nodes → `subagent` tool.** `architect` = single foreground
   (inline, blocking) call. `researcher` = foreground by default, but MUST
   fan out when a wave needs ≥2 independent lookups (read-only →
-  collision-free; `researcher` may itself fan out leaf
-  `explore` children). `reviewer` = one per lane,
-  fanned out background/async across the review wave, each joined to its
-  own lane before that lane closes out. Roles: `architect` (design/plan),
-  `researcher` (codebase/web lookup), `reviewer` (review). They never
-  mutate; their agent md `model:` pin applies to child sessions
-  automatically — no `--model` needed.
+  collision-free; `researcher` may itself fan out leaf `explore` children).
+  `reviewer` = one per lane, fanned out background/async across the review
+  wave, joined to its own lane before close-out. All three never mutate;
+  their agent md `model:` pin applies to child sessions automatically — no
+  `--model` needed.
 
 A mutation the orchestrator makes itself is a violation: stop, revert it
 before proceeding, and re-dispatch the work to the correct plane (behavior
-→ lane; non-behavior upkeep → `steward` subagent). Design artifacts
-that must land as files: the project's design artifacts → `designer` lane;
+→ lane; non-behavior upkeep → `steward`: worktree chore → lane, in-place →
+subagent). Design artifacts that must land as files: the project's design
+artifacts → `designer` lane;
 decision records / specs → merged into the project's design authority
 docs; implementation-plan content → folded into `status/<plan>/plan.md`,
 never a separate plans tree. A mutation lane (`swe`) persists the
@@ -211,8 +209,8 @@ Follow `references/lane-dispatch.md` for the exact order (guards →
 worktrees → master+grid layout → batch-dispatch the wave → join the
 return files). Lane
 roles by DISCOVERY, never hardcoded IDs: `swe` (implement/fix), `designer`
-(design artifacts), `steward` (non-behavior upkeep; behavior change →
-WAIT + re-dispatch). luvus agent kinds name backends, not roles — the role travels
+(design artifacts), `steward` (worktree/branch upkeep — release prep;
+behavior change → WAIT + re-dispatch). luvus agent kinds name backends, not roles — the role travels
 in the brief. If no fitting agent exists, keep the lane WAIT and report the
 gap; never invent an agent name.
 
@@ -220,15 +218,11 @@ A lane whose plan declares `## Tasks` runs crumb sub-waves per
 `references/crumb-execution.md` (disjoint ready set → `wave-wait.ts` →
 `lane-verify` per join → next set); no `## Tasks` → the path below.
 
-Layout (design-thinking variant C, built once per wave by
-`scripts/lane-layout.ts`): fixed left master column at full height; lanes
-tile a balanced grid to the right (~2:1 tiles), never a widening row of
-skinny columns; lanes beyond `--max-per-tab` (default 6) move to extra
-lane-only tabs — never squeezed. One lane, one pane, one owner; each pane's
-cwd is its worktree. Requires ≥1 lane; at N=0 it is not called (master full
-width). The grid reflows only when a pane closes, and the orchestrator closes
-every lane pane at plan DONE/FAILED (the only close point), never an orphan
-tile.
+Layout (variant C, built once per wave by `scripts/lane-layout.ts`; full
+contract in `references/lane-dispatch.md` step 3): master column + balanced
+lane grid; one lane, one pane, one owner; lanes beyond `--max-per-tab`
+(default 6) go to extra lane-only tabs. The orchestrator closes every lane
+pane at plan DONE/FAILED (the only close point), never an orphan tile.
 
 Brief (subgraph IN — every lane, self-contained):
 ```
@@ -245,26 +239,25 @@ Boundary:       cwd <absolute worktree>; branch <branch>; no commit, no push
 ```
 
 Model: dispatch with an explicit `--model provider/model#variant` plus
-`--agent <role>`. Resolve the ref by reading the role agent's markdown
-`model:` field (`~/.config/opencode/agents/<role>.md`) and pass that exact
-base+variant. Never hardcode, guess, or invent one. If the role agent md
-has no `model:`, use the gate-approved ref in `plan.md` (R); if neither
-exists → FAST EXIT naming the gap. The default model errors (auth), and
-an agent's `model:` field does NOT auto-apply to a primary
-`opencode run --auto --agent` session (child/subagent sessions only) — which is
-why it must be read and passed explicitly.
+`--agent <role>`, resolved verbatim from the role agent's md `model:` field
+(`~/.config/opencode/agents/<role>.md`) — never hardcode, guess, or invent
+one; that pin does NOT auto-apply to a primary `opencode run --agent`
+session (child sessions only). No `model:` → gate-approved ref in `plan.md`
+(R); neither → FAST EXIT naming the gap. The default model errors (auth).
 
 Forbidden in every lane brief (opencode `--auto` approves what is not
-denied): act outside the assigned worktree, exfiltrate data beyond
-declared fetches, `--force` or history rewrites on shared branches,
-commit secrets. Violation kills the lane.
+denied): out-of-worktree action, undeclared exfiltration, `--force` /
+history rewrites on shared branches, committing secrets — kills the lane.
 
 Dispatch is deterministic (pinned forms in `references/cli-reference.md`
 and `references/lane-dispatch.md`; never probe `--help`). luvus has no
 opencode kind, so lanes are driven with the canonical runner via
 `luvus pane run <pane> bash <runner>`, which in turn calls
 `opencode run --auto --model <...> --agent <role> "<brief>"` (message
-positional, no `--prompt`). The lane runs foreground in its own pane — the
+positional, no `--prompt`). **`luvus pane run` is the ONLY runner dispatch
+form**: `bash <runner>` via the shell tool — foreground or `background:
+true` — is a violation (headless run, no live progress, no reusable pane);
+stop it and re-dispatch through a lane pane. The lane runs foreground in its own pane — the
 user watches progress there; it is never detached or backgrounded, and the
 pane persists through the loop so scrollback stays and the pane can be
 reused for a resume/follow-up; it closes only at plan DONE/FAILED (the
@@ -283,8 +276,8 @@ on the first lane that lands, so its reviewer can spawn early;
 `lane-wait.ts` stays the single-lane form). Each runner clears its stale
 return file before starting, so a present file always means the current
 run. Serialize only lanes the graph
-marks unsafe to overlap (shared files) and the `steward` subagent (hardened
-gate, always one at a time); co-wave lanes declared independent run
+marks unsafe to overlap (shared files) and the in-place `steward` subagent
+(hardened gate, always one at a time); co-wave lanes declared independent run
 concurrently — dispatch-one/wait-one is a deviation. A wait timeout is not
 a dead lane: check `luvus pane status` and re-wait before any re-dispatch.
 
@@ -437,6 +430,8 @@ concerns (if any) — nothing else.
   behavior change → WAIT + report and re-dispatch that node to a
   `swe`/`designer` lane; steward never absorbs behavior changes (its remit
   is non-behavior upkeep only).
+- **Runner outside a pane**: started via the shell tool (`bash <runner>`,
+  incl. `background: true`) → violation: stop, re-dispatch via a lane pane.
 - **Lane dead before return persisted**: `<slug>-return.md` is
   missing/empty → WAIT + re-dispatch (resume the pane with opencode
   `--session` when state remains); the return file — not scrollback — is
@@ -476,6 +471,9 @@ plan-env hygiene: `references/edge-cases.md`. Read it before closing a wave.
   mutation to the `steward` subagent (serialized + hardened gate), read-only
   work to a `subagent` (`architect`/`researcher`/`reviewer`). A self-made
   edit is a violation: revert it + re-dispatch.
+- Runner dispatch is pane-only: every runner starts via `luvus pane run
+  <pane> bash <runner>` — any route, any role, incl. steward worktree
+  chores. The shell tool never runs a runner (`background: true` included).
 - Repo bindings, before touching code: load the project's declared design
   authority in the order its `AGENTS.md` gives (typically schema → layers
   → API → design artifacts → architecture rationale). Names and

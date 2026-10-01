@@ -2,9 +2,10 @@
 
 Application-behavior mutation runs through a luvus lane: simple route =
 exactly one lane in `.worktrees/<plan>`; complex route = one lane per track
-(`.worktrees/<plan>-<lane>`). Non-behavior upkeep mutation runs as a
-`steward` subagent in the control checkout (serialized, hardened gate —
-`SKILL.md` Phase 5), never a lane. The `subagent` tool also carries the
+(`.worktrees/<plan>-<lane>`). Non-behavior upkeep that needs a worktree or
+branch (release prep) runs as a `steward` lane the same way; in-place
+upkeep runs as a `steward` subagent in the control checkout (serialized,
+hardened gate — `SKILL.md` Phase 5). The `subagent` tool also carries the
 read-only agents: `architect` runs as a single foreground call; `researcher`
 runs foreground but MUST fan out (foreground `explore` children) for ≥2
 independent lookups; `reviewer` may fan out background/async (one per lane,
@@ -16,8 +17,8 @@ of the wave before the join at the end of step 4 (one `wave-wait.ts` call
 over every return file) — `luvus pane run` is
 non-blocking (it only submits text + Enter), so dispatch is one batch, not
 a per-lane start/wait loop. Serialize only what the graph marks unsafe to
-overlap (shared files) or mandates serial (the `steward` subagent, one at a
-time). Any FAST EXIT stops that lane only; others continue.
+overlap (shared files) or mandates serial (the in-place `steward` subagent,
+one at a time). Any FAST EXIT stops that lane only; others continue.
 
 All CLI syntax is pinned in `references/cli-reference.md`. Use ONLY those
 signatures; never run `--help` (luvus `help all` is the only discovery
@@ -66,15 +67,20 @@ command, and it is not part of the lane loop).
    closes it at plan DONE/FAILED (step 8).
 4. Dispatch (deterministic — use the pinned forms in
    `references/cli-reference.md`; NEVER run `--help`):
-   mutation roles are `swe`/`designer`; `steward` (non-behavior mutation)
-   and read-only roles run as `subagent`, not lanes. There is no opencode
+   mutation lane roles are `swe`/`designer`, plus `steward` for
+   worktree/branch chores (release prep); in-place non-behavior upkeep and
+   read-only roles run as `subagent`, not lanes. There is no opencode
    kind, so do NOT call `luvus agent start/prompt` for a lane. Write the
    brief to `<worktree>/../<slug>-brief.md` and the canonical runner
    (`cli-reference.md` § Canonical lane runner) to
    `<worktree>/../<slug>-runner.sh`, then dispatch with
    `luvus pane run <pane> bash <abs-runner>` so the lane runs foreground
-   in that pane — the user watches live progress there; never detach or
-   background a lane. Fire the whole wave back to back (one pass over the
+   in that pane — the user watches live progress there. **`luvus pane run`
+   is the ONLY dispatch form**: `bash <runner>` via the shell tool
+   (foreground or `background: true`) is a violation — headless output, no
+   live progress, no reusable pane; stop it and re-dispatch through a lane
+   pane. Never detach or background a lane. Fire the whole wave back to
+   back (one pass over the
    wave's lanes) BEFORE waiting on anything: `pane run` returns
    immediately, so every lane starts within seconds (each runner clears its
    own stale `<slug>-return.md` before starting, so a present file always

@@ -4,6 +4,16 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-01 — orchestration: runner dispatch is pane-only; steward worktree chores are explicitly lanes
+
+A live regression: the Lexa orchestrator session (pane 8) stopped using luvus pane dispatch — from Oct 1 01:23 every lane runner (`secrets-cleanup` ×3, `release` v2026.5.0/5.1/5.2, `installer-hardening` ×2, `installer-account` ×2) ran headless via the shell tool (`bash .worktrees/<slug>-runner.sh`, `background: true`), so `opencode run` executed under the orchestrator session with progress only in `<slug>-return.md.tmp` — no pane, nothing to watch or reuse. Earlier the same session dispatched correctly through `lane-layout.ts` + `luvus pane run` (panes 90/22/23).
+
+- **Pane-only dispatch, everywhere**: `SKILL.md` (§4.2 dispatch, Break points, Standing guardrails), `references/lane-dispatch.md` step 4, and `references/cli-reference.md` (lane driving + canonical runner) now state that `luvus pane run <pane> bash <runner>` is the ONLY runner dispatch form — `bash <runner>` via the shell tool, foreground or `background: true`, is a dispatch violation (stop it, re-dispatch via a pane, record the deviation), regardless of route (simple, single-lane, steward worktree chore).
+- **Mechanical guard**: the canonical runner template now carries a TTY preflight — `[ ! -t 0 ] && [ ! -t 1 ]` → `FAST EXIT: runner outside a pane (no TTY)` — so a headless spawn refuses instead of running hidden.
+- **Steward split**: `SKILL.md` previously said steward is subagent-only ("never a lane") while §4.2 and the de-facto release flow used "steward lane". Now explicit: worktree/branch upkeep (release prep) runs as a **steward lane** (canonical runner, visible pane); in-place upkeep (docs sync, hygiene, dep bumps) stays a serialized **`steward` subagent** (hardened gate, control checkout). Same split mirrored in `goal/SKILL.md` guardrails.
+
+`SKILL.md` is capped at 500 lines; the additions were offset by compressions elsewhere (Layout/Model/Forbidden/Autonomy/Read-only bullets shed detail that already lives in `references/`), landing at 498. Watch item: the central run log has no dispatch-mode field, so `run-report.sh` cannot flag this class directly (the TTY preflight covers it mechanically). Evidence: `bash scripts/validate-skills.sh --verbose` → rc 0 (37 skills, 5 pre-existing warnings). Committed, not pushed.
+
 ## 2026-10-01 — git-workflow skill: merge instructions now reference the local gate (CI runs at release prep only); gitleaks rationale updated.
 
 Global `config/skills/git-workflow/SKILL.md` synced with the Lexa CI change (Lexa PR #163): CI no longer runs on PRs there, release-prep only. Two claims made false were fixed and made generic across repos — the merge precondition is now the project's local gate (with an instruction to check the repo's CI triggers instead of assuming a PR gate), and the no-secrets rationale now says secret scanning runs in release CI while the local gate checks staged filenames.

@@ -45,6 +45,10 @@ luvus pane run <pane-id> "cd '<abs-worktree>'"             # park the lane shell
 luvus pane close <pane-id>                                 # only panes YOU created
 ```
 
+`luvus pane run` is the ONLY runner dispatch form: `bash <runner>` via the
+shell tool (foreground or `background: true`) is a violation — headless
+output, no pane, no live progress, no reusable surface.
+
 Worker panes (crumb sub-waves, `references/crumb-execution.md`): one pane per
 crumb, split off the LANE pane, parked in the SAME worktree, run with the same
 canonical runner (slug `<prefix>-<crumb>`); close each once its set verifies.
@@ -146,6 +150,14 @@ TMP="$RETURN.tmp"
 
 cd "$WORKTREE" || { echo "FAST EXIT: no worktree $WORKTREE"; exit 1; }
 
+# dispatch guard: a runner only ever runs inside a lane pane (luvus pane run
+# gives stdin/stdout the pane's TTY). A shell-tool spawn (`bash <runner>`,
+# incl. `background: true`) has neither -> refuse instead of running hidden.
+if [ ! -t 0 ] && [ ! -t 1 ]; then
+  echo "FAST EXIT: runner outside a pane (no TTY) — dispatch via 'luvus pane run <pane> bash $0'"
+  exit 1
+fi
+
 # clear any prior run's artifact: a return file always belongs to THIS run
 rm -f "$RETURN" "$TMP" "$TMP.out"
 
@@ -172,6 +184,11 @@ echo "lane $SLUG done rc=$rc -> $RETURN"
 No trailing `exec $SHELL`: `luvus pane run` submits the command line to the
 pane's existing interactive shell, so the pane returns to its prompt (and keeps
 its scrollback) when the runner exits.
+
+The runner is always submitted by `luvus pane run` into a lane pane — never
+launched from the orchestrator's shell tool (`bash <runner>`, incl.
+`background: true`); that is a dispatch violation. The runner's TTY
+preflight above enforces it mechanically (a headless spawn FAST EXITs).
 
 Wait for completion from the orchestrator side (single lane vs whole wave —
 wave dispatch is a batch):
