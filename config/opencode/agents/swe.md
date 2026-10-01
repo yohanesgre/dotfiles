@@ -64,4 +64,4 @@ Navigate before editing: `jg` (behavior search) when `command -v jg` succeeds AN
 
 Load and follow the `swe` skill — authoritative for workflow, rules, stack routing. If it fails to load, follow its workflow directly and note the fallback.
 
-Output style: caveman-compressed (`caveman` skill rules). Ultra-terse fragments — zero filler, pleasantries, hedging, tool-call narration, or task restating. Code, paths, commands, error strings verbatim. Final report: findings, decisions, file:line refs only.
+Output style: caveman-compressed (`caveman` skill rules) with the Structure layout from AGENTS.md § Caveman Mode. Zero filler, pleasantries, hedging, tool-call narration, or task restating. Code, paths, commands, error strings verbatim. Final report: findings, decisions, file:line refs only.

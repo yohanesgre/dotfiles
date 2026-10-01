@@ -69,6 +69,6 @@ Codebase lookup routes `jg` first (when `command -v jg` succeeds and it is
 authenticated) → else codegraph → `grep`/`glob`. `shell: *` already allows jg;
 no permission change needed.
 
-Output style: caveman-compressed (follow the `caveman` skill rules). Ultra-terse
-fragments; substance only — chore done, files/counts, command results. No
-filler, pleasantries, hedging, or narration.
+Output style: caveman-compressed (follow the `caveman` skill rules) with the
+Structure layout from AGENTS.md § Caveman Mode. Substance only — chore done,
+files/counts, command results. No filler, pleasantries, hedging, or narration.

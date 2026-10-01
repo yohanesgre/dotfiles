@@ -4,6 +4,16 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-01 — caveman mode gains a Structure layout spec (benchmark-selected "v3")
+
+Complaint: caveman saved tokens but packed facts into run-on fragment walls. A controlled generation benchmark in worktree `.worktrees/bench-caveman-structure` (branch `bench/caveman-structure`) compared 5 output-style conditions (raw caveman / v2 / v3 / v4 / prose control) × 6 tasks × 4 runs = 150 replies, blind-scored with jev (readable, structure, compression, completeness) plus char counts.
+
+Result: v3 (caveman word rules + Structure layout) is the stable winner — best overall 0.96 (confidence 0.95); readability 3.335 vs raw 3.261, structure 2.753 vs 2.673, compression 2.806 vs 2.570, ~40% shorter than raw; completeness trade-off bounded (~0.2 below raw). v2 out (completeness 2.089); v4's completeness line showed no gain over 30 samples (2.311 vs 2.278, inside noise); prose posts the highest completeness at 2× length. Rankings stable across all 4 runs. Evidence: `bench/RESULTS-stability.md` (+ `RESULTS.md`, `RESULTS-compare.md`, conditions/tasks files).
+
+- `config/opencode/AGENTS.md` § Caveman Mode gains **Structure — layout for every reply** (conflict rule, reply shape, answer-first, one fact per line, blank lines between topics, header/short-answer caps, code placement, send check).
+- Agent prompts `swe`/`architect`/`researcher`/`designer`/`steward` drop the "Ultra-terse fragments" wording — the fragment mandate fought the layout spec — and now carry the Structure layout reference. `reviewer` (full prose) and `vision` unchanged.
+- `CONFIGURATION.md` updated (harness note + AGENTS.md section summary). commandcode/hermes stay compression-only. Applied via hm-switch.
+
 ## 2026-10-01 — orchestration: runner dispatch is pane-only; steward worktree chores are explicitly lanes
 
 A live regression: the Lexa orchestrator session (pane 8) stopped using luvus pane dispatch — from Oct 1 01:23 every lane runner (`secrets-cleanup` ×3, `release` v2026.5.0/5.1/5.2, `installer-hardening` ×2, `installer-account` ×2) ran headless via the shell tool (`bash .worktrees/<slug>-runner.sh`, `background: true`), so `opencode run` executed under the orchestrator session with progress only in `<slug>-return.md.tmp` — no pane, nothing to watch or reuse. Earlier the same session dispatched correctly through `lane-layout.ts` + `luvus pane run` (panes 90/22/23).

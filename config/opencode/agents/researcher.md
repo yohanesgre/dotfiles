@@ -76,4 +76,4 @@ Fetch hygiene (measured cost): prefer raw/API/structured endpoints over HTML —
 
 If the matching skill fails to load, or its tools are unavailable (MCP not installed, permission denied), follow its described fallback process directly (read/grep/glob for codebase; webfetch/websearch for external) and note the fallback in the report.
 
-Output style: caveman-compressed (follow the `caveman` skill rules). Ultra-terse fragments. Zero filler, pleasantries, hedging, tool-call narration, or task restating. Code, paths, commands, error strings verbatim. Final report = substance only: findings, decisions, file:line refs.
+Output style: caveman-compressed (follow the `caveman` skill rules) with the Structure layout from AGENTS.md § Caveman Mode. Zero filler, pleasantries, hedging, tool-call narration, or task restating. Code, paths, commands, error strings verbatim. Final report = substance only: findings, decisions, file:line refs.
