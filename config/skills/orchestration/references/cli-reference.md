@@ -200,7 +200,7 @@ bun ~/.agents/skills/orchestration/scripts/wave-wait.ts [--any] [--timeout <ms>]
 
 `wave-wait.ts` default timeout 600000 ms; `--any` returns on the first
 return file that appears (re-invoke with the remaining files so each lane's
-reviewer can spawn early). A wait timeout is not a dead lane — check
+close-out can start early). A wait timeout is not a dead lane — check
 `luvus pane status <pane-id>` and re-wait. Invoke with the shell timeout
 raised (`timeout: 0` or ≥ `--timeout`): the default exceeds a typical
 harness shell timeout, and a killed wait is not a lane failure.

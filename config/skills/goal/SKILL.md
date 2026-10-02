@@ -13,8 +13,8 @@ Turn a goal prompt into DONE through a loop. This skill owns the goal
 lifecycle: intake → classify → design → protocol → track. Once the plan is
 frozen and the execution gate is approved, it hands off to the
 `orchestration` skill, which owns execution (isolate → lanes → verify →
-review → merge → loop). The loop ends only when acceptance criteria hold
-and gates are green — never on effort spent.
+close-out → review ∥ CI → merge → loop). The loop ends only when
+acceptance criteria hold and gates are green — never on effort spent.
 
 Scope: this skill runs ONLY under an explicit `/goal` invocation. Its
 guard and policies do NOT apply to ordinary sessions, other commands, or
@@ -25,8 +25,8 @@ protocol + model/effort approval); the execution gate is the LAST human
 gate. After it, execution is full-auto and owned by `orchestration` — the
 user reads wave reports async and the loop never blocks on them. Approving
 the gate pre-authorizes exactly the lifecycle `orchestration` enumerates
-(branch → commit → push → PR → auto-merge on green CI) for exactly the
-named lanes/branches. The gate approves scope and waves.
+(branch → commit → push → PR → review ∥ CI → auto-merge when both green)
+for exactly the named lanes/branches. The gate approves scope and waves.
 
 Runtime: opencode (v2) only; execution runs on luvus lanes. Exact pinned
 CLI signatures live in the `orchestration` skill
@@ -48,8 +48,8 @@ and flag before doing anything.
 A — happy path
 goal → intake → classify → design → protocol → track → GATE
      [execution owned by the `orchestration` skill:]
-     → isolate → wave{lanes} → verify → review-wave{reviewer_i ∥}
-     → per-lane close(PR) → merge → loop: next wave | DONE
+     → isolate → wave{lanes} → verify → per-lane close(PR)
+     → review-wave{reviewer_i ∥ CI} → merge(CI ∧ review) → loop: next wave | DONE
 
 E — planning break points (coordinator failures, not worker failures)
 wrong context · missing input (invisible edge) · misinterpretation ·
@@ -199,7 +199,7 @@ plan-check + closure judgment are owned by `orchestration`.)
 After Phase 3 the plan is frozen. Load the `orchestration` skill and follow
 it from the execution gate onward: it owns the gate (LAST human gate), the
 main-session guard, the simple/complex lane routing, Phase 4
-(isolate/dispatch/return), Phase 5 (verify/loop/review/merge/plan
+(isolate/dispatch/return), Phase 5 (verify/loop/close-out/review/merge/plan
 close-out), the break points, and the standing guardrails. This skill's
 loop is complete when `orchestration` reaches DONE/FAILED and the tracking
 plane is finalized.

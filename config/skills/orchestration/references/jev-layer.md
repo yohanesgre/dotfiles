@@ -34,10 +34,10 @@ primary session is allowed.
   `scope` (diff ⊆ the lane's assigned files), `acceptance` (frozen criteria
   appear met), `secrets` (no credential added), `offscript` (no extra or
   missing nodes vs the delegated subgraph). A failing check sends the lane
-  back to fix BEFORE the `reviewer` subagent runs; a passing check does not
-  skip the reviewer.
-- **Pre-merge.** `jev_check` on the PR (diff + gate tails + deviations):
-  "safe to auto-merge on green CI?" Advisory; policy and CI still decide.
+  back to fix BEFORE close-out; a passing check does not skip the reviewer.
+- **Pre-merge.** `jev_check` on the PR (diff + gate tails + deviations +
+  reviewer verdict): "safe to auto-merge — CI and review green?" Advisory;
+  policy, CI, and the reviewer still decide.
 
 Failure mode: jev unreachable, errors, or `abstain` → skip it and fall back
 to the existing reviewer path (never a blocker). Never let jev output

@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   Architecture map of the dotfiles orchestration pipeline (goal → orchestration → work-plans).
-  Hand-authored from skill sources 2026-09-29 (includes the uncommitted batch-dispatch change).
+  Hand-authored from skill sources 2026-10-02 (includes the uncommitted PR-first close-out change).
   Verify with architecture-viz scripts: check-svg-overlaps.py + render-check.sh.
 -->
 <html lang="en">
@@ -87,13 +87,13 @@
   <header>
     <div class="kicker">Architecture Map</div>
     <h1>orchestration — agent-lane execution plane</h1>
-    <p class="sub">A frozen plan (from <code>goal</code>) runs through one human gate, then isolated luvus lanes verify, review, and merge themselves. Static, hand-authored snapshot — no runtime introspection; every claim carries a source line.</p>
+    <p class="sub">A frozen plan (from <code>goal</code>) runs through one human gate, then isolated luvus lanes verify, close out (PR), review ∥ CI, and merge themselves. Static, hand-authored snapshot — no runtime introspection; every claim carries a source line.</p>
     <div class="chips">
       <span class="chip"><b>14</b> nodes · <b>15</b> edges</span>
       <span class="chip">wave lanes run <b>in parallel</b> (batch dispatch, 2026-09-29)</span>
       <span class="chip">jev advisory at <b>4</b> points</span>
-      <span class="chip">validate-skills <b>rc 0</b> · wave-wait smoke <b>6/6</b></span>
-      <span class="chip">snapshot <b>2026-09-29</b></span>
+      <span class="chip">validate-skills <b>rc 0</b> · live wave smoke <b>19.9s</b></span>
+      <span class="chip">snapshot <b>2026-10-02</b></span>
     </div>
   </header>
 
@@ -199,17 +199,17 @@
       </g>
       <g class="n svc" transform="translate(520,470)">
         <rect width="360" height="110" rx="12"/>
-        <text class="t" x="20" y="28">Verify + review wave</text>
+        <text class="t" x="20" y="28">Verify → close-out (PR)</text>
         <text class="s" x="20" y="50">frozen acceptance · gate evidence</text>
         <text class="s" x="20" y="72">graph compare vs delegated subgraph</text>
-        <text class="s" x="20" y="94">reviewer per lane, async fan-out</text>
+        <text class="s" x="20" y="94">green → commit · push · open PR</text>
       </g>
       <g class="n svc" transform="translate(520,620)">
         <rect width="360" height="110" rx="12"/>
-        <text class="t" x="20" y="28">Close-out → PR → merge → loop</text>
-        <text class="s" x="20" y="50">commit · push · PR · auto-merge on CI</text>
-        <text class="s" x="20" y="72">loop guard: 3/wave · cap 5/plan</text>
-        <text class="s" x="20" y="94">policy-blocked PR → park + report</text>
+        <text class="t" x="20" y="28">Review ∥ CI → merge → loop</text>
+        <text class="s" x="20" y="50">reviewer per lane on the OPEN PR</text>
+        <text class="s" x="20" y="72">merge on CI green + reviewer green</text>
+        <text class="s" x="20" y="94">loop guard: 3/wave · cap 5/plan</text>
       </g>
       <g class="n svc" transform="translate(520,770)">
         <rect width="360" height="84" rx="12"/>
@@ -237,7 +237,7 @@
         <rect width="340" height="110" rx="12"/>
         <text class="t" x="20" y="28">Read-only subagents</text>
         <text class="s" x="20" y="50">architect foreground · researcher fans</text>
-        <text class="s" x="20" y="72">reviewer per lane, prose output</text>
+        <text class="s" x="20" y="72">reviewer per lane over the open PR</text>
         <text class="s" x="20" y="94">models pinned in the agent md</text>
       </g>
       <g class="n tool" transform="translate(1060,540)">
@@ -290,43 +290,43 @@
       </li>
       <li>
         <div class="st">Pre-gate validation (advisory)</div>
-        <div class="note"><code>plan-check.sh</code> (strict) + jev open triage (advisory) — a red plan is fixed before the gate, never after. <code>goal/SKILL.md:191-195</code>, <code>work-plans/SKILL.md:154-160</code></div>
+        <div class="note"><code>plan-check.sh</code> (strict) + jev open triage (advisory) — a red plan is fixed before the gate, never after. <code>goal/SKILL.md:191-195</code>, <code>work-plans/SKILL.md:169-177</code></div>
       </li>
       <li>
         <div class="st"><span class="tag">human</span> Execution gate — last human gate</div>
-        <div class="note">Approves waves, lanes, resolved models, worktrees/branches, and the whole lifecycle (branch → commit → push → PR → auto-merge on green CI). No approval = no execution; lapse 72h. Simple route → fast path (ack = go). <code>orchestration/SKILL.md:157-175</code></div>
+        <div class="note">Approves waves, lanes, resolved models, worktrees/branches, and the whole lifecycle (branch → commit → push → PR → review ∥ CI → auto-merge on green CI + green review). No approval = no execution; lapse 72h. Simple route → fast path (ack = go). <code>orchestration/SKILL.md:155-173</code></div>
       </li>
       <li>
         <div class="st">Isolate — every worktree before any setup</div>
-        <div class="note"><code>git worktree add</code> from <code>origin/main</code> per lane; setups then run concurrently (independent paths); per-worktree clean check inside. Collision → FAST EXIT, never unisolated. <code>orchestration/SKILL.md:183-206</code></div>
+        <div class="note"><code>git worktree add</code> from <code>origin/main</code> per lane; setups then run concurrently (independent paths); per-worktree clean check inside. Collision → FAST EXIT, never unisolated. <code>orchestration/SKILL.md:181-204</code></div>
       </li>
       <li>
         <div class="st">Layout — master column + lane grid, once per wave</div>
-        <div class="note"><code>lane-layout.ts</code>: orchestrator stays left at full height, lanes tile ~2:1; more than 6 lanes overflow to extra lane-only tabs, never squeezed. <code>orchestration/SKILL.md:219-231</code></div>
+        <div class="note"><code>lane-layout.ts</code>: orchestrator stays left at full height, lanes tile ~2:1; more than 6 lanes overflow to extra lane-only tabs, never squeezed. <code>orchestration/SKILL.md:221-225</code></div>
       </li>
       <li>
         <div class="st">Brief + model — self-contained, explicit</div>
-        <div class="note">Brief = delegated subgraph (WHY/Nodes/Edges/Docs/Acceptance/Gate/Forbidden/Boundary); model is read verbatim from the role agent's md and passed with <code>--model</code> — the md pin does NOT apply to a primary <code>opencode run</code> session. <code>orchestration/SKILL.md:233-256</code></div>
+        <div class="note">Brief = delegated subgraph (WHY/Nodes/Edges/Docs/Acceptance/Gate/Forbidden/Boundary); model is read verbatim from the role agent's md and passed with <code>--model</code> — the md pin does NOT apply to a primary <code>opencode run</code> session. <code>orchestration/SKILL.md:227-250</code></div>
       </li>
       <li>
         <div class="st"><span class="tag">2026-09-29</span> Dispatch is a BATCH, not a loop</div>
-        <div class="note">Fire EVERY lane of the wave before waiting on anything — <code>luvus pane run</code> is a non-blocking text+Enter submission. Serialize only shared-file lanes and the steward subagent; dispatch-one/wait-one is now an explicit deviation. <code>orchestration/SKILL.md:278-289</code>, <code>references/lane-dispatch.md:13-20</code></div>
+        <div class="note">Fire EVERY lane of the wave before waiting on anything — <code>luvus pane run</code> is a non-blocking text+Enter submission. Serialize only shared-file lanes and the steward subagent; dispatch-one/wait-one is now an explicit deviation. <code>orchestration/SKILL.md:271-282</code>, <code>references/lane-dispatch.md:14-21</code></div>
       </li>
       <li>
         <div class="st">Join — <code>wave-wait.ts [--any] [--timeout]</code></div>
-        <div class="note">200 ms poll over N return files; <code>--any</code> lets an early lane's reviewer spawn while siblings still run. A return file's appearance means the runner finished; <code>rc=0</code> is real completion. Timeout ≠ dead lane — check <code>luvus pane status</code>, re-wait. <code>orchestration/scripts/wave-wait.ts:5-21</code></div>
+        <div class="note">200 ms poll over N return files; <code>--any</code> lets an early lane close out (PR) while siblings still run. A return file's appearance means the runner finished; <code>rc=0</code> is real completion. Timeout ≠ dead lane — check <code>luvus pane status</code>, re-wait. <code>orchestration/scripts/wave-wait.ts:5-21</code></div>
       </li>
       <li>
-        <div class="st">Verify + review wave — per lane, then merge</div>
-        <div class="note">End of wave: gates + frozen acceptance + graph compare (extra/missing node = deviation). Reviewer per lane, async, stable lane↔reviewer map; jev diff pre-filter first; a lane closes out on its own green — no sibling wait. <code>orchestration/SKILL.md:325-388</code></div>
+        <div class="st">Verify → close-out (PR) — per lane</div>
+        <div class="note">End of wave: gates + frozen acceptance + graph compare (extra/missing node = deviation); jev diff pre-filter before close-out. Green + met → commit, push, open PR (body = result + gate tails + deviations) — <b>no reviewer before the PR exists</b>; each lane closes out as it turns green, no sibling wait. <code>orchestration/SKILL.md:318-366</code>, <code>:383-397</code></div>
       </li>
       <li>
-        <div class="st">PR → auto-merge → loop guard</div>
-        <div class="note">Green + met → commit, push, PR (body = result + gate tails + deviations); CI green → auto-merge. Loop guard: 3 iterations/wave without progress → park; hard cap 5/plan → FAILED. Policy-blocked → park + report, never poll. <code>orchestration/SKILL.md:390-400</code>, <code>:451-455</code></div>
+        <div class="st">Review ∥ CI → merge → loop guard</div>
+        <div class="note">Reviewer per lane over the open PR, async, stable lane↔reviewer map, concurrent with CI; merge only when CI is green AND the reviewer pass is green (findings route back to the lane: fix → push → CI re-runs). Loop guard: 3 iterations/wave without progress → park; hard cap 5/plan → FAILED. Policy-blocked → park + report, never poll. <code>orchestration/SKILL.md:368-397</code>, <code>:449-453</code></div>
       </li>
       <li>
         <div class="st"><span class="tag">close</span> Plan close-out — DONE | FAILED</div>
-        <div class="note">Close every lane pane → remove merged worktrees/branches → <code>plan-check.sh</code> + jev closure judgment → <code>report.md</code>/<code>status.md</code>/TIMELINE → <code>icm_memory_store</code>. The plan is not DONE until its panes are closed. <code>orchestration/SKILL.md:405-419</code></div>
+        <div class="note">Close every lane pane → remove merged worktrees/branches → <code>plan-check.sh</code> + jev closure judgment → <code>report.md</code>/<code>status.md</code>/TIMELINE → <code>icm_memory_store</code>. The plan is not DONE until its panes are closed. <code>orchestration/SKILL.md:399-415</code></div>
       </li>
     </ol>
   </section>
@@ -344,10 +344,10 @@
     <section>
       <h2><span class="dot" style="background:#f472b6"></span>orchestration — guardrails</h2>
       <ul class="rulelist">
-        <li><b>Main-session guard:</b> the orchestrator edits only <code>status/**</code> + memory; a self-made code edit is reverted and re-dispatched. <code>orchestration/SKILL.md:83-93</code>, <code>:469-476</code></li>
-        <li><b>Hardened gate for steward:</b> serialized, named files only, no commit/push, verify-then-accept (out-of-scope hunk → revert + re-dispatch). <code>orchestration/SKILL.md:338-352</code></li>
-        <li><b>Break points:</b> FAST EXIT (env/binary/worktree collision/model gap) stops one lane; WAIT parks it and continues others; secrets = the only halt-everything. <code>orchestration/SKILL.md:424-459</code></li>
-        <li><b>Evidence rule:</b> a bare “tests pass” is never green — gate output tails are pasted into the lane report. <code>orchestration/SKILL.md:359-361</code></li>
+        <li><b>Main-session guard:</b> the orchestrator edits only <code>status/**</code> + memory; a self-made code edit is reverted and re-dispatched. <code>orchestration/SKILL.md:81-93</code>, <code>:465-473</code></li>
+        <li><b>Hardened gate for steward:</b> serialized, named files only, no commit/push, verify-then-accept (out-of-scope hunk → revert + re-dispatch). <code>orchestration/SKILL.md:331-349</code></li>
+        <li><b>Break points:</b> FAST EXIT (env/binary/worktree collision/model gap) stops one lane; WAIT parks it and continues others; secrets = the only halt-everything. <code>orchestration/SKILL.md:420-457</code></li>
+        <li><b>Evidence rule:</b> a bare “tests pass” is never green — gate output tails are pasted into the lane report. <code>orchestration/SKILL.md:352-358</code></li>
       </ul>
     </section>
   </div>
@@ -356,19 +356,19 @@
     <section>
       <h2><span class="dot" style="background:var(--e)"></span>workers — lanes &amp; subagents</h2>
       <ul class="rulelist">
-        <li><b>Lane:</b> <code>swe</code> (implementation) or <code>designer</code> (design artifacts) in a luvus pane, cwd = its worktree; the pane persists through the loop and closes only at plan DONE/FAILED. <code>orchestration/SKILL.md:96-102</code>, <code>:312-323</code></li>
-        <li><b>Boundary:</b> brief (delegated subgraph IN) → <code>&lt;slug&gt;-return.md</code> (implemented graph OUT, <code>rc=</code> line); extra/missing node = deviation. <code>orchestration/SKILL.md:68-76</code>, <code>:291-306</code></li>
-        <li><b>Read-only:</b> <code>architect</code> foreground, <code>researcher</code> fans out leaves, <code>reviewer</code> one per lane async; they never mutate. <code>orchestration/SKILL.md:110-119</code></li>
-        <li><b>One mutating subagent only:</b> <code>steward</code> (upkeep) — never a lane, never parallel. <code>orchestration/SKILL.md:103-109</code></li>
+        <li><b>Lane:</b> <code>swe</code> (implementation) or <code>designer</code> (design artifacts) in a luvus pane, cwd = its worktree; the pane persists through the loop and closes only at plan DONE/FAILED. <code>orchestration/SKILL.md:94-100</code>, <code>:305-316</code></li>
+        <li><b>Boundary:</b> brief (delegated subgraph IN) → <code>&lt;slug&gt;-return.md</code> (implemented graph OUT, <code>rc=</code> line); extra/missing node = deviation. <code>orchestration/SKILL.md:68-76</code>, <code>:284-316</code></li>
+        <li><b>Read-only:</b> <code>architect</code> foreground, <code>researcher</code> fans out leaves, <code>reviewer</code> one per lane over the open PR; they never mutate. <code>orchestration/SKILL.md:109-116</code></li>
+        <li><b>One mutating subagent only:</b> <code>steward</code> (upkeep) — never a lane, never parallel. <code>orchestration/SKILL.md:101-108</code></li>
       </ul>
     </section>
     <section>
       <h2><span class="dot" style="background:var(--g)"></span>jev — advisory at four points (+ tracking)</h2>
       <ul class="rulelist">
         <li><b>Gate:</b> <code>jev_check</code> on the frozen plan — a no is surfaced, the human still decides. <code>references/jev-layer.md:13-16</code></li>
-        <li><b>Dispatch:</b> <code>jev_ask</code> over proposed lanes — disjoint files, independent outputs, self-contained prompts, <b>batch-dispatched</b> (added 2026-09-29). <code>references/jev-layer.md:17-24</code></li>
-        <li><b>Review pre-filter:</b> <code>jev_triage</code> over each lane's diff as a <code>path</code> item (read server-side, never in context) — scope · acceptance · secrets · offscript; passing does NOT skip the reviewer. <code>references/jev-layer.md:33-40</code></li>
-        <li><b>Tracking:</b> work-plans open/close judgments stay advisory; <code>plan-check.sh</code> stays authoritative. <code>work-plans/SKILL.md:154-168</code></li>
+        <li><b>Dispatch:</b> <code>jev_ask</code> over proposed lanes — disjoint files, independent outputs, self-contained prompts, <b>batch-dispatched</b> (added 2026-09-29). <code>references/jev-layer.md:17-29</code></li>
+        <li><b>Review pre-filter:</b> <code>jev_triage</code> over each lane's diff as a <code>path</code> item (read server-side, never in context) — scope · acceptance · secrets · offscript; passing does NOT skip the reviewer. <code>references/jev-layer.md:31-37</code></li>
+        <li><b>Tracking:</b> work-plans open/close judgments stay advisory; <code>plan-check.sh</code> stays authoritative. <code>work-plans/SKILL.md:162-185</code></li>
       </ul>
     </section>
   </div>
@@ -387,7 +387,7 @@
         </div>
         <div class="card">
           <h3><b>wave-wait.ts</b> <span class="who">bun · new 2026-09-29</span></h3>
-          <p>Joins N return files; <code>--any</code> returns on the first (early reviewer spawn); default 600 s. Exit 0 all/≥1 · 1 timeout with missing listed · 2 argv.</p>
+          <p>Joins N return files; <code>--any</code> returns on the first (early close-out); default 600 s. Exit 0 all/≥1 · 1 timeout with missing listed · 2 argv.</p>
         </div>
         <div class="card">
           <h3><b>plan-check.sh</b> <span class="who">bash · work-plans</span></h3>
@@ -403,18 +403,18 @@
       <h2><span class="dot" style="background:var(--h)"></span>Verification &amp; seams</h2>
       <div class="cards">
         <div class="card">
-          <h3><b>green</b> <span class="who">2026-09-29</span></h3>
+          <h3><b>green</b> <span class="who">2026-10-02</span></h3>
           <ul>
             <li><code>validate-skills.sh</code> rc 0 — 37 skills, 5 pre-existing warnings.</li>
-            <li><code>wave-wait.ts</code> smoke 6/6: argv, timeout, <code>--any</code>, late arrival, <code>rc≠0</code> parse.</li>
-            <li>jev 1.13.0: batch-dispatch yes 0.82 · consistency 0.91 · soundness 1.75/2.</li>
+            <li>Live 3-lane wave smoke (2026-09-29): all <code>rc=0</code>, wall 19.9 s vs ~45 s serial; 3 reviewers green; PRs #15–#17 squash-merged (<code>ebd9e80</code>/<code>fa77ab7</code>/<code>fa9dac7</code>).</li>
+            <li>PR-first review change (2026-10-02): jev consistency 0.81 yes · safety 0.77 yes.</li>
           </ul>
         </div>
         <div class="card">
           <h3><b>not yet run</b> <span class="who">the open seam</span></h3>
           <ul>
-            <li>No live end-to-end wave (3 lanes) since the batch change — jev action stays <code>review</code>.</li>
-            <li>Traps read before closing a wave: dirty worktree, shared-file collision, rebase-before-PR, files-are-truth. <code>references/edge-cases.md:1-26</code></li>
+            <li>No live wave with the PR-first order (reviewer over the open PR) yet.</li>
+            <li>Traps read before closing a wave: dirty worktree, shared-file collision, rebase-before-PR, files-are-truth. <code>references/edge-cases.md:1-29</code></li>
           </ul>
         </div>
       </div>
@@ -425,35 +425,31 @@
     <h2><span class="dot" style="background:var(--danger)"></span>Watch items</h2>
     <div class="cards">
       <div class="card danger">
-        <h3><b>Concurrency fix not yet proven live</b> <span class="sev warn">verify</span></h3>
-        <p>The batch-dispatch rule + <code>wave-wait.ts</code> are new (uncommitted as of this snapshot); correctness is proven for the script and the text, not yet for a real multi-lane wave. jev is advisory-<code>review</code>, not <code>act</code>. <code>orchestration/SKILL.md:278-289</code>, <code>scripts/wave-wait.ts</code></p>
+        <h3><b>PR-first order not yet proven live</b> <span class="sev warn">verify</span></h3>
+        <p>Batch dispatch + <code>wave-wait.ts</code> are proven live (3-lane smoke 2026-09-29). The PR-first close-out — reviewer over the open PR, merge on CI + review — is text/jev-verified only until a real wave runs it. <code>orchestration/SKILL.md:368-397</code>, <code>scripts/wave-wait.ts</code></p>
       </div>
       <div class="card danger">
         <h3><b>Fire-and-forget dispatch</b> <span class="sev warn">observability</span></h3>
-        <p><code>luvus pane run</code> has no ack, so a dead lane is indistinguishable from a slow one until the wait times out; the rule “timeout ≠ dead lane” softly degrades the distinction. <code>references/cli-reference.md:162-164</code>, <code>wave-wait.ts:19-20</code></p>
+        <p><code>luvus pane run</code> has no ack, so a dead lane is indistinguishable from a slow one until the wait times out; the rule “timeout ≠ dead lane” softly degrades the distinction. <code>references/cli-reference.md:43</code>, <code>:184-187</code>, <code>wave-wait.ts:19-21</code></p>
       </div>
       <div class="card">
         <h3><b>Layout has no rollback</b> <span class="sev soft">runtime</span></h3>
-        <p>Each UHP request is a separate process spawn; a mid-way <code>lane-layout</code> failure leaves panes created with the layout unapplied — partial state, recovered by hand. <code>scripts/lane-layout.ts:123-128</code><code>:262</code>, <code>cli-reference.md:74-80</code></p>
+        <p>Each UHP request is a separate process spawn; a mid-way <code>lane-layout</code> failure leaves panes created with the layout unapplied — partial state, recovered by hand. <code>scripts/lane-layout.ts:123-128</code><code>:262</code>, <code>cli-reference.md:87-105</code></p>
       </div>
       <div class="card">
         <h3><b>Routing text duplicated</b> <span class="sev soft">drift</span></h3>
-        <p>The simple/complex classification is byte-duplicated in goal and orchestration with no single source; goal says orchestration “re-uses” it, but nothing enforces equality. <code>goal/SKILL.md:88-114</code> vs <code>orchestration/SKILL.md:130-155</code></p>
+        <p>The simple/complex classification is byte-duplicated in goal and orchestration with no single source; goal says orchestration “re-uses” it, but nothing enforces equality. <code>goal/SKILL.md:88-114</code> vs <code>orchestration/SKILL.md:128-153</code></p>
       </div>
       <div class="card">
         <h3><b>status/ gitignored — but cited as chronology</b> <span class="sev soft">docs</span></h3>
-        <p>Reports travel via PR bodies because <code>status/</code> is gitignored, while <code>git log -- status/</code> is offered elsewhere as a history source — a third reading of where plan history lives. <code>orchestration/SKILL.md:402</code> vs <code>work-plans/SKILL.md:120-122</code></p>
-      </div>
-      <div class="card">
-        <h3><b>Worktree-removal approval conflict</b> <span class="sev soft">docs</span></h3>
-        <p>“Removal after merge needs no approval inside the loop” vs “removal needs explicit user approval” — both in the same skill, no precedence marker; worktree+reviewer races are the practical reading. <code>orchestration/SKILL.md:401-402</code> vs <code>:318-320</code></p>
+        <p>Reports travel via PR bodies because <code>status/</code> is gitignored, while <code>git log -- status/</code> is offered elsewhere as a history source — a third reading of where plan history lives. <code>orchestration/SKILL.md:394-397</code> vs <code>work-plans/SKILL.md:130-135</code></p>
       </div>
     </div>
   </section>
 
   <footer>
-    Static snapshot — 2026-09-29 · sources: <code>config/skills/{goal,orchestration,work-plans}/**</code>, <code>config/opencode/{commands,agents}/**</code>, <code>config/skills/orchestration/scripts/**</code>, <code>docs/configuration-changelog.md</code>.
-    Line refs are repo-relative; the newer concurrency change is on disk but uncommitted. Re-run the analysis after structural changes.
+    Static snapshot — 2026-10-02 (includes the PR-first close-out change) · sources: <code>config/skills/{goal,orchestration,work-plans}/**</code>, <code>config/opencode/{commands,agents}/**</code>, <code>config/skills/orchestration/scripts/**</code>, <code>docs/configuration-changelog.md</code>.
+    Line refs are repo-relative; the PR-first review change is on disk but uncommitted. Re-run the analysis after structural changes.
   </footer>
 </div>
 </body>

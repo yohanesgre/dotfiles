@@ -11,8 +11,11 @@ Traps that recur across waves. Read this before closing a wave.
   Assign one owner at protocol time; on collision risk, serialize those
   files through one lane.
 - Rebase before PR: main moves under lanes. Rebase each lane on latest
-  `main` + re-run its gate before opening the PR. CI red caused by the
-  rebase → fix loop (counts toward the loop guard).
+  `main` + re-run its gate before opening the PR. A PR open through
+  review/CI can also be overtaken by `main` — re-check mergeability before
+  merge; rebase + re-run if needed (only a diff-changing rebase needs a
+  re-review). CI red caused by the rebase → fix loop (counts toward the
+  loop guard).
 - Files are truth: a pane persists through the loop but is not durable (it can be closed,
   and the orchestrator's own view is compacted). Lane progress lives
   in lane files + `report.md`. After context compaction, re-read

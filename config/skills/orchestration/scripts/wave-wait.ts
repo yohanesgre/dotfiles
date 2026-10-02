@@ -13,8 +13,8 @@
  *
  * Default: waits for EVERY file, then prints each in discovery order with
  * its `rc=` line and a body tail.
- * `--any`: returns as soon as at least one file appears — spawn that lane's
- * reviewer early, then re-invoke with the remaining files.
+ * `--any`: returns as soon as at least one file appears — start that
+ * lane's close-out early, then re-invoke with the remaining files.
  *
  * Exit 0 = all files seen (default) / >=1 file seen (--any), 1 = timeout
  * (missing files printed) or unreadable file, 2 = bad argv. A timeout is NOT

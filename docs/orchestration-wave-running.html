@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <!--
   Runtime view: one orchestration wave with three lanes running in parallel.
-  Hand-authored 2026-09-29 from the orchestration skill sources (batch-dispatch change included).
+  Hand-authored 2026-10-02 from the orchestration skill sources (PR-first close-out change included).
   Durations are illustrative (15/20/35 min lane runs, 12 min reviews).
   Verify with architecture-viz scripts: check-svg-overlaps.py (svg 0 + 1) + render-check.sh.
 -->
@@ -82,19 +82,19 @@
   <header>
     <div class="kicker">Runtime View</div>
     <h1>a wave in flight — three lanes, one orchestrator</h1>
-    <p class="sub">What the wall clock looks like while workers run in parallel: dispatch is a batch, the join is a single wait, and reviewers start as lanes land. Durations are illustrative; the mechanics and line refs are real.</p>
+    <p class="sub">What the wall clock looks like while workers run in parallel: dispatch is a batch, the join is a single wait, and lanes close out (PR) as they land — reviewers run over the open PRs. Durations are illustrative; the mechanics and line refs are real.</p>
     <div class="chips">
       <span class="chip">wall clock = <b>max(tᵢ)</b>, not Σtᵢ</span>
       <span class="chip">3 lanes <b>+ steward serial</b></span>
-      <span class="chip">early reviewers via <b>--any</b></span>
+      <span class="chip">early close-out via <b>--any</b></span>
       <span class="chip"><code>wave-wait.ts</code></span>
-      <span class="chip">snapshot <b>2026-09-29</b></span>
+      <span class="chip">snapshot <b>2026-10-02</b></span>
     </div>
   </header>
 
   <section>
     <h2><span class="dot" style="background:var(--e)"></span>Timeline — the parallel window</h2>
-    <p class="hint">Shaded stages = how many lanes are still running (3 → 2 → 1). Bars are illustrative durations: lane A 35 min, lane B 20 min, lane C 15 min, reviews 12 min. Everything the orchestrator does while the lanes run happens inside one <code>wave-wait</code>.</p>
+    <p class="hint">Shaded stages = how many lanes are still running (3 → 2 → 1). Bars are illustrative durations: lane A 35 min, lane B 20 min, lane C 15 min, reviews 12 min (over the open PRs). Everything the orchestrator does while the lanes run happens inside one <code>wave-wait</code>.</p>
     <svg class="graph" viewBox="0 0 1440 560" role="img" aria-label="parallel wave timeline">
       <defs>
         <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
@@ -167,7 +167,7 @@
       </g>
       <g class="n svc" transform="translate(367,70)">
         <rect width="563" height="38" rx="8"/>
-        <text class="s" x="12" y="22">wave-wait: join + spawn reviewers on --any</text>
+        <text class="s" x="12" y="22">wave-wait: join + close out on --any</text>
       </g>
       <g class="n svc" transform="translate(930,70)">
         <rect width="115" height="38" rx="8"/>
@@ -185,7 +185,7 @@
       </g>
       <g class="n svc" transform="translate(1127,126)">
         <rect width="148" height="38" rx="8"/>
-        <text class="s" x="12" y="22">PR + merge</text>
+        <text class="s" x="12" y="22">merge (both green)</text>
       </g>
 
       <!-- lane B -->
@@ -195,7 +195,7 @@
       </g>
       <g class="n svc" transform="translate(881,182)">
         <rect width="148" height="38" rx="8"/>
-        <text class="s" x="12" y="22">PR + merge</text>
+        <text class="s" x="12" y="22">merge (both green)</text>
       </g>
 
       <!-- lane C -->
@@ -205,26 +205,26 @@
       </g>
       <g class="n svc" transform="translate(798,238)">
         <rect width="148" height="38" rx="8"/>
-        <text class="s" x="12" y="22">PR + merge</text>
+        <text class="s" x="12" y="22">merge (both green)</text>
       </g>
 
       <!-- reviewers -->
       <g class="n tool" transform="translate(601,294)">
         <rect width="197" height="38" rx="8"/>
-        <text class="s" x="12" y="22">review (12m)</text>
+        <text class="s" x="12" y="22">PR opens · review (12m)</text>
       </g>
       <g class="n tool" transform="translate(684,350)">
         <rect width="197" height="38" rx="8"/>
-        <text class="s" x="12" y="22">review</text>
+        <text class="s" x="12" y="22">PR opens · review</text>
       </g>
       <g class="n tool" transform="translate(930,406)">
         <rect width="197" height="38" rx="8"/>
-        <text class="s" x="12" y="22">review</text>
+        <text class="s" x="12" y="22">PR opens · review</text>
       </g>
 
       <!-- event captions -->
       <text class="elabel" x="240" y="500" text-anchor="start">T+0 — batch dispatch: every pane fired</text>
-      <text class="elabel" x="601" y="500" text-anchor="start">first return → reviewer C starts early (--any)</text>
+      <text class="elabel" x="601" y="500" text-anchor="start">first return → close-out C + reviewer (--any)</text>
       <text class="elabel" x="930" y="500" text-anchor="start">wave complete → verify</text>
     </svg>
     <div class="legend">
@@ -237,7 +237,7 @@
 
   <section>
     <h2><span class="dot" style="background:var(--c)"></span>State at the first return — what is live at once</h2>
-    <p class="hint">Snapshot of the same wave the moment lane C's return file appears (dashed edge = the advisory/async path). One orchestrator, three lanes, one reviewer already running, one mutating subagent parked.</p>
+    <p class="hint">Snapshot of the same wave the moment lane C's return file appears (dashed edge = the advisory/async path). One orchestrator, three lanes, lane C closing out (PR) with its reviewer spawning on that PR, one mutating subagent parked.</p>
     <svg class="graph" viewBox="0 0 1440 420" role="img" aria-label="mid-wave state graph">
       <rect width="1440" height="420" fill="url(#dots)"/>
 
@@ -255,7 +255,7 @@
       <text class="elabel" x="457" y="296" text-anchor="start">watches C</text>
 
       <path class="edge" d="M400,178 H420 V20 H1200 V40" marker-end="url(#ah)"/>
-      <text class="elabel" x="810" y="12" text-anchor="middle">spawns reviewer on first return</text>
+      <text class="elabel" x="810" y="12" text-anchor="middle">spawns C's reviewer after its PR opens</text>
 
       <!-- nodes -->
       <g class="n svc" transform="translate(60,40)">
@@ -287,13 +287,13 @@
         <rect width="360" height="84" rx="12"/>
         <text class="t" x="20" y="28">Lane C — designer</text>
         <text class="s" x="20" y="50">return written · rc=0</text>
-        <text class="s" x="20" y="68">pane persists (scrollback)</text>
+        <text class="s" x="20" y="68">close-out: PR opens; reviewer next</text>
       </g>
 
       <g class="n test" transform="translate(1060,40)">
         <rect width="340" height="84" rx="12"/>
         <text class="t" x="20" y="28">Reviewer C — subagent</text>
-        <text class="s" x="20" y="50">spawned early on --any</text>
+        <text class="s" x="20" y="50">spawns on C's open PR</text>
         <text class="s" x="20" y="68">findings bind to lane C</text>
       </g>
       <g class="n tool" transform="translate(1060,170)">
@@ -319,22 +319,22 @@
       <table>
         <tr><th>What</th><th>Serial (old)</th><th>Batch (now)</th></tr>
         <tr><td>Lane runs</td><td>15 + 20 + 35 = 70m</td><td>35m (max)</td></tr>
-        <tr><td>First review starts</td><td>after 70m</td><td>15m (lane C lands)</td></tr>
-        <tr><td>First PR open</td><td>82m</td><td>27m (C: 15 + 12)</td></tr>
+        <tr><td>First PR open</td><td>82m (after review)</td><td>15m (C closes out)</td></tr>
+        <tr><td>First review starts</td><td>82m</td><td>15m (C's PR open)</td></tr>
         <tr><td>Wave verified</td><td>82m+</td><td>35m (last lane)</td></tr>
       </table>
       <ul class="rulelist">
         <li><b>Why serial happened:</b> the old text said “one lane at a time” and the only wait primitive watched one file — so the natural reading was start → block → start. <code>references/lane-dispatch.md:13-20</code></li>
-        <li><b>Why batch is safe:</b> completion is a durable file, not pane output — the runner writes <code>&lt;slug&gt;-return.md</code> atomically as its last step. <code>references/cli-reference.md:120-146</code></li>
+        <li><b>Why batch is safe:</b> completion is a durable file, not pane output — the runner writes <code>&lt;slug&gt;-return.md</code> atomically as its last step. <code>references/cli-reference.md:174-176</code></li>
       </ul>
     </section>
     <section>
       <h2><span class="dot" style="background:var(--e)"></span>What the orchestrator does while they run</h2>
       <ul class="rulelist">
-        <li><b>Waits once:</b> <code>wave-wait.ts</code> polls all return files — it is the orchestrator's only idle state. <code>orchestration/SKILL.md:278-289</code></li>
-        <li><b>Reacts per lane:</b> a landed file → its reviewer spawns (background, read-only); <code>rc≠0</code> → FAST EXIT/WAIT, never review. <code>:375-388</code></li>
-        <li><b>Triages server-side:</b> jev reads the full return artifact and lane diff as <code>path</code> items — never into orchestrator context. <code>references/jev-layer.md:24-40</code></li>
-        <li><b>Never codes:</b> main-session guard — while lanes run, the orchestrator touches only <code>status/**</code> + memory. <code>orchestration/SKILL.md:83-93</code></li>
+        <li><b>Waits once:</b> <code>wave-wait.ts</code> polls all return files — it is the orchestrator's only idle state. <code>orchestration/SKILL.md:271-282</code></li>
+        <li><b>Reacts per lane:</b> a landed file → close-out (PR) starts; its reviewer spawns over the open PR (background, read-only); <code>rc≠0</code> → FAST EXIT/WAIT, never close-out. <code>orchestration/SKILL.md:363-397</code></li>
+        <li><b>Triages server-side:</b> jev reads the full return artifact and lane diff as <code>path</code> items — never into orchestrator context. <code>references/jev-layer.md:22-37</code></li>
+        <li><b>Never codes:</b> main-session guard — while lanes run, the orchestrator touches only <code>status/**</code> + memory. <code>orchestration/SKILL.md:81-93</code></li>
       </ul>
     </section>
   </div>
@@ -344,17 +344,17 @@
       <h2><span class="dot" style="background:#f472b6"></span>What is NOT parallel</h2>
       <ul class="rulelist">
         <li><b>Shared-file lanes:</b> migrations, lockfiles, CHANGELOG, submodule gitlinks — one owner, serialized through one lane. <code>references/edge-cases.md:9-12</code></li>
-        <li><b>steward:</b> the one mutating subagent (control checkout, no worktree) — one at a time, never beside a lane touching the same files. <code>orchestration/SKILL.md:338-352</code></li>
-        <li><b>Dependent waves:</b> an edge gates the next wave; wave-to-wave is the plan's outer loop, not a per-lane loop. <code>orchestration/SKILL.md:78-81</code></li>
+        <li><b>steward:</b> the one mutating subagent (control checkout, no worktree) — one at a time, never beside a lane touching the same files. <code>orchestration/SKILL.md:331-349</code></li>
+        <li><b>Dependent waves:</b> an edge gates the next wave; wave-to-wave is the plan's outer loop, not a per-lane loop. <code>orchestration/SKILL.md:76-77</code></li>
       </ul>
     </section>
     <section>
       <h2><span class="dot" style="background:var(--danger)"></span>Failure while running</h2>
       <ul class="rulelist">
-        <li><b>Wait timeout ≠ dead lane:</b> fire-and-forget dispatch has no ack — check <code>luvus pane status</code>, re-wait; only a dead pane with no return file is WAIT + re-dispatch. <code>references/lane-dispatch.md:88-96</code></li>
-        <li><b>Lane died mid-run:</b> resume the pane with <code>opencode --session</code> (state lives in the worktree). <code>orchestration/SKILL.md:315-317</code></li>
-        <li><b>Reviewer fail/timeout:</b> not green — retry, or self-review that lane against the checklist. <code>:445-446</code></li>
-        <li><b>Secrets:</b> the only halt-everything — kill that lane immediately. <code>:457-458</code></li>
+        <li><b>Wait timeout ≠ dead lane:</b> fire-and-forget dispatch has no ack — check <code>luvus pane status</code>, re-wait; only a dead pane with no return file is WAIT + re-dispatch. <code>references/lane-dispatch.md:96-105</code></li>
+        <li><b>Lane died mid-run:</b> resume the pane with <code>opencode --session</code> (state lives in the worktree). <code>orchestration/SKILL.md:305-316</code></li>
+        <li><b>Reviewer fail/timeout:</b> not green — PR stays open, merge blocked; retry, or self-review that lane against the checklist. <code>:443-445</code></li>
+        <li><b>Secrets:</b> the only halt-everything — kill that lane immediately. <code>:455-456</code></li>
       </ul>
     </section>
   </div>
@@ -364,25 +364,25 @@
     <div class="cards">
       <div class="card danger">
         <h3><b>Slow lane vs dead lane look identical</b> <span class="sev warn">observability</span></h3>
-        <p>No ack on <code>luvus pane run</code>; the return file is the only signal. Timeout handling depends on the orchestrator remembering to check pane status. <code>references/cli-reference.md:162-164</code></p>
+        <p>No ack on <code>luvus pane run</code>; the return file is the only signal. Timeout handling depends on the orchestrator remembering to check pane status. <code>references/cli-reference.md:43</code>, <code>:184-187</code></p>
       </div>
       <div class="card danger">
         <h3><b>Provider rate limits cap real concurrency</b> <span class="sev warn">external</span></h3>
-        <p>Three <code>opencode run</code> sessions share one provider quota; the batch fires them, but upstream may queue them. Bulk saves wall clock only up to the provider's limit. <code>orchestration/SKILL.md:278-289</code></p>
+        <p>Three <code>opencode run</code> sessions share one provider quota; the batch fires them, but upstream may queue them. Bulk saves wall clock only up to the provider's limit. <code>orchestration/SKILL.md:271-282</code></p>
       </div>
       <div class="card">
         <h3><b>Panes persist by design — grid reflows only on close</b> <span class="sev soft">UI</span></h3>
-        <p>A finished lane keeps its pane and scrollback until plan DONE/FAILED; the visible grid is not a task board. <code>orchestration/SKILL.md:225-231</code></p>
+        <p>A finished lane keeps its pane and scrollback until plan DONE/FAILED; the visible grid is not a task board. <code>orchestration/SKILL.md:312-316</code></p>
       </div>
       <div class="card">
-        <h3><b>This exact flow is not yet proven live</b> <span class="sev soft">verify</span></h3>
-        <p>The batch rule and <code>wave-wait.ts</code> are new (uncommitted); the concurrency narrative above is the spec, verified by lint + smoke, not yet by a real three-lane wave. <code>scripts/wave-wait.ts</code></p>
+        <h3><b>PR-first order not yet proven live</b> <span class="sev soft">verify</span></h3>
+        <p>Batch dispatch + <code>wave-wait.ts</code> are proven live (3-lane smoke 2026-09-29: 19.9 s vs ~45 s serial, all <code>rc=0</code>). The PR-first close-out (reviewer over the open PR, merge on CI + review) is text/jev-verified only. <code>orchestration/SKILL.md:368-397</code>, <code>scripts/wave-wait.ts</code></p>
       </div>
     </div>
   </section>
 
   <footer>
-    Static snapshot — 2026-09-29 · sources: <code>config/skills/orchestration/**</code> (SKILL.md §4.2, references/lane-dispatch.md, references/cli-reference.md, references/jev-layer.md, references/edge-cases.md, scripts/wave-wait.ts).
+    Static snapshot — 2026-10-02 (includes the PR-first close-out change) · sources: <code>config/skills/orchestration/**</code> (SKILL.md §4.2, references/lane-dispatch.md, references/cli-reference.md, references/jev-layer.md, references/edge-cases.md, scripts/wave-wait.ts).
     Durations are illustrative; the parallel-window claim (max, not sum) follows from batch dispatch + a single multi-file join.
   </footer>
 </div>

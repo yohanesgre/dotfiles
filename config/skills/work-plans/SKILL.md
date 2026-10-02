@@ -94,6 +94,8 @@ plan silently WORKING. Lane files use the same states.
 Multi-track: one file per lane under `lanes/` in the same 3-line format.
 The plan-level `status.md` stays the summary — it mirrors the slowest lane, it never
 dumps lane logs. Lane files stay small for the same reason as `status.md`.
+A lane flips DONE only when its PR merges (or it is terminally parked);
+while its PR sits open through review/CI it stays WORKING, msg naming the PR.
 
 Reopened work flips out of DONE first: any new request on a DONE plan (commit,
 fixup, follow-up) → overwrite `status.md` to WORKING/WAIT before acting, then

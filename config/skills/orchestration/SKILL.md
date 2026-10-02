@@ -1,6 +1,6 @@
 ---
 name: orchestration
-description: 'Agent-lane orchestration plane — dispatch planned work into isolated luvus lanes and read-only subagents, run the execution gate, verify, review, close out per lane, merge, and loop until the plan is done. Loaded by `/goal` after its planning phases, and directly by `/orchestrate`. Owns the main-session guard, simple/complex routing, the execution gate, isolate/dispatch/return, verify/loop, break points, and guardrails.'
+description: 'Agent-lane orchestration plane — dispatch planned work into isolated luvus lanes and read-only subagents, run the execution gate, verify, close out per lane, review, merge, and loop until the plan is done. Loaded by `/goal` after its planning phases, and directly by `/orchestrate`. Owns the main-session guard, simple/complex routing, the execution gate, isolate/dispatch/return, verify/loop, break points, and guardrails.'
 metadata:
   requires:
     - work-plans
@@ -9,8 +9,8 @@ metadata:
 # Orchestration
 
 Run a frozen plan to DONE by dispatching it into isolated lanes. This is
-the execution plane: isolate → dispatch → verify → review → close out →
-merge → loop. It does not plan or track — `goal` (with `work-plans`) owns
+the execution plane: isolate → dispatch → verify → close out (PR) →
+review ∥ CI → merge → loop. It does not plan or track — `goal` (with `work-plans`) owns
 intake, design, protocol, and the tracking plane; orchestration consumes
 that plan and produces a verified, merged implementation.
 
@@ -23,7 +23,7 @@ before execution (goal clarity, design direction, protocol + model/effort
 approval); once execution starts the loop never waits for a human — wave
 reports are read async, the rails below replace further gates. Approving
 the gate pre-authorizes exactly the lifecycle it enumerates (branch →
-commit → push → PR → auto-merge on green CI) for the named lanes/branches.
+commit → push → PR → review ∥ CI → auto-merge when both are green) for the named lanes/branches.
 
 Runtime: opencode (v2) only. Assumed surfaces: luvus CLI and opencode
 flags — exact pinned signatures live in `references/cli-reference.md` and
@@ -50,12 +50,12 @@ not opencode, STOP and flag before doing anything.
 
 ```
 A — happy path (execution graph)
-GATE → isolate → wave{lanes} → verify → review-wave{reviewer_i ∥}
-     → per-lane close(PR) → merge → loop: next wave | DONE
+GATE → isolate → wave{lanes} → verify → per-lane close(PR)
+     → review-wave{reviewer_i ∥ CI} → merge(CI ∧ review) → loop: next wave | DONE
 
 Lane node lifecycle (visible pane, persists through the loop)
-spawn → work live in pane → persist return to <slug>-return.md
-     → pane persists through loop → plan DONE/FAILED: close all lane panes
+spawn → work in pane → return <slug>-return.md → close-out (commit/push/PR)
+     → review ∥ CI → merge → pane persists → DONE/FAILED: close lane panes
 
 E — break points (coordinator failures, not worker failures)
 wrong context · missing input (invisible edge) · misinterpretation
@@ -88,7 +88,7 @@ any skill/config file, and never calls a mutating tool against them.
 The orchestrator writes only the tracking plane directly:
 `status/<plan>/` (`plan.md`, `status.md`, `lanes/<lane>.md`,
 `report.md`), `status/TIMELINE.md`, and `icm_memory_store`. It also drives
-isolate, gates, review, PR, CI, and merge — it does not produce the diff.
+isolate, gates, close-out (PR), review, CI, and merge — it does not produce the diff.
 
 Delegation by node type (matches the graph):
 - **Application-behavior mutation nodes → luvus lane(s) only.** Lane roles:
@@ -110,8 +110,8 @@ Delegation by node type (matches the graph):
   (inline, blocking) call. `researcher` = foreground by default, but MUST
   fan out when a wave needs ≥2 independent lookups (read-only →
   collision-free; `researcher` may itself fan out leaf `explore` children).
-  `reviewer` = one per lane, fanned out background/async across the review
-  wave, joined to its own lane before close-out. All three never mutate;
+  `reviewer` = one per lane, fanned out background/async over the open PRs
+  across the review wave; findings to its own lane, green gates its merge. All three never mutate;
   their agent md `model:` pin applies to child sessions automatically — no
   `--model` needed.
 
@@ -158,9 +158,9 @@ Present for one-shot approval: frozen acceptance, the wave graph
 (waves + lanes + one owner per node), chosen route + why, mutation lanes
 + role agents + resolved model+variant (from the agent md; question tool,
 no defaults), read-only roles used, worktree path(s) + branch name(s),
-autonomy envelope (worktree → branch → commit → push → PR → auto-merge on
-green CI). User approves → Phase 4 isolates first, then runs with zero
-further questions. User rejects/changes → adjust the plan (goal Phases
+autonomy envelope (worktree → branch → commit → push → PR → review ∥ CI →
+auto-merge on green CI + green review). User approves → Phase 4 isolates
+first, then runs with zero further questions. User rejects/changes → adjust the plan (goal Phases
 0–3), re-present. No approval = no execution. Approval lapses after 72h or
 if the goal text changed → re-present only the diff, not the whole gate.
 Worktrees/branches always derive from latest `main` at dispatch;
@@ -272,7 +272,7 @@ Wave dispatch is a BATCH, not a loop: fire every lane of the wave
 (`luvus pane run` is non-blocking — text + Enter) before waiting on any
 return file, then join with
 `wave-wait.ts [--any] [--timeout <ms>] <return-file>...` (`--any` returns
-on the first lane that lands, so its reviewer can spawn early;
+on the first lane that lands, so its close-out can start early;
 `lane-wait.ts` stays the single-lane form). Each runner clears its stale
 return file before starting, so a present file always means the current
 run. Serialize only lanes the graph
@@ -309,7 +309,7 @@ persisted `<slug>-return.md` is still the record. Reuse the pane for a
 follow-up or resume a lane that died BEFORE done with opencode `--session`
 (state lives in the worktree, re-brief from the lane file). Keep worktree +
 branch until its PR merges (never delete early; the reviewer still reads
-it); removal needs explicit user approval. The pane is closed only at plan
+it); pre-merge removal needs explicit user approval. The pane is closed only at plan
 close-out (§5), never per lane mid-loop. Each lane runs `git status` FIRST
 inside its own worktree — clean expected there; dirty from an unknown
 source → WAIT + report, never build on top of it (control-checkout dirt is
@@ -361,39 +361,40 @@ Missing tool: `command -v` first, then the closest equivalent, and
 declare the deviation.
 
 End of every wave: gates + FROZEN acceptance + graph compare per lane. A
-lane green + met → spawn its reviewer immediately (async) and let it run;
-a lane red or unmet → adjust the plan, record the deviation, next loop
-iteration.
+lane green + met → close out immediately (commit/push/PR) and spawn its
+reviewer over the open PR (async); a lane red or unmet → adjust the plan,
+record the deviation, next loop iteration.
 
-Review wave (async, per lane): every lane gets a reviewer pass
-(correctness, scope, edge cases) before its PR — run the jev review
-pre-filter first (§ Jev judgment layer). Spawn one `reviewer` per
-lane as a background `subagent` at once — read-only, so the fan-out is
-collision-free. Bind each reviewer to its own lane (stable reviewer↔lane
-map); findings return to that lane only, never around it. A lane closes out
-(commit/push/PR) as soon as its own reviewer is green — lanes are
-edge-independent; `report.md`/DONE stay wave-level (all lanes closed). A
-reviewer that fails or times out is NOT green — retry it or self-review
-that lane; a missing reviewer is never a pass. No reviewer discoverable →
-orchestrator self-reviews against a checklist (diff matches lane scope,
-acceptance re-checked, edge cases probed, staged names secret-free) and
-records it in the report. Lane findings live in the lane file (+ TIMELINE
-line); `report.md` is owned by the orchestrator and aggregates lanes.
+Review wave (async, per lane, over the OPEN PR): every lane gets a
+reviewer pass (correctness, scope, edge cases) on its PR diff — jev
+review pre-filter at return, before close-out (§ Jev judgment layer). Spawn one `reviewer` per
+lane as a background `subagent` at once — read-only, collision-free;
+review and CI run concurrently. Bind each reviewer to its own lane
+(stable reviewer↔lane map); findings return to that lane only, never
+around it — the fix re-enters the lane pane (resume `--session` when
+state remains), pushes to the same branch, and the reviewer re-reviews
+it; CI re-runs. A reviewer that fails or times out is NOT green — retry
+it; none discoverable → orchestrator self-reviews against a checklist
+(scope match, acceptance re-checked, edge cases, staged names
+secret-free), records it as the fallback verdict, and the PR merges only
+on a green verdict. Lane findings live in the lane file (+ TIMELINE line).
+`report.md`/DONE stay wave-level — orchestrator-owned, aggregating lanes.
 
-Auto close-out (per lane): a lane that is green + met with its own reviewer
-pass recorded always commits on its branch (conventional message, body =
-WHY), pushes (`git push -u origin <branch>`), and opens a PR (base `main`,
-body = result + gate tails + deviations). Lanes are edge-independent, so
-each closes out the moment its own review clears — no waiting on sibling
-lanes. Invoking `/goal` (or `/orchestrate`) plus the approved gate is the
-explicit ask for exactly the enumerated lifecycle. Then the merge gate
-takes over: PR auto-merges when CI is green. CI red → fix loop (counts
-toward the loop guard); unfixable within budget → leave open + report.
-Merge BLOCKED BY POLICY (e.g. required-human-review rule, not red CI) →
-leave open + report immediately, never burn loop iterations polling it.
-Worktree/branch removal after merge needs no approval inside the loop; keep
-them until merged, then clean up. `status/` is gitignored — reports travel
-via the PR body, not the repo.
+Auto close-out (per lane): a lane that is green + met commits on its
+branch (conventional message, body = WHY), pushes (`git push -u origin
+<branch>`), and opens a PR (base `main`, body = result + gate tails +
+deviations) — no reviewer before the PR exists. Lanes are
+edge-independent: each closes out as it turns green, no sibling wait.
+Invoking `/goal` (or `/orchestrate`) plus the approved gate is the
+explicit ask for the enumerated lifecycle. Then the merge gate: a PR
+merges when CI is green AND its reviewer pass is green; reviewer
+findings route back to the lane (fix → push → CI re-runs). CI red → fix
+loop (counts toward the loop guard); unfixable → leave open + report.
+Merge BLOCKED BY POLICY (e.g. required-human-review, not red CI) → leave
+open + report immediately, never poll. Worktree/branch removal after
+merge needs no approval inside the loop; remove merged lanes at plan
+close-out. `status/` is gitignored — reports travel via the PR body,
+not the repo.
 
 Plan close-out (plan reached DONE/FAILED): once every lane in the plan is
 closed out (PRs merged, or terminally parked/reported), or the plan closes
@@ -438,10 +439,10 @@ concerns (if any) — nothing else.
   the record.
 - **Lane return with rc≠0**: the runner finished but the lane failed
   (auth/model/lane error) — the file is not a green signal; treat per the
-  error (FAST EXIT/WAIT), never proceed to review.
+  error (FAST EXIT/WAIT), never proceed to close-out.
 - **Reviewer fan-out**: a reviewer that times out or fails is not green —
-  retry it or self-review that lane; the reviewer↔lane map stays stable, a
-  review never crosses to a sibling lane.
+  retry it or self-review that lane; its PR stays open, merge blocked. The
+  reviewer↔lane map stays stable, a review never crosses to a sibling lane.
 - **Jev unavailable/abstain**: the advisory judgment layer is skipped and
   the loop falls back to the existing reviewer path — never a blocker,
   never a completion signal.

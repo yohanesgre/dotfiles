@@ -97,7 +97,7 @@ command, and it is not part of the lane loop).
    for the wave with
    `bun ~/.agents/skills/orchestration/scripts/wave-wait.ts [--any]
    [--timeout <ms>] <return-file>...` (`--any` returns as soon as one lane
-   lands, so its reviewer can spawn early — re-invoke for the rest); the
+   lands, so its close-out can start early — re-invoke for the rest); the
    single-lane form is `lane-wait.ts <return-file> [timeout-ms]`
    (file-sentinel watch + Effect timeout — never fixed `sleep`, never
    `luvus wait output`). A wait timeout is not a dead lane: check
