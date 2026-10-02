@@ -166,9 +166,48 @@
       ExecStart = "%h/.local/bin/icm serve --http 127.0.0.1:11435";
       Restart = "on-failure";
       RestartSec = 3;
+      # Cap the warm embedding daemon: its ONNX bursts + zram-hoarded pages
+      # were triggering systemd-oomd kills of unrelated app cgroups.
+      # Measured 2026-10-03: MemoryHigh=1G caused reclaim thrash while the
+      # model loads; 1800M leaves the working set alone and only squeezes
+      # above that. Hard ceiling 2560M, swap 512M.
+      Nice = 10;
+      CPUWeight = 20;
+      IOWeight = 20;
+      CPUQuota = "200%";
+      MemoryHigh = "1800M";
+      MemoryMax = "2560M";
+      MemorySwapMax = "512M";
     };
     Install = {
       WantedBy = [ "default.target" ];
+    };
+  };
+
+  # Coalesced drain for the icm extraction queue. The icm.ts plugin triggers
+  # this unit instead of spawning `icm extract-pending` directly: concurrent
+  # opencode sessions share one drain (systemd ignores a start while it is
+  # already running), the fastembed model load lives in its own cgroup, and
+  # the caps below keep its ~2GB / 400% CPU burst from starving apps or
+  # getting whole terminal cgroups killed by systemd-oomd.
+  systemd.user.services.icm-drain = {
+    Unit = {
+      Description = "ICM extraction queue drain — capped, coalesced background drain";
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "%h/.local/bin/icm extract-pending --limit 10";
+      Nice = 10;
+      CPUWeight = 20;
+      IOWeight = 20;
+      CPUQuota = "150%";
+      # Measured 2026-10-03: a --limit 10 fastembed drain peaks ~2.25G
+      # (model cache 1.1G on disk; 2G max + 256M swap was hit exactly).
+      # No MemoryHigh — 1500M caused D-state reclaim thrash during model
+      # load; MemoryMax 2560M is the hard ceiling, swap 512M.
+      MemoryMax = "2560M";
+      MemorySwapMax = "512M";
+      TimeoutStartSec = "900";
     };
   };
 

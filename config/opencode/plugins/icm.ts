@@ -49,6 +49,10 @@ const EXTRACT_EVERY = 6
 // detached drain. Tuned 2026-09-24: keep 10, so with EXTRACT_EVERY=6 a
 // drain fires every ~60 tool calls and each drain is smaller
 // (--limit 10) — rarer + smaller bursts, ~1/2 total extraction volume.
+// 2026-10-03: drains now run through the capped, coalescing `icm-drain`
+// systemd user unit (see home/modules/opencode/default.nix) rather than a
+// direct detached spawn, so concurrent sessions share one drain and its
+// cgroup caps keep the ~2GB / 400% CPU burst from starving apps.
 const DRAIN_EVERY = 10
 let toolCallCount = 0
 let enqueueCount = 0
@@ -87,17 +91,28 @@ function icmEnqueue(project: string, input: string): void {
 }
 
 /// Drain the pending-extraction queue in a detached background process.
-/// Fire-and-forget: the chat turn never waits on it, and the heavy
-/// fastembed model load happens at most once per drain. `--limit 10`
-/// (was 30) keeps each drain's burst small — see the 2026-09-24 tuning note.
+/// Fire-and-forget: the chat turn never waits on it. Prefers the capped,
+/// coalescing `icm-drain` systemd user unit (see home/modules/opencode/
+/// default.nix): concurrent sessions share one drain, its cgroup caps
+/// CPU/RAM/swap, and the fastembed model load cannot starve apps or get
+/// whole terminal cgroups killed by systemd-oomd. Falls back to a direct
+/// detached drain when the unit is not installed or user D-Bus is
+/// unreachable.
 function icmDrainDetached(): void {
   try {
     const B = bun()
     if (!B?.spawn) return
-    const child = B.spawn(["icm", "extract-pending", "--limit", "10"], {
-      detached: true,
-      stdio: ["ignore", "ignore", "ignore"],
-    })
+    const child = B.spawn(
+      [
+        "sh",
+        "-c",
+        "systemctl --user cat icm-drain.service >/dev/null 2>&1 && systemctl --user start --no-block icm-drain.service || icm extract-pending --limit 10",
+      ],
+      {
+        detached: true,
+        stdio: ["ignore", "ignore", "ignore"],
+      },
+    )
     child?.unref?.()
   } catch {
     // silent — extraction is best-effort
