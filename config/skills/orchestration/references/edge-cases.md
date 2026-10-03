@@ -19,7 +19,7 @@ Traps that recur across waves. Read this before closing a wave.
 - Files are truth: a pane persists through the loop but is not durable (it can be closed,
   and the orchestrator's own view is compacted). Lane progress lives
   in lane files + `report.md`. After context compaction, re-read
-  `plan.md` + lane files AND run `icm_wake_up` + `icm_memory_recall` before
+  `plan.md` + lane files AND run `mem_session_summary` + `mem_context` before
   continuing — never assume file or memory state. If memory is unreadable,
   proceed on files alone and note it.
 - Plan-env hygiene: if `status/<plan>/` already exists, suffix the plan

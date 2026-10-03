@@ -11,7 +11,7 @@
     warn() { echo "manualInstall: $*" >&2; }
     info() { echo "manualInstall: $*"; }
 
-    # bun / codegraph / rtk / icm / luvus / omp / jev-mcp / cf via upstream
+    # bun / codegraph / rtk / engram / luvus / omp / jev-mcp / cf via upstream
     # installers (home/modules/upstream); opencode via bun (home/modules/opencode)
 
     # never block switch

@@ -126,14 +126,25 @@
     fi
   '';
 
-  home.activation.opencodeSyncIcmPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    SRC="$HOME/projects/dotfiles/config/opencode/plugins/icm.ts"
-    DST="$HOME/.config/opencode/plugins/icm.ts"
-    if [ -f "$SRC" ]; then
-      mkdir -p "$HOME/.config/opencode/plugins"
-      if ! cmp -s "$SRC" "$DST"; then
-        cp -f "$SRC" "$DST"
-        echo "opencode: synced icm plugin"
+  # engram plugin: OpenCode event adapter for the engram HTTP server, vendored
+  # byte-for-byte from upstream v3.0.0 (type-only @opencode-ai/plugin import,
+  # zero runtime deps). Sourced from the flake store path (not
+  # $HOME/projects/dotfiles) so it deploys from any checkout or worktree —
+  # same pattern as the gh plugin below.
+  home.activation.opencodeSyncEngramPlugin = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+    mkdir -p "$HOME/.config/opencode/plugins"
+    # drop the replaced icm plugin (stale real file copied by the removed
+    # opencodeSyncIcmPlugin activation) so OpenCode never loads both adapters
+    if [ -e "$HOME/.config/opencode/plugins/icm.ts" ]; then
+      rm -f "$HOME/.config/opencode/plugins/icm.ts"
+      echo "opencode: removed stale icm plugin"
+    fi
+    ENGRAM_SRC="${../../../config/opencode/plugins/engram.ts}"
+    ENGRAM_DST="$HOME/.config/opencode/plugins/engram.ts"
+    if [ -f "$ENGRAM_SRC" ]; then
+      if ! cmp -s "$ENGRAM_SRC" "$ENGRAM_DST"; then
+        cp -f "$ENGRAM_SRC" "$ENGRAM_DST"
+        echo "opencode: synced engram plugin"
       fi
     fi
   '';
@@ -153,61 +164,22 @@
     fi
   '';
 
-  # Shared warm embedding daemon for the icm OpenCode plugin tools (icm.ts):
-  # `icm serve --http` loads the embedding model + SQLite store once and keeps
-  # them warm across requests. The plugin routes heavy semantic ops
-  # (store/recall/consolidate/stats/topics/health) to this daemon and shells out
-  # to the `icm` CLI for cheap/occasional ops — replacing the old `icm` MCP server.
-  systemd.user.services.icm-http = {
+  # Engram local HTTP server (127.0.0.1:7437) — the single supervised server
+  # instance the OpenCode plugin adopts (auto-starts one if absent, but a
+  # systemd-managed server survives plugin reloads and keeps one shared SQLite
+  # store warm across sessions). `engram mcp` (opencode.jsonc) is the stdio
+  # adapter the agent's mem_* tools talk to.
+  systemd.user.services.engram-serve = {
     Unit = {
-      Description = "ICM HTTP daemon — shared warm embedding model for OpenCode plugin tools";
+      Description = "Engram memory HTTP server — local persistent memory for AI agents";
     };
     Service = {
-      ExecStart = "%h/.local/bin/icm serve --http 127.0.0.1:11435";
+      ExecStart = "%h/.local/bin/engram serve";
       Restart = "on-failure";
       RestartSec = 3;
-      # Cap the warm embedding daemon: its ONNX bursts + zram-hoarded pages
-      # were triggering systemd-oomd kills of unrelated app cgroups.
-      # Measured 2026-10-03: MemoryHigh=1G caused reclaim thrash while the
-      # model loads; 1800M leaves the working set alone and only squeezes
-      # above that. Hard ceiling 2560M, swap 512M.
-      Nice = 10;
-      CPUWeight = 20;
-      IOWeight = 20;
-      CPUQuota = "200%";
-      MemoryHigh = "1800M";
-      MemoryMax = "2560M";
-      MemorySwapMax = "512M";
     };
     Install = {
       WantedBy = [ "default.target" ];
-    };
-  };
-
-  # Coalesced drain for the icm extraction queue. The icm.ts plugin triggers
-  # this unit instead of spawning `icm extract-pending` directly: concurrent
-  # opencode sessions share one drain (systemd ignores a start while it is
-  # already running), the fastembed model load lives in its own cgroup, and
-  # the caps below keep its ~2GB / 400% CPU burst from starving apps or
-  # getting whole terminal cgroups killed by systemd-oomd.
-  systemd.user.services.icm-drain = {
-    Unit = {
-      Description = "ICM extraction queue drain — capped, coalesced background drain";
-    };
-    Service = {
-      Type = "oneshot";
-      ExecStart = "%h/.local/bin/icm extract-pending --limit 10";
-      Nice = 10;
-      CPUWeight = 20;
-      IOWeight = 20;
-      CPUQuota = "150%";
-      # Measured 2026-10-03: a --limit 10 fastembed drain peaks ~2.25G
-      # (model cache 1.1G on disk; 2G max + 256M swap was hit exactly).
-      # No MemoryHigh — 1500M caused D-state reclaim thrash during model
-      # load; MemoryMax 2560M is the hard ceiling, swap 512M.
-      MemoryMax = "2560M";
-      MemorySwapMax = "512M";
-      TimeoutStartSec = "900";
     };
   };
 

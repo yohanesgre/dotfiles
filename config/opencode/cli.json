@@ -10,7 +10,6 @@
     "sound": true
   },
   "session": {
-    "permissions": "autoaccept",
-    "thinking": "show"
+    "permissions": "autoaccept"
   }
 }

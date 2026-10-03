@@ -54,10 +54,19 @@
       }
     },
     "codegraph": { "type": "local", "command": ["codegraph", "serve", "--mcp"], "enabled": true, "environment": { "CODEGRAPH_TELEMETRY": "0", "CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS": "1800000" } },
-    // icm is no longer an MCP server (2026-09-24): its tools are registered by
-    // config/opencode/plugins/icm.ts under the `icm` namespace, backed by the
-    // `icm-http` systemd user service (home/modules/opencode/default.nix) and
-    // the `icm` CLI. Same exposed tool names (`icm_memory_*`, `icm_wake_up`, ...).
+    // engram (2026-10-03): Gentleman-Programming/engram — persistent agent
+    // memory over SQLite. `engram mcp` is the stdio MCP adapter; the HTTP
+    // server it talks to is the supervised `engram-serve` systemd user service
+    // (127.0.0.1:7437, home/modules/opencode/default.nix). `--tools=agent`
+    // exposes the agent tool profile (`mem_*` names). Binary: `engram`
+    // (checksum-verified upstream tarball, home/modules/upstream). Absolute
+    // path (not bare `engram`): the OpenCode server's PATH may omit
+    // ~/.local/bin, and upstream pins absolute paths for its integrations.
+    "engram": {
+      "type": "local",
+      "command": ["/home/yohanes/.local/bin/engram", "mcp", "--tools=agent"],
+      "enabled": true
+    },
     // jev-mcp — TypeSafe Jev typed decision layer (diff review gate, change risk,
     // requirement check, coding-loop routing). Binary: `jev-mcp` (bun global,
     // home/modules/upstream). The key comes from ~/.config/typesafe/key (0600),
@@ -68,7 +77,15 @@
       "type": "local",
       "command": ["jev-mcp"],
       "enabled": true
-    }
+    },
+    // Cloudflare MCP servers (2026-10-03) — official remote servers from
+    // developers.cloudflare.com/agent-setup. cloudflare-docs is public (no
+    // auth); the other four use OAuth, triggered by `opencode mcp auth`.
+    "cloudflare": { "type": "remote", "url": "https://mcp.cloudflare.com/mcp", "enabled": true, "oauth": {} },
+    "cloudflare-docs": { "type": "remote", "url": "https://docs.mcp.cloudflare.com/mcp", "enabled": true },
+    "cloudflare-bindings": { "type": "remote", "url": "https://bindings.mcp.cloudflare.com/mcp", "enabled": true, "oauth": {} },
+    "cloudflare-builds": { "type": "remote", "url": "https://builds.mcp.cloudflare.com/mcp", "enabled": true, "oauth": {} },
+    "cloudflare-observability": { "type": "remote", "url": "https://observability.mcp.cloudflare.com/mcp", "enabled": true, "oauth": {} }
   },
   "shell": "/usr/bin/zsh"
 }

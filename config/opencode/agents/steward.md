@@ -31,13 +31,7 @@ permissions:
   - action: skill
     resource: "*"
     effect: allow
-  - action: icm_memory_*
-    resource: "*"
-    effect: allow
-  - action: icm_wake_up
-    resource: "*"
-    effect: allow
-  - action: icm_feedback_*
+  - action: engram_mem_*
     resource: "*"
     effect: allow
   - action: webfetch

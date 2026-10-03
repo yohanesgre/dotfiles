@@ -141,7 +141,7 @@ command, and it is not part of the lane loop).
    pane it did not create; overflow lane-only tabs are closed with
    `luvus tab close <n>` once their panes are gone), then removes each
    merged lane's worktree + branch and finalizes tracking
-   (`report.md`/`status.md`/`icm_memory_store`). A pane-close failure is non-fatal:
+   (`report.md`/`status.md`/`mem_save`). A pane-close failure is non-fatal:
    report it and continue. Closing panes is part of DONE/FAILED close-out —
    never leave lane panes open after the goal is reached or the plan is
    closed.

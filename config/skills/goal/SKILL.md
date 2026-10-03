@@ -180,7 +180,7 @@ mid-execution.
 **Reopen rule**: any new request on a DONE plan → flip `status.md` to
 WORKING first + TIMELINE line, then act. In-loop heartbeats (`status.md`
 mirroring the slowest lane, 3-line lane files) and the DONE close-out —
-including `icm_memory_store` — are owned by `orchestration` § Plan close-out;
+including `mem_save` — are owned by `orchestration` § Plan close-out;
 this section states only the artifact rules applied at open. `report.md`
 follows the work-plans report template. Tracking artifacts have their own
 break points (3-line overflow, orphan lane, DONE-without-report, pointerless
@@ -212,7 +212,7 @@ already exists and only execution remains.
 The tracking-plane close-out is owned by `orchestration` (§ Plan
 close-out): it writes `report.md`, flips `status.md` to DONE/FAILED,
 appends the TIMELINE line, runs `plan-check.sh` + the jev closure judgment,
-and `icm_memory_store`s. Goal's loop ends at the handoff — it does not touch
+and `mem_save`s. Goal's loop ends at the handoff — it does not touch
 tracking artifacts after that. Finished plans stay in `status/` until
 archived; archiving is outside `/goal`.
 

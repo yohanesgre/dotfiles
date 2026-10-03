@@ -116,7 +116,7 @@ deviations: <contract breaks, or "none">
 
 2. Flip `status.md` to `state: DONE` with fresh `ts`.
 3. Append TIMELINE line with `DONE` and the report path.
-4. Save to memory (`icm_memory_store`): 3–5 point summary + artifact paths
+4. Save to memory (`mem_save`): 3–5 point summary + artifact paths
    (`plan.md`, `report.md`). Never duplicate full report content into memory —
    memory is the index, the files are the source.
 
@@ -145,7 +145,7 @@ just backfill it when noticed.
 | FAILED | no `report.md` | write `report.md`, then flip FAILED |
 | state | undefined value (e.g. `PARTIAL`) | use the AGENTS.md enum; FAILED + blockers |
 | reopen | act on a DONE plan without flipping status | flip to WORKING first + TIMELINE line |
-| memory | `icm_memory_store` without artifact path | amend with path — a pointerless summary is lost |
+| memory | `mem_save` without artifact path | amend with path — a pointerless summary is lost |
 | root | loose file in `status/` | move into a plan folder or archive |
 
 ## Validate

@@ -39,7 +39,7 @@ Surfaces: luvus `pane split/run/read/close`, `tab new/focus/close`,
 (`description/agent/model/subagent`), project skill dir `.agents/skills/`,
 project commands dir `.opencode/commands/`. MCP tools arrive through
 `execute` (Code Mode): `tools["jev-mcp"].*` (optional advisory judgments,
-§ Jev judgment layer) and `tools["icm"].*` (memory). If this session is
+§ Jev judgment layer) and `tools.engram.*` (memory). If this session is
 not opencode, STOP and flag before doing anything.
 
 ## Requires
@@ -87,7 +87,7 @@ any skill/config file, and never calls a mutating tool against them.
 
 The orchestrator writes only the tracking plane directly:
 `status/<plan>/` (`plan.md`, `status.md`, `lanes/<lane>.md`,
-`report.md`), `status/TIMELINE.md`, and `icm_memory_store`. It also drives
+`report.md`), `status/TIMELINE.md`, and `mem_save`. It also drives
 isolate, gates, close-out (PR), review, CI, and merge — it does not produce the diff.
 
 Delegation by node type (matches the graph):
@@ -407,7 +407,7 @@ tracking plane — the single owner: run
 `bash ~/.agents/skills/work-plans/scripts/plan-check.sh <plan>` and, when
 `jev-mcp` is reachable, the work-plans closure judgment (`work-plans`
 § Jev judgment); then write `report.md` / `status.md` (`state: DONE` or
-`FAILED`) / `status/TIMELINE.md` + `icm_memory_store`. Closing panes is part of
+`FAILED`) / `status/TIMELINE.md` + `mem_save`. Closing panes is part of
 DONE/FAILED close-out — never leave lane panes open once the goal is
 reached or the plan is closed. A pane-close failure is non-fatal: report it
 and continue cleanup. The plan is not DONE until its panes are closed.

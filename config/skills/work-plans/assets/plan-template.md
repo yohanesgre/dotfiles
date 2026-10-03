@@ -26,7 +26,7 @@ step 1 → step 2 → DONE
 
 ## R
 {what each step needs: files, sessions, accounts, approvals}
-- memory: `icm_wake_up` + `icm_memory_recall` at open · `icm_memory_store` on DONE (summary + plan.md/report.md paths)
+- memory: `mem_current_project` + `mem_context` at open · `mem_save` on DONE (summary + plan.md/report.md paths)
 
 ## Lanes (only when parallel — else delete this section)
 - <lane>: <files touched> — <content owned>
@@ -45,4 +45,4 @@ makes them parallelizable).
 | T1 | <owner> | <paths> | — | <criterion> | <gate cmd> | — |
 
 ## Memory
-- `icm_memory_store` on DONE: summary + paths to plan.md and report.md
+- `mem_save` on DONE: summary + paths to plan.md and report.md

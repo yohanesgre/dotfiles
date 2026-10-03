@@ -1,7 +1,7 @@
 // GitHub read-only tools for OpenCode V2 — wraps the authenticated `gh` CLI.
 //
 // Shape: `export default { id, async setup(ctx) { await ctx.tool.transform(...) } }`
-// (same V2 plugin shape as icm.ts / rtk.ts). The only import is the Node
+// (same V2 plugin shape as the engram / rtk.ts plugins). The only import is the Node
 // builtin `node:child_process` — the V2 loader resolves it in the Bun runtime;
 // a bare `@opencode/plugin` specifier would not resolve server-side.
 //

@@ -18,8 +18,8 @@
   #   re-running the installer updates the direct install in ~/.local/bin.
   # - omp: oh-my-pi — bun global install (config declarative via home/modules/omp).
   # - jev-mcp: TypeSafe Jev MCP server (OpenCode MCP entry; bin in ~/.bun/bin).
-  # - icm: rtk-ai/icm — official installer bundles the ONNX runtime, so
-  #   semantic search works out of the box (no extra model/runtime setup).
+  # - engram: Gentleman-Programming/engram — persistent memory for AI coding
+  #   agents (Go single binary; checksum-verified tarball -> ~/.local/bin).
   # Stable CLI (git/curl/jq/rg/fd/fzf/bat/eza/zoxide/nodejs/go/neovim/tmux)
   # comes from pacman/CachyOS since 2026-09-07 — see home/modules/pacman
   # (no nixpkgs packages in the profile).
@@ -88,24 +88,40 @@
     fi
     curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh 2>&1 || warn "rtk install/update failed (continuing)"
 
-    # icm: rtk-ai/icm — official installer (checksum-verified, -> ~/.local/bin).
-    # Pinned to v0.10.63: v0.10.64 and v0.10.65 are partial releases — the
-    # x86_64-unknown-linux-gnu artifact (embeddings build) is unpublished
-    # (broken upstream onnxruntime CDN); only musl (keyword-only, no
-    # embeddings) and .rpm shipped. On glibc the installer selects gnu -> 404.
-    # Unpin once upstream restores gnu/embeddings builds.
-    if is_upstream icm; then
-      info "updating icm..."
+    # engram: Gentleman-Programming/engram — persistent memory MCP server for
+    # AI coding agents (MIT, Go single binary). Pinned to v3.0.0 (2026-10-01):
+    # gnu/arm64 assets are published upstream, so the pinned tarball is
+    # checksum-verified against the release checksums.txt before extraction and
+    # installed to ~/.local/bin (mode 755). Re-running installs the pin.
+    if is_upstream engram; then
+      info "updating engram..."
     else
-      info "installing icm (rtk-ai)..."
+      info "installing engram (Gentleman-Programming)..."
     fi
-    curl -fsSL https://raw.githubusercontent.com/rtk-ai/icm/main/install.sh | sh -s -- --version icm-v0.10.63 2>&1 || warn "icm install/update failed (continuing)"
+    engram_tmp="$(mktemp -d)"
+    engram_url="https://github.com/Gentleman-Programming/engram/releases/download/v3.0.0"
+    engram_asset="engram_3.0.0_linux_amd64.tar.gz"
+    if curl -fsSL -o "$engram_tmp/$engram_asset" "$engram_url/$engram_asset" \
+       && curl -fsSL -o "$engram_tmp/checksums.txt" "$engram_url/checksums.txt"; then
+      engram_expected="$(grep -F "  $engram_asset" "$engram_tmp/checksums.txt" | awk '{print $1}')"
+      engram_actual="$(sha256sum "$engram_tmp/$engram_asset" | awk '{print $1}')"
+      if [ -n "$engram_expected" ] && [ "$engram_expected" = "$engram_actual" ] \
+         && tar -xzf "$engram_tmp/$engram_asset" -C "$engram_tmp" engram \
+         && install -m 755 "$engram_tmp/engram" "$HOME/.local/bin/engram"; then
+        info "engram v3.0.0 installed"
+      else
+        warn "engram checksum mismatch, extraction, or install failed (continuing)"
+      fi
+    else
+      warn "engram download failed (continuing)"
+    fi
+    rm -rf "$engram_tmp"
 
     # luvus: RizRiyz/luvus — official installer (https://luvus.dev/install.sh).
     # Replaces herdr as the agent multiplexer (2026-09-23). LUVUS_INSTALL_DIR is
     # pinned: the installer prefers /usr/local/bin whenever that is writable, which
     # would drop the binary outside the user profile and outside is_upstream's
-    # ~/.local/bin convention. Re-running the installer = update (same as rtk/icm);
+    # ~/.local/bin convention. Re-running the installer = update (same as rtk/engram);
     # `luvus update` also self-updates this direct install.
     if is_upstream luvus; then
       info "updating luvus..."

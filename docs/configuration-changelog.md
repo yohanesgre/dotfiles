@@ -4,6 +4,32 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-03 — memory: icm → engram v3.0.0 (OpenCode 1.x/2.x plugin + MCP); 209 curated memories migrated
+
+Motivation: icm's always-warm ONNX daemon (1.5 GB RSS + 512 MB swap idle) and per-session extraction drains (~2.4 GB peak each, queue backlog 2,485 rows) were untenable with 6 concurrent OpenCode sessions — the earlier caps kept systemd-oomd from killing app cgroups but not the load itself. Engram v3.0.0 (Gentleman-Programming, Go/MIT, 2026-10-01) shipped upstream OpenCode 2.x support (dual-major plugin), removing the V2 blocker that had ruled it out in September; the user chose it over further icm slimming and over ai-memory (Rust, wiki markdown, optional vectors).
+
+- `home/modules/upstream/default.nix` — icm install pin removed; engram pinned to v3.0.0 (`engram_3.0.0_linux_amd64.tar.gz`, SHA256 `22bbfd81ee9071a04d446f653842c383a3101b594e8829519a63a7c747602e69` verified against release `checksums.txt`) → `~/.local/bin/engram`.
+- `home/modules/opencode/default.nix` — `icm-http`/`icm-drain` units and `opencodeSyncIcmPlugin` removed; `opencodeSyncEngramPlugin` (vendored `config/opencode/plugins/engram.ts`, cmp-guarded, removes stale `icm.ts`) and `engram-serve` systemd user unit added (`%h/.local/bin/engram serve`, `Restart=on-failure`, `RestartSec=3`).
+- `config/opencode/plugins/engram.ts` — upstream v3.0.0 vendored byte-for-byte (dual-major: V1 `server` + V2 `setup`; type-only SDK import, zero runtime deps). `config/opencode/plugins/icm.ts` deleted.
+- `config/opencode/opencode.jsonc` — `engram` MCP entry with absolute command (`/home/yohanes/.local/bin/engram mcp --tools=agent`): bare `engram` produced `NotFound: ChildProcess.spawn` in the running server; absolute path is PATH-independent.
+- Agent/memory refs swept: `agents/{swe,steward}.md` permission envelopes (`icm_memory_*`/`icm_wake_up`/`icm_feedback_*` → `engram_mem_*`), `agents/researcher.md` namespace (`tools.icm.*` → `tools.engram.*`), `AGENTS.md` Memory/Compaction/Recovery/Prompt-Templates, `config/skills/{goal,orchestration,work-plans}` tool refs.
+- Migration: 209 curated icm rows (all projects — icm was global cross-project memory, not dotfiles-only) via transient `.tmp/migrate-icm.py` + idempotency ledger (`.tmp/icm-migrated-ids.txt`); topic key suffixed `#<icm-id>` because engram upserts on `(project, topic_key)`. Buckets: dotfiles 80, lexa 69, cookinggame 27, global (errors-resolved) 24, luvus-opencode-pulse 4, football-manager 3, personal (preferences) 2. Raw `context-*` auto-captures (~15k) intentionally not migrated; icm DB + binary kept as archive.
+
+Evidence: `bash scripts/validate.sh` rc 0 (1463/0); `nix build '.#homeConfigurations."yohanes@desktop".activationPackage'` rc 0; hm-switch applied generation `6zmbp3fm5zk622fs8niv6p5bybamlzwd-home-manager-generation` (engram-serve started, icm-http stopped, stale icm plugin removed); `engram --version` 3.0.0; `engram-serve` active, 127.0.0.1:7437 listening; `engram stats --all` → 209 observations; `engram projects list` matches the buckets; 4 cross-project spot checks found; `opencode mcp list` → `✓ engram connected`; migration re-run `migrated=0 skipped=209 failed=0`. `engram doctor` rc 0 (1 pre-existing warning: `ambiguous_active_runtime_sessions` in project `lexa`). No commit, no push.
+
+Caveat: CLI `engram search` from a dotfiles cwd does not surface `global`/`personal`-scoped rows (scope stored correctly; cross-project surfacing is MCP-layer — verify `mem_search` after a full OpenCode restart). Follow-ups: restart OpenCode and confirm engram MCP recall; optionally checkpoint/prune the icm archive.
+
+## 2026-10-03 — Cloudflare agent setup: 5 remote MCP servers + `cf` CLI rule
+
+- `config/opencode/opencode.jsonc` — added 5 official Cloudflare remote MCP servers to the `mcp` block after `jev-mcp`: `cloudflare` (`https://mcp.cloudflare.com/mcp`), `cloudflare-docs` (`https://docs.mcp.cloudflare.com/mcp`, public, no auth), `cloudflare-bindings`, `cloudflare-builds`, `cloudflare-observability`. The four non-docs servers declare `"oauth": {}`; OAuth is triggered by `opencode mcp auth`. JSONC validated (comment-strip + `JSON.parse`).
+- `config/opencode/AGENTS.md` — `## Tool Selection` gains a final bullet: prefer the `cf` CLI for Cloudflare interaction unless the project has a Wrangler configuration file.
+
+The optional `cf` CLI item is now enabled (binary `~/.bun/bin/cf` v1.0.0-beta.12 was already installed and authenticated — no install or login needed); AGENTS.md gained the cf-vs-Wrangler rule, and CONFIGURATION.md's `cf` section notes it.
+
+Applied via hm-switch; live `~/.config/opencode/opencode.jsonc` symlink repointed to a new nix store path containing the five `cloudflare*` entries. No commit.
+
+Verification: MCP servers loaded in-session after activation; `cloudflare.get_user` via Code Mode returned the account (`yohanesgre@gmail.com`) — OAuth already active, no `opencode mcp auth` prompt needed. `cf` CLI (`~/.bun/bin/cf` v1.0.0-beta.12) also already authenticated (`cf auth whoami`: `authenticated:true`, OAuth token at `~/.config/cloudflare/config/default.json`, tokenValid:true), so no `cf auth login` run. Skills: 16 Cloudflare skills installed globally to `~/.agents/skills/` via `npx skills add cloudflare/skills --skill '*' --yes --global` (PromptScript backend skips them by design).
+
 ## 2026-10-03 — icm: capped daemon + coalesced drain; systemd-oomd stopped killing app cgroups
 
 User report: "icm keeps breaking my other apps — often on full load, crashes some apps." Journal confirmed whole app cgroups being killed: ghostty transient scopes (`systemd-oomd killed 2449 process(es)` Oct 01 23:55, `1391` Oct 02 23:02) and a vivaldi service (`killed 489 process(es)`, `Failed with result 'oom-kill'`). Machine sat at ~15G RAM + ~6.1G physical zram (18.1G compressed of 23.2G swap) ≈ 21G/23G effective memory. ICM was a top contributor: `icm-http` held 1.87G zram swap (RSS 255–370M) and each per-session detached `icm extract-pending` drain loads the fastembed model; with multiple opencode sessions the ~2.25G / ~400% CPU bursts landed inside terminal cgroups, so oomd's highest-usage-cgroup pick killed the terminal (with its opencode sessions), not icm.
