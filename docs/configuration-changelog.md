@@ -4,6 +4,17 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-06 — skills: anti-slop added (miqdadbadjuber/anti-slop, 6 skills, global install)
+
+Request: install https://github.com/miqdadbadjuber/anti-slop in OpenCode. Route chosen: the dotfiles externalized-skills system (not the upstream `npx antislop-ai` installer) so the set stays declared in `sources.json` and survives hm-switch.
+
+- `config/skills/sources.json` — new `project`-scope source `miqdadbadjuber-anti-slop` (repo `miqdadbadjuber/anti-slop`, MIT, 4.5k stars, upstream v3.2.20): `antislop` (core filter: 38 rules + Delivery Gate), `antislop-ui`, `antislop-copywriting`, `antislop-human`, `antislop-layoutmobile`, `antislop-code`; `updated` → 2026-10-06.
+- Installed globally: `bash scripts/skills-sync.sh --global --source miqdadbadjuber-anti-slop` → `npx skills add … -a universal --copy` from `$HOME`, 6 dirs copied to `~/.agents/skills/` (skills.sh assessment per skill: Safe / 0 alerts / Low Risk).
+- No `~/.config/opencode/skills/` copy (canonical single root preserved), no AGENTS.md pointer block (OpenCode loads them by description; the harness surfaced all 6 live in the installing session).
+- `config/opencode/CONFIGURATION.md` — Skills System gains an anti-slop bullet.
+
+Evidence: 6 × `~/.agents/skills/<skill>/SKILL.md` present; `~/.agents/skills/antislop/VERSION` = 3.2.20; `sources.json` parses (python json.load); `skills-sync.sh --global --check` rc 0; repo starred. Update path: `npx antislop-ai --update` or `npx skills update -g`; optional mode preference `npx antislop-ai --mode during|after|ask` → `~/.config/antislop/settings.json` (default asks per session). No hm-switch, no commit this session.
+
 ## 2026-10-03 — memory: icm → engram v3.0.0 (OpenCode 1.x/2.x plugin + MCP); 209 curated memories migrated
 
 Motivation: icm's always-warm ONNX daemon (1.5 GB RSS + 512 MB swap idle) and per-session extraction drains (~2.4 GB peak each, queue backlog 2,485 rows) were untenable with 6 concurrent OpenCode sessions — the earlier caps kept systemd-oomd from killing app cgroups but not the load itself. Engram v3.0.0 (Gentleman-Programming, Go/MIT, 2026-10-01) shipped upstream OpenCode 2.x support (dual-major plugin), removing the V2 blocker that had ruled it out in September; the user chose it over further icm slimming and over ai-memory (Rust, wiki markdown, optional vectors).

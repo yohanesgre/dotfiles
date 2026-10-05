@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-09-28",
+  "updated": "2026-10-06",
   "policy": "Commit only local-authored and wired skills. Externalized skills install globally on every hm-switch via scripts/skills-sync.sh --global (npx skills -a universal from $HOME -> ~/.agents/skills), or per project on demand; upstream owns their content.",
   "keep": [
     "agent-browser",
@@ -277,6 +277,20 @@
         "jevgrep"
       ],
       "notes": "global install via `npx skills add dzhng/jevgrep --skill jevgrep --global --yes` -> ~/.agents/skills/jevgrep; requires jg binary (npm i -g @dzhng/jevgrep, Node 22+) and per-user `jg auth`"
+    },
+    {
+      "id": "miqdadbadjuber-anti-slop",
+      "repo": "miqdadbadjuber/anti-slop",
+      "scope": "project",
+      "skills": [
+        "antislop",
+        "antislop-code",
+        "antislop-copywriting",
+        "antislop-human",
+        "antislop-layoutmobile",
+        "antislop-ui"
+      ],
+      "notes": "Anti-slop filter rules for AI coding agents (MIT, 4.5k stars 2026-10-06): core `antislop` (38 rules + Delivery Gate) + 5 concern skills. Installed globally 2026-10-06 via `scripts/skills-sync.sh --global --source miqdadbadjuber-anti-slop` -> ~/.agents/skills/. Update: `npx antislop-ai --update` or `npx skills update -g`. Optional mode preference: `npx antislop-ai --mode during|after|ask` -> ~/.config/antislop/settings.json (default: asks per session)."
     }
   ]
 }
