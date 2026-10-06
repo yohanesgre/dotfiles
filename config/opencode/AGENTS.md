@@ -63,7 +63,7 @@ No self-reference. Never name or announce the style. No "caveman mode on", "me c
 - Codebase-exploration prompt: name the project, the exact question, known `qualified_name`s/paths, the evidence expected (`path:line` + snippet), and the depth budget (quick pass — stop at the first evidence-complete answer). researcher routes internally: locate → `explorer`, trace → `design-thinking`, structure/impact → codegraph.
 - Web-research prompt: state the library + pinned version, the exact question, and the source expectation (versioned official docs first). researcher fetches; never invent APIs.
 - **Prefer proceeding over blocking questions.** Use the `question` tool only for irreversible/destructive actions or genuinely ambiguous forks (and at human-gated planning steps). For reversible choices, pick the recommended default, state the assumption in one line, and continue — a blocked question can idle a session for hours.
-- **Every routine upkeep chore MUST route to `steward` — never `swe`.** Git lifecycle (status/stage/commit/branch/worktree/stash), docs sync (README/CONFIGURATION.md/AGENTS.md drift), repo hygiene (format, .gitignore, temp cleanup), release chores (changelog/version/tag), dependency bumps, and gate runs (lint/test/build) all go to `steward` on the cheap `space-bunny-free`; only application-behavior changes go to `swe`/`designer`. **This includes read-only and trivial-looking checks**: a bare `git status`, "is the tree clean", "do the checks pass", "any docs drifted" MUST be delegated to `steward` — never run git/validate/docs-scan inline in the primary, even when the answer is one line.
+- **Every routine upkeep chore MUST route to `steward` — never `swe`.** Git lifecycle (status/stage/commit/branch/worktree/stash), docs sync (README/CONFIGURATION.md/AGENTS.md drift), repo hygiene (format, .gitignore, temp cleanup), release chores (changelog/version/tag), dependency bumps, and gate runs (lint/test/build) all go to `steward` on the cheap `mimo-v2.5`; only application-behavior changes go to `swe`/`designer`. **This includes read-only and trivial-looking checks**: a bare `git status`, "is the tree clean", "do the checks pass", "any docs drifted" MUST be delegated to `steward` — never run git/validate/docs-scan inline in the primary, even when the answer is one line.
 - **Implementation code changes MUST be dispatched to `swe`** — via the `subagent` tool, or via the project's orchestration lane when one exists that runs `swe`. The primary lands docs, tracking, and non-behavior upkeep directly; it does not land implementation edits itself. Comments, formatting, and single-literal fixes may stay inline. A project's own `AGENTS.md` may override this rule (project rules win; see the `swe` agent md).
 - **Settle the brief before dispatching `swe`** — decision ref (or "no contract surface"), exact files, acceptance criteria, and test commands; `swe` denies `question`/`subagent` and cannot clarify mid-task.
 - For planning a feature or refactor before implementation, use `architect` agent.
@@ -153,12 +153,12 @@ Natural-language code search: `jg "where is auth token validated"` returns relev
 |----------|-------|--------|
 | Bounded implementation (feature/bugfix) | `swe` | Bash-first, test-driven minimal fixes |
 | Repo status/health check (even a single `git status` / "is it clean" / "do checks pass" / docs drift) | `steward` | Trivial-looking checks still delegate; primary never runs git/validate/docs-scan inline |
-| Git lifecycle (status/stage/commit/branch/worktree/stash) | `steward` | Cheap `space-bunny-free`; keeps implementer tokens for `swe` |
-| Docs sync (README/CONFIGURATION.md/AGENTS.md drift) | `steward` | Cheap `space-bunny-free`; non-behavior |
-| Repo hygiene (format, .gitignore, temp cleanup) | `steward` | Cheap `space-bunny-free`; non-behavior |
-| Release chores (changelog/version/tag) | `steward` | Cheap `space-bunny-free`; commits only when asked |
-| Dependency bumps | `steward` | Cheap `space-bunny-free`; non-behavior |
-| Gate runs (lint/test/build) | `steward` | Cheap `space-bunny-free`; no behavior change |
+| Git lifecycle (status/stage/commit/branch/worktree/stash) | `steward` | Cheap `mimo-v2.5`; keeps implementer tokens for `swe` |
+| Docs sync (README/CONFIGURATION.md/AGENTS.md drift) | `steward` | Cheap `mimo-v2.5`; non-behavior |
+| Repo hygiene (format, .gitignore, temp cleanup) | `steward` | Cheap `mimo-v2.5`; non-behavior |
+| Release chores (changelog/version/tag) | `steward` | Cheap `mimo-v2.5`; commits only when asked |
+| Dependency bumps | `steward` | Cheap `mimo-v2.5`; non-behavior |
+| Gate runs (lint/test/build) | `steward` | Cheap `mimo-v2.5`; no behavior change |
 | Multi-file bug / complex debugging | `swe` + `architect` | Plan first, then execute |
 | Vague idea / concept | `architect` | Structured exploration before code |
 | Feature planning / refactor >50 lines | `architect` | Phased plans with verify gates |

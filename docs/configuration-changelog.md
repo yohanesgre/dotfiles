@@ -4,6 +4,30 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-06 — models: researcher → deepseek-v4.1-flash#high; steward → mimo-v2.5#low (jev-picked efforts)
+
+User request; supersedes the same-day muse swap for these two agents — built-in `explore` keeps `muse-spark-1.3-contributor#low`. Efforts picked by jev.
+
+- `jev_ask` (jev-1.13.0) over both roles: researcher `high` (confidence 0.99, `max` 0.01), steward `low` (0.90, `none` 0.08); both `action: act`.
+- `config/opencode/agents/researcher.md` → `opencode-go/deepseek-v4.1-flash#high` (native efforts verified: low/high/max pass; medium/none → `Variant unavailable`); `config/opencode/agents/steward.md` → `opencode-go/mimo-v2.5#low`.
+- `config/opencode/opencode.jsonc` — new `providers.opencode-go.models.mimo-v2.5` custom variants (`none`/`low`/`medium`): the Go model exposes no native variants (`opencode run` rejects every effort id as "Variant unavailable"), but the OpenAI-compatible `reasoning_effort` param is API-verified on the endpoint (`none` → 0 reasoning tokens; low/medium/high accepted).
+- Docs: CONFIGURATION.md pins paragraph + variants sentence + steward/researcher rows + skills routing line; AGENTS.md routing bullet + 6 steward rows (`Cheap \`mimo-v2.5\``).
+- Runtime proof (server DB `session_v2.model`): researcher smoke session resolved `{"id":"deepseek-v4.1-flash","providerID":"opencode-go","variant":"high"}`; steward smoke `{"id":"mimo-v2.5","variant":"low"}` — agent-md `model: provider/model#variant` parsing confirmed working.
+
+Evidence: `bash scripts/validate.sh` rc 0 (1463/0, run by steward); `bash scripts/hm-switch.sh` rc 0, live symlink greps ≥1 for both new pins; both subagent smoke tests spawned on the new pins (`STEWARD_OK` / `RESEARCHER_OK`). No commit, no push.
+
+## 2026-10-06 — models: space-bunny-free → muse-spark-1.3-contributor (researcher/steward/explore)
+
+Request: swap every space-bunny pin. Interim pick in the same session was LongCat 2.5 Preview Free, dropped when LongCat turned out to have no thinking variants (`opencode run --model opencode-go/longcat-2.5-preview-free#low` → `Error: Variant unavailable … low`; `#none`/`#high` also rejected, default only).
+
+- `config/opencode/opencode.jsonc` — `agents.explore.model` → `opencode-go/muse-spark-1.3-contributor#low`; removed the `providers.opencode-go.models.space-bunny-free` custom `low` variant block (no consumers; muse's `low` is native — minimal/low/medium/high/xhigh all accepted).
+- `config/opencode/agents/steward.md` → `opencode-go/muse-spark-1.3-contributor#low`; `config/opencode/agents/researcher.md` → `opencode-go/muse-spark-1.3-contributor` (default variant; extended thinking kept by request — API probes show default reasoning above explicit `#xhigh`, e.g. 849 vs 283 reasoning tokens on a PONG probe).
+- `config/opencode/{CONFIGURATION.md,AGENTS.md}` — pin paragraph, steward/researcher rows, cheap-model routing references updated; the browser-use free-model example is now `longcat-2.5-preview-free`.
+- Privacy: Contributor tier = prompts/completions used to train future Meta models, availability limited to Meta-permitted regions (OpenCode docs; both Go and Zen free variants). Explicitly rejected for private repos on 2026-09-24; user re-chose it and opted in. Go pricing $0.10/$0.20 per M, 1M ctx.
+- Urgency context: `space-bunny-free` went upstream-unavailable mid-session (`Upstream request failed: Model is unavailable`; the first `steward` spawn failed on it) — the swap fixes that class of failure.
+
+Evidence: `opencode run --model opencode-go/muse-spark-1.3-contributor "Reply with exactly: PONG"` → PONG (default; `#minimal`/`#low`/`#medium`/`#high`/`#xhigh` all accepted); post-switch `steward` subagent spawned on `opencode-go/muse-spark-1.3-contributor` and replied `STEWARD_OK`; JSONC parses (comment-strip + `JSON.parse`); `bash scripts/validate.sh` rc 0 (1463 passed / 0 failed); `bash scripts/hm-switch.sh` rc 0 with live symlinks repointed to new store paths; the running server picked the config up without a restart (config watcher), so `opencode service restart` was not needed. No commit, no push.
+
 ## 2026-10-06 — skills: anti-slop added (miqdadbadjuber/anti-slop, 6 skills, global install)
 
 Request: install https://github.com/miqdadbadjuber/anti-slop in OpenCode. Route chosen: the dotfiles externalized-skills system (not the upstream `npx antislop-ai` installer) so the set stays declared in `sources.json` and survives hm-switch.
