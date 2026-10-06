@@ -11,72 +11,92 @@
  * `<return-file>` as the LAST step — so the file's appearance means the
  * runner finished (its `rc=` line carries real completion: `rc=0` ok,
  * `rc!=0` failed). This script waits for that file (bounded 200ms
- * poll + Effect timeout) and prints its contents on success.
+ * poll) and prints its contents on success.
  *
  * Exit 0 = return file appeared (+ elapsed, contents printed), 1 = timeout,
  * 2 = bad argv.
  */
-import { Data, Effect } from "effect";
 import { existsSync, readFileSync } from "node:fs";
-
-export class InvalidArgs extends Data.TaggedError("InvalidArgs")<{ reason: string }> {}
-export class LaneTimeout extends Data.TaggedError("LaneTimeout")<{
-  file: string;
-  timeoutMs: number;
-}> {}
 
 interface Args {
   file: string;
   timeoutMs: number;
 }
 
-const decodeArgs = (argv: Array<string>): Effect.Effect<Args, InvalidArgs> => {
+class InvalidArgs extends Error {
+  constructor(public readonly reason: string) {
+    super(reason);
+  }
+}
+
+class LaneTimeout extends Error {
+  constructor(
+    public readonly file: string,
+    public readonly timeoutMs: number,
+  ) {
+    super(`${file} not written within ${timeoutMs}ms`);
+  }
+}
+
+const decodeArgs = (argv: Array<string>): Args => {
   const file = argv[0];
   if (file === undefined || file === "") {
-    return Effect.fail(new InvalidArgs({ reason: "usage: lane-wait.ts <return-file> [timeout-ms]" }));
+    throw new InvalidArgs("usage: lane-wait.ts <return-file> [timeout-ms]");
   }
   const rawTimeout = argv[1] ?? "120000";
   const timeoutMs = Number.parseInt(rawTimeout, 10);
   if (!Number.isInteger(timeoutMs) || timeoutMs <= 0) {
-    return Effect.fail(new InvalidArgs({ reason: `timeout-ms must be a positive integer, got ${rawTimeout}` }));
+    throw new InvalidArgs(`timeout-ms must be a positive integer, got ${rawTimeout}`);
   }
-  return Effect.succeed({ file, timeoutMs });
+  return { file, timeoutMs };
 };
 
-const awaitFile = (args: Args): Effect.Effect<void, LaneTimeout> =>
-  Effect.gen(function* () {
-    const deadline = Date.now() + args.timeoutMs;
-    while (!existsSync(args.file)) {
-      if (Date.now() >= deadline) {
-        return yield* new LaneTimeout({ file: args.file, timeoutMs: args.timeoutMs });
-      }
-      yield* Effect.sleep("200 millis");
-    }
-  });
+/** Returns the body, or null if the file vanished between check and read. */
+const readBody = (file: string): string | null => {
+  try {
+    return readFileSync(file, "utf8");
+  } catch (e) {
+    if ((e as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw e;
+  }
+};
 
-const program = Effect.gen(function* () {
-  const args = yield* decodeArgs(Bun.argv.slice(2));
+const awaitFile = async (args: Args): Promise<string> => {
+  const deadline = Date.now() + args.timeoutMs;
+  for (;;) {
+    if (existsSync(args.file)) {
+      const body = readBody(args.file);
+      if (body !== null) return body;
+    }
+    if (Date.now() >= deadline) {
+      throw new LaneTimeout(args.file, args.timeoutMs);
+    }
+    await Bun.sleep(200);
+  }
+};
+
+const main = async (): Promise<number> => {
+  const args = decodeArgs(Bun.argv.slice(2));
   const started = Date.now();
-  yield* awaitFile(args);
+  const body = await awaitFile(args);
   const elapsed = Date.now() - started;
-  const body = readFileSync(args.file, "utf8");
   console.log(`lane-wait: return file seen in ${elapsed}ms`);
   console.log(body.slice(-4000));
-});
+  return 0;
+};
 
-Effect.runPromise(
-  Effect.catchAll(program, (e: InvalidArgs | LaneTimeout) =>
-    Effect.sync(() => {
-      const detail =
-        e._tag === "InvalidArgs" ? e.reason : `${e.file} not written within ${e.timeoutMs}ms`;
-      console.error(`lane-wait: ${e._tag}: ${detail}`);
-      return e._tag === "InvalidArgs" ? 2 : 1;
-    }),
-  ),
-).then(
+main().then(
   (code) => process.exit(code),
-  (defect) => {
-    console.error(`lane-wait: Defect: ${String(defect)}`);
+  (e) => {
+    if (e instanceof InvalidArgs) {
+      console.error(`lane-wait: InvalidArgs: ${e.reason}`);
+      process.exit(2);
+    }
+    if (e instanceof LaneTimeout) {
+      console.error(`lane-wait: LaneTimeout: ${e.file} not written within ${e.timeoutMs}ms`);
+      process.exit(1);
+    }
+    console.error(`lane-wait: Defect: ${String(e)}`);
     process.exit(1);
   },
 );

@@ -4,6 +4,16 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-07 — orchestration: wait scripts drop `effect` (v4 catchAll drift) for plain poll loops
+
+Both wait scripts crashed on `effect@4.0.1` — `Effect.catchAll` is gone (renamed `catch`); Bun resolves `effect` from its global install cache because the skill scripts carry no local `node_modules`. Fallback chosen over the one-word Effect migration to remove the hidden cache dependency.
+
+- `config/skills/orchestration/scripts/{lane-wait,wave-wait}.ts` — plain async Bun loops (`node:fs` `existsSync` poll every 200ms + bounded deadline, ENOENT-race tolerant); no `effect`/`Data.TaggedError` import; CLI contracts, stdout/stderr strings, exit codes 0/1/2 unchanged.
+- `config/skills/orchestration/references/lane-dispatch.md` — "file-sentinel watch + Effect timeout" → "file-sentinel watch, 200ms poll + bounded timeout".
+- Live `~/.agents/skills/orchestration/scripts/*` are symlinks to the dotfiles copies — already live; no sync step, and no hm-switch needed for the scripts (the live `CONFIGURATION.md` copy updates on the next hm-switch).
+
+Evidence: 8 acceptance tests (success/timeout/bad-argv/wave-all/`--any`/pending/missing) + live smoke through the `~/.agents` path (exit 0 success, exit 1 timeout); `bash scripts/validate.sh` rc 0 (steward-run); committed same day, no push.
+
 ## 2026-10-06 — models: researcher → deepseek-v4.1-flash#high; steward → mimo-v2.5#low (jev-picked efforts)
 
 User request; supersedes the same-day muse swap for these two agents — built-in `explore` keeps `muse-spark-1.3-contributor#low`. Efforts picked by jev.

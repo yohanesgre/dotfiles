@@ -99,7 +99,7 @@ command, and it is not part of the lane loop).
    [--timeout <ms>] <return-file>...` (`--any` returns as soon as one lane
    lands, so its close-out can start early — re-invoke for the rest); the
    single-lane form is `lane-wait.ts <return-file> [timeout-ms]`
-   (file-sentinel watch + Effect timeout — never fixed `sleep`, never
+   (file-sentinel watch, 200ms poll + bounded timeout — never fixed `sleep`, never
    `luvus wait output`). A wait timeout is not a dead lane: check
    `luvus pane status <pane-id>` and re-wait; only a dead pane with no
    return file is WAIT + re-dispatch.
