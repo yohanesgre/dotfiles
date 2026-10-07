@@ -90,12 +90,12 @@ Natural-language code search: `jg "where is auth token validated"` returns relev
 
 | Caller | Access | Order |
 |--------|--------|-------|
-| `swe` | `shell: *` (unchanged) | jg when `command -v jg` succeeds and it is authenticated → else codegraph → `grep`/`glob` |
+| `swe` | `shell: *` (unchanged) | jg one chained call (`command -v jg >/dev/null && jg "<query>"`), rc gate → else codegraph → `grep`/`glob` |
 | `build` | blanket allow (global `permission: allow`; no agent envelope) | jg when `command -v jg` succeeds and it is authenticated → else codegraph → `grep`/`glob` |
 | `researcher` | `shell` allowed for `jg *` + `command -v jg` ONLY; every other shell command stays denied | jg → codegraph → `grep`/`glob` |
 | `architect` | `shell` allowed for `jg *` + `command -v jg` ONLY (new — previously no shell at all); every other shell command stays denied | jg → codegraph → `grep`/`glob` |
 | `reviewer` | `shell: *` ask, but `jg *` + `command -v jg` explicitly allowed (frictionless, no prompt) | jg → codegraph → `grep`/`glob` |
-| `steward` | `shell: *` allow (jg already available, now documented); no codegraph grant | jg when authed → `grep`/`glob` (no codegraph permission) |
+| `steward` | `shell: *` allow (jg already available, now documented); no codegraph grant | jg one chained call, rc gate → `grep`/`glob` (no codegraph permission) |
 | `designer` | `shell: *` ask, but `jg *` + `command -v jg` explicitly allowed (frictionless, no prompt); `execute` + `codegraph_*` allow (Code Mode) | jg → codegraph → `grep`/`glob` |
 | `vision` | no jg grant (image-only, no shell) | not applicable |
 

@@ -59,9 +59,10 @@ Hard limits from AGENTS.md: never commit unless explicitly asked; never push,
 tag, or rewrite history without an explicit user request; never touch .env or
 credential files. Project `AGENTS.md` / `.opencode` rules win over this agent.
 
-Codebase lookup routes `jg` first (when `command -v jg` succeeds and it is
-authenticated) → else codegraph → `grep`/`glob`. `shell: *` already allows jg;
-no permission change needed.
+Codebase lookup routes `jg` first: one shell call
+`command -v jg >/dev/null && jg "<query>"`; exit 1 means jg is missing or
+unauthenticated, so fall through to `grep`/`glob` (no codegraph grant here).
+`shell: *` already allows jg; no permission change needed.
 
 Output style: caveman-compressed (follow the `caveman` skill rules) with the
 Structure layout from AGENTS.md § Caveman Mode. Substance only — chore done,

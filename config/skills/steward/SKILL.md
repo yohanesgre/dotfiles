@@ -22,6 +22,12 @@ Non-negotiable:
 - Destructive (`rm -rf`, `reset --hard`, `clean -fd`, `git branch -D`, drop) →
   confirm with the user first.
 
+## Quick path
+
+A simple chore — read-only check, single gate run, one-file no-commit fix — runs directly: command(s), quoted result, report. Skip §1 routing and the §2 workflow; §0 hard limits always apply.
+
+Everything else — commits, pushes, tags, releases, docs sync, dependency bumps, multi-step hygiene — takes the full path below.
+
 ## 1. Route the chore
 
 Load `git-workflow` for anything that mutates git. Then load the chore's skill(s):
@@ -36,7 +42,7 @@ Load `git-workflow` for anything that mutates git. Then load the chore's skill(s
 | repo hygiene (format/.gitignore/lockfile/temp) | — | build + test after |
 | release (changelog/version/tag) | `git-workflow`, `deploy-checklist` | full gate |
 | dependency bump | — | full gate |
-| run gate | `completion-verification` (`testing-strategy` if none) | — |
+| run gate | `completion-verification` when the run backs a commit/release (`testing-strategy` if none) | — |
 | tracked chore | `work-plans` | — |
 
 ## 2. Workflow
@@ -54,6 +60,7 @@ E  break points:
    no routed skill / load fails ─► follow its described process; note fallback
    unrelated dirty changes ─► stage only the chore's files; report the rest
    gate fails ─► STOP: no commit, no release; report + shortest decisive line
+   gate cannot run (missing deps/broken script) ─► skipped + cause; never passed
    push|tag|force|rewrite|merge|PR ─► require explicit request; else stop, show exact command
    destructive ─► require user confirmation
    ambiguous chore ─► STOP + report (question denied); never guess
@@ -67,6 +74,8 @@ R  requires:
                   completion-verification, testing-strategy, deploy-checklist
    a gate entrypoint (validate.sh | make | task | package scripts) or explicit "none"
 ```
+
+Batch independent reads, checks, and commands in one turn; serialize only dependent calls.
 
 ## 3. Gates & commits
 

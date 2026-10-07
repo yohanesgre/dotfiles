@@ -4,6 +4,36 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-08 — steward: efficiency pass (quick path, one-call jg, dead codegraph rung)
+
+User: make steward quicker on simple chores. Same treatment as swe, adapted to the upkeep role:
+
+- `config/skills/steward/SKILL.md` (live via symlink): new **Quick path** section — read-only check, single gate run, one-file no-commit fix run directly (command, quoted result, report), skipping §1 routing + §2 workflow; §0 hard limits always apply; everything mutating or multi-step keeps the full path. E: new "gate cannot run" case (skipped + cause, never passed). Batching line added. Gate-run routing row now loads `completion-verification` only when the run backs a commit/release.
+- `config/opencode/agents/steward.md`: jg routing now one chained call `command -v jg >/dev/null && jg "<query>"`, rc gate → `grep`/`glob`; dead `codegraph` rung removed (steward has no codegraph grant).
+- `config/opencode/AGENTS.md`: jg matrix rows for `swe` (stale wording from the earlier pass) and `steward` updated to the chained-call form.
+- `config/opencode/CONFIGURATION.md`: steward row updated.
+
+Evidence: `bash scripts/validate.sh` rc 0 (1463 passed, 0 failed, 4 skipped; steward-run); `bash scripts/hm-switch.sh` rc 0 (steward-run); live greps: Quick path = 1, chained jg = 1, no-codegraph note = 1, AGENTS.md chained rows = 2, CONFIGURATION efficiency notes = 2. Committed same day; no push.
+
+## 2026-10-08 — agents: jg auth preflight dropped (designer, researcher, reviewer, architect)
+
+Follow-up to the swe pass: the `installed+authenticated` phrasing implied an extra check before every jg query. All four prompts now run `jg "<query>"` directly and treat failure (missing or unauthenticated) as the fall-through signal. Restricted-shell agents keep the direct-run form because their grants match `jg *` per command (a chained `command -v jg && jg ...` would miss the allow and hit `ask`/`deny`); swe's and steward's chained one-liners stay (`shell: *` covers them).
+
+- `config/opencode/agents/designer.md:60`, `config/opencode/agents/researcher.md:67`, `config/opencode/agents/reviewer.md:154`, `config/opencode/agents/architect.md:57-59` — routing lines rewritten; grants unchanged.
+- `config/opencode/CONFIGURATION.md` — all four rows noted.
+
+Evidence: `bash scripts/validate.sh` rc 0 (1463 passed, 0 failed, 4 skipped; steward-run); `bash scripts/hm-switch.sh` rc 0 (steward-run, both passes); live greps: `installed+authenticated` = 0 in all four agent files, `fails fast` = 1 in each, `auth preflight dropped` = 4 in CONFIGURATION.md. Committed same day; no push.
+
+## 2026-10-08 — swe: efficiency + error-handling pass on skill + agent
+
+User: swe burns calls on ceremony; asked first for thinking/tool-call efficiency, then for error handling on tool calling and skill loading. antislop + design-thinking were analysis lenses only; prompt-level trims, no behavior change.
+
+- `config/skills/swe/SKILL.md` (live via symlink): new **Size first** section (small = ≤1 file, cause known, no contract change → skip governing-skill load, memory read only when the area is new); skill discovery matches names/descriptions already in context (`skills-sync.sh --list` demoted to fallback, saves one shell call per task); "ask if still unsure" → "state the assumption and proceed" (envelope denies `question`); repro rule gains a docs/config/refactor escape hatch; verify prefers one gate command, "cannot run" → skipped with cause; codegraph note replaced by full nav order (`jg` single chained call + exit-code gate → `codegraph_explore`, error/empty falls through → `grep`/`glob`); missing memory file declared not-an-error; skill-load failure → repo patterns + stated assumption; batching rule added.
+- `config/opencode/agents/swe.md`: routing line now one call `command -v jg >/dev/null && jg "<query>"`, exit 1 → fall through; `jg doctor` preflight removed.
+- `config/opencode/CONFIGURATION.md`: swe row + skills routing line updated.
+
+Evidence: `bash scripts/validate.sh` rc 0 (1467 checks, 4 skipped; steward-run); `bash scripts/hm-switch.sh` rc 0 (steward-run; dirty-tree warning only); live greps post-deploy: jg guard in `~/.config/opencode/agents/swe.md` = 1, "Size first" in `~/.agents/skills/swe/SKILL.md` = 1, efficiency note in `~/.config/opencode/CONFIGURATION.md` = 1. Committed same day; no push.
+
 ## 2026-10-07 — orchestration: wait scripts drop `effect` (v4 catchAll drift) for plain poll loops
 
 Both wait scripts crashed on `effect@4.0.1` — `Effect.catchAll` is gone (renamed `catch`); Bun resolves `effect` from its global install cache because the skill scripts carry no local `node_modules`. Fallback chosen over the one-word Effect migration to remove the hidden cache dependency.
