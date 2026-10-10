@@ -11,16 +11,28 @@ let
   #
   # top-level config documents omp reads; agents/ holds the subagent definitions
   #
-  # MCP set (mcp.json, 2026-09-24): codegraph
+  # MCP set (mcp.json): codegraph
   # (codegraph serve --mcp, the successor of the removed codebase-memory-mcp —
   # omp's explorer/reviewer/swe skills already call codegraph_explore). playwright
   # is declared but omp silently drops browser MCPs while the native browser
   # prelude is enabled (omp://mcp-config.md). codegraph gets a 120s timeout
   # because its first call may sync the index and omp's default is 30s.
+  # jev-mcp (@jkudish/jev-mcp, 12 judgment tools) is reached through the
+  # `jev-mcp-keyfile` wrapper (home/modules/opencode) so opencode, codex and omp
+  # share one key path (~/.config/typesafe/key) — same server name
+  # as opencode's entry, so the tool surface is identical across clients.
+  # engram (Gentleman-Programming/engram) is omp's memory layer, same as
+  # opencode: the `engram` MCP entry (`mem_*` tools) talks to the shared
+  # `engram-serve` systemd user service on 127.0.0.1:7437. omp's OWN memory
+  # backends stay off (config.yml: memory.backend "off", memories.enabled false).
+  #
+  # models.yml was removed 2026-10-11: it defined the only custom provider
+  # (gmi-cloud), now retired — every agent pins commandcode. modelRoles is
+  # intentionally unset (omp role defaults apply); the activation deletes any
+  # stale live models.yml copy so omp stops advertising the dead provider.
   files = [
     "config.yml"
     "mcp.json"
-    "models.yml"
   ];
 in
 {
@@ -44,6 +56,12 @@ in
           echo "omp: synced $f"
         fi
       done
+      # gmi-cloud retired 2026-10-11 (config/omp/models.yml deleted): drop the
+      # live copy so omp stops loading the dead provider.
+      if [ -f "$DST/models.yml" ]; then
+        $DRY_RUN_CMD rm -f "$DST/models.yml"
+        echo "omp: removed stale models.yml (gmi-cloud retired)"
+      fi
       if [ -d "$SRC/agents" ]; then
         mkdir -p "$DST/agents"
         for a in "$SRC/agents"/*.md; do

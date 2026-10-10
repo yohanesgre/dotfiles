@@ -4,6 +4,23 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-11 — jev: standardize on @jkudish/jev-mcp (12 tools) across opencode + codex + omp
+
+User flagged that omp's jev differed from opencode's, then asked to align them, retire gmi-cloud, add engram to omp, and rewrite the omp model roles with jev. Root cause: the **unscoped npm name `jev-mcp` is a different project** (`rashedInt32/jev-mcp`, 6 question-pack tools: classify/score/check/ask/triage/models); `jkudish/jev-mcp` publishes as the scoped **`@jkudish/jev-mcp`** (12 judgment tools).
+
+- `config/opencode/opencode.jsonc` — `jev-mcp` command → `["jev-mcp-keyfile"]`; comment rewritten to the 12-tool set + the no-key-file caveat.
+- `home/modules/opencode/default.nix` — new `jev-mcp-keyfile` wrapper (mirrors `browser-use-mcp`): exports `TYPESAFE_API_KEY` from `~/.config/typesafe/key` (0600) into the child, then `exec "$HOME/.bun/bin/jev-mcp"`. This build reads the key ONLY from the env (no `JEV_KEY_FILE` fallback), so the wrapper is the single key path.
+- `home/modules/upstream/default.nix` — `bun remove -g jev-mcp` + `bun install -g --trust @jkudish/jev-mcp@latest` (package swap; the bin stays `~/.bun/bin/jev-mcp`).
+- `home/modules/codex/default.nix` — jev-mcp migrated to `$HOME/.nix-profile/bin/jev-mcp-keyfile` (one-time remove while the entry still points at `bin/jev-mcp`).
+- `home/modules/env/default.nix` — key comment corrected (the file is read by the wrapper, not by jev-mcp itself).
+- `config/opencode/AGENTS.md` — "Jev" section rewritten for the 12 tools; records that this build is text-only, so the old `jev_triage` server-side path reads are gone.
+- `config/opencode/CONFIGURATION.md` — MCP table row, gotcha bullets, json block, codex-sharing and key notes updated.
+- `config/skills/sources.json` — `jkudish-jev-mcp` source (skill `jev`); installed globally to `~/.agents/skills/jev`.
+
+omp side (no omp changelog; recorded here): `config/omp/mcp.json` gained the same `jev-mcp` (wrapper) **and** an `engram` entry (`/home/yohanes/.local/bin/engram mcp --tools=agent`, shared with the `engram-serve` unit) — omp's own memory stays off (`memory.backend: "off"`, `memories.enabled: false`). `config/omp/models.yml` was deleted (it defined the only custom provider, gmi-cloud); the activation now removes the stale live copy. `config/omp/agents/*.md` were ported to the updated repo skills (retiring the live-only `agents-*` clones), gained the jg → codegraph → grep/glob routing, and had every model pin removed so they inherit the session model. `config/omp/config.yml` dropped the invalid `task.defaultIsolation` key and the dead `retry.fallbackChains` (openrouter is not a configured provider), synced the runtime display settings, and now carries the jev-decided role mapping plus `modelPresets.commandcode` / `modelPresets.opencode-go`.
+
+Evidence: `bash scripts/validate.sh` rc 0 (1463 passed, 0 failed, 4 skipped); `bash scripts/hm-switch.sh` rc 0; live — `~/.bun/bin/jev-mcp` handshake = 12 tools (`@jkudish/jev-mcp` 0.14.1), `codex mcp get jev-mcp` = the wrapper, omp `-p` `jev_noul` returned a real TypeSafe verdict, omp MCP list = engram 19 / codegraph 1 / jev 12, `reviewer` subagent inherits `commandcode/deepseek/deepseek-v4.1-flash`, live `models.yml` gone, no `gmi-cloud`/`MiniMax` left in the live omp config.
+
 ## 2026-10-08 — steward: efficiency pass (quick path, one-call jg, dead codegraph rung)
 
 User: make steward quicker on simple chores. Same treatment as swe, adapted to the upkeep role:

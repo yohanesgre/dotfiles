@@ -17,6 +17,17 @@
       "command": "bun",
       "args": ["x", "@playwright/mcp"],
       "enabled": true
+    },
+    "jev-mcp": {
+      "type": "stdio",
+      "command": "jev-mcp-keyfile",
+      "enabled": true
+    },
+    "engram": {
+      "type": "stdio",
+      "command": "/home/yohanes/.local/bin/engram",
+      "args": ["mcp", "--tools=agent"],
+      "enabled": true
     }
   }
 }

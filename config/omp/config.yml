@@ -1,20 +1,42 @@
 modelRoles:
-  slow: gmi-cloud/MiniMaxAI/MiniMax-M3:high
-  smol: gmi-cloud/MiniMaxAI/MiniMax-M2.7:medium
-  plan: gmi-cloud/MiniMaxAI/MiniMax-M3:high
-  commit: gmi-cloud/MiniMaxAI/MiniMax-M2.7
-  designer: gmi-cloud/MiniMaxAI/MiniMax-M3:high
-  task: gmi-cloud/MiniMaxAI/MiniMax-M2.7:medium
-  advisor: gmi-cloud/MiniMaxAI/MiniMax-M3:high
-  default: opencode-go/deepseek-v4.1-flash
-  vision: gmi-cloud/MiniMaxAI/MiniMax-M2.7:medium
-  tiny: gmi-cloud/MiniMaxAI/MiniMax-M2.7
+  default: commandcode/deepseek/deepseek-v4.1-flash:high
+  slow: commandcode/z-ai/glm-5.3-flash:high
+  plan: commandcode/zai-org/GLM-5.3:high
+  advisor: commandcode/deepseek/deepseek-v4.1-flash
+  designer: commandcode/xiaomi/mimo-v2.6-pro
+  task: commandcode/deepseek/deepseek-v4.1-flash
+  smol: commandcode/xiaomi/mimo-v2.6-flash
+  tiny: commandcode/xiaomi/mimo-v2.6-flash
+  commit: commandcode/xiaomi/mimo-v2.6-flash
+  vision: commandcode/z-ai/glm-5.3-flash:low
+modelPresets:
+  commandcode:
+    modelRoles:
+      default: commandcode/deepseek/deepseek-v4.1-flash:high
+      slow: commandcode/z-ai/glm-5.3-flash:high
+      plan: commandcode/z-ai/glm-5.3-flash:high
+      advisor: commandcode/deepseek/deepseek-v4.1-flash
+      designer: commandcode/xiaomi/mimo-v2.6-pro
+      task: commandcode/deepseek/deepseek-v4.1-flash
+      smol: commandcode/xiaomi/mimo-v2.6-flash
+      tiny: commandcode/xiaomi/mimo-v2.6-flash
+      commit: commandcode/xiaomi/mimo-v2.6-flash
+      vision: commandcode/z-ai/glm-5.3-flash:low
+  opencode-go:
+    modelRoles:
+      default: opencode-go/deepseek-v4.1-flash:high
+      slow: opencode-go/glm-5.3-flash:high
+      plan: opencode-go/glm-5.3:high
+      advisor: opencode-go/deepseek-v4.1-flash
+      designer: opencode-go/mimo-v2.6-pro
+      task: opencode-go/deepseek-v4.1-flash
+      smol: opencode-go/mimo-v2.6-flash:low
+      tiny: opencode-go/mimo-v2.6-flash:low
+      commit: opencode-go/mimo-v2.6-flash:low
+      vision: opencode-go/glm-5.3-flash:low
 task:
-  agentModelOverrides:
-    task: gmi-cloud/MiniMaxAI/MiniMax-M3:high
   maxConcurrency: 4
   maxRecursionDepth: 2
-  defaultIsolation: worktree
 setupVersion: 2
 hideThinkingBlock: false
 theme:
@@ -34,21 +56,17 @@ tui:
   textSizing: false
   resizeScrollback: rebuild
 omitThinking: false
-retry:
-  fallbackChains:
-    slow:
-      - openrouter/stealth/ox-alpha
-    plan:
-      - openrouter/stealth/ox-alpha
-    designer:
-      - openrouter/stealth/ox-alpha
-    advisor:
-      - openrouter/stealth/ox-alpha
 defaultThinkingLevel: auto
 display:
   shimmer: classic
+  showTokenUsage: true
+  showTurnTime: true
+  cacheMissMarker: true
+  pinnedAgents: full
+  subagentLivePreview: true
 bash:
   enabled: true
-providers:
-  maxInFlightRequests:
-    {}
+memory:
+  backend: "off"
+memories:
+  enabled: false

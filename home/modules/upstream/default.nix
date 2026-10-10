@@ -17,7 +17,7 @@
   # - luvus: RizRiyz/luvus — official installer, replaces herdr (2026-09-23);
   #   re-running the installer updates the direct install in ~/.local/bin.
   # - omp: oh-my-pi — bun global install (config declarative via home/modules/omp).
-  # - jev-mcp: TypeSafe Jev MCP server (OpenCode MCP entry; bin in ~/.bun/bin).
+  # - jev-mcp: TypeSafe Jev MCP server, @jkudish/jev-mcp (opencode/codex/omp; bin in ~/.bun/bin).
   # - engram: Gentleman-Programming/engram — persistent memory for AI coding
   #   agents (Go single binary; checksum-verified tarball -> ~/.local/bin).
   # Stable CLI (git/curl/jq/rg/fd/fzf/bat/eza/zoxide/nodejs/go/neovim/tmux)
@@ -144,16 +144,22 @@
       warn "bun missing — skipping omp"
     fi
 
-    # jev-mcp: TypeSafe Jev decision layer as an MCP server (OpenCode MCP entry in
-    # config/opencode/opencode.jsonc; bin: jev-mcp). Live judgments need
-    # TYPESAFE_API_KEY (see .env.toml.example).
+    # jev-mcp: TypeSafe Jev judgment tools as an MCP server, shared by opencode,
+    # codex and omp (config/opencode/opencode.jsonc, home/modules/codex,
+    # config/omp/mcp.json; bin: ~/.bun/bin/jev-mcp). Scoped package on purpose:
+    # the unscoped `jev-mcp` name is a DIFFERENT project (rashedInt32/jev-mcp,
+    # 6 question-pack tools); @jkudish/jev-mcp is the 12-tool judgment server.
+    # The swap removes the stale unscoped global. This build reads NO key file —
+    # TYPESAFE_API_KEY must be in the child env, supplied by the `jev-mcp-keyfile`
+    # wrapper (home/modules/opencode) from ~/.config/typesafe/key.
     if [ -x "$HOME/.bun/bin/bun" ]; then
       if is_upstream jev-mcp; then
-        info "updating jev-mcp..."
+        info "updating jev-mcp (@jkudish)..."
       else
-        info "installing jev-mcp (TypeSafe)..."
+        info "installing jev-mcp (@jkudish/jev-mcp)..."
       fi
-      "$HOME/.bun/bin/bun" install -g --trust jev-mcp@latest 2>&1 || warn "jev-mcp install/update failed (continuing)"
+      "$HOME/.bun/bin/bun" remove -g jev-mcp >/dev/null 2>&1 || true
+      "$HOME/.bun/bin/bun" install -g --trust @jkudish/jev-mcp@latest 2>&1 || warn "jev-mcp install/update failed (continuing)"
     else
       warn "bun missing — skipping jev-mcp"
     fi

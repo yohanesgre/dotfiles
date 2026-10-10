@@ -291,6 +291,15 @@
         "antislop-ui"
       ],
       "notes": "Anti-slop filter rules for AI coding agents (MIT, 4.5k stars 2026-10-06): core `antislop` (38 rules + Delivery Gate) + 5 concern skills. Installed globally 2026-10-06 via `scripts/skills-sync.sh --global --source miqdadbadjuber-anti-slop` -> ~/.agents/skills/. Update: `npx antislop-ai --update` or `npx skills update -g`. Optional mode preference: `npx antislop-ai --mode during|after|ask` -> ~/.config/antislop/settings.json (default: asks per session)."
+    },
+    {
+      "id": "jkudish-jev-mcp",
+      "repo": "jkudish/jev-mcp",
+      "scope": "project",
+      "skills": [
+        "jev"
+      ],
+      "notes": "TypeSafe Jev judgment-tool skill for the jev-mcp MCP server (registered for omp in config/omp/mcp.json as `npx -y @jkudish/jev-mcp`). Teaches when to call jev_verify/jev_noul/jev_gate/etc. instead of reading. Global install: `scripts/skills-sync.sh --global --source jkudish-jev-mcp` -> ~/.agents/skills/jev. Requires TYPESAFE_API_KEY (key file ~/.config/typesafe/key)."
     }
   ]
 }

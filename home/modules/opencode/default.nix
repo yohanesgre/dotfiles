@@ -29,6 +29,21 @@
       fi
       exec uvx --from 'browser-use[cli]==0.13.10' browser-use --mcp
     '')
+    # jev-mcp wrapper: @jkudish/jev-mcp reads its key ONLY from the environment
+    # (TYPESAFE_API_KEY / JEV_API_KEY) — unlike the older rashedInt32 build it has
+    # no key-file fallback. This exports the key from ~/.config/typesafe/key
+    # (0600, written by home/modules/env) into the child only, so the daemonized
+    # clients (opencode service, codex, omp) never depend on TYPESAFE_API_KEY
+    # being present in their own process env. Absolute exec path: ~/.bun/bin is
+    # not guaranteed on every spawner's PATH. Referenced by opencode.jsonc, the
+    # codex module, and config/omp/mcp.json.
+    (pkgs.writeShellScriptBin "jev-mcp-keyfile" ''
+      if [ -r "$HOME/.config/typesafe/key" ]; then
+        TYPESAFE_API_KEY="$(cat "$HOME/.config/typesafe/key")"
+        export TYPESAFE_API_KEY
+      fi
+      exec "$HOME/.bun/bin/jev-mcp" "$@"
+    '')
   ];
 
   home.activation.opencodeBunInstall = lib.hm.dag.entryAfter [ "writeBoundary" ] ''

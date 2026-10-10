@@ -1,8 +1,7 @@
 ---
 name: vision
 description: Vision agent. Reads and describes images, screenshots, diagrams, charts, and UI mockups into text for text-only models. Use when the main model cannot see images.
-model: opencode/mimo-v2.6-flash-free
-thinkingLevel: low
+model: commandcode/xiaomi/mimo-v2.6-flash
 tools:
   - read
 spawns: false

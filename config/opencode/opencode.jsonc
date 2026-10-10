@@ -69,15 +69,17 @@
       "command": ["/home/yohanes/.local/bin/engram", "mcp", "--tools=agent"],
       "enabled": true
     },
-    // jev-mcp — TypeSafe Jev typed decision layer (diff review gate, change risk,
-    // requirement check, coding-loop routing). Binary: `jev-mcp` (bun global,
-    // home/modules/upstream). The key comes from ~/.config/typesafe/key (0600),
-    // written from .env.toml by the home/modules/env activation — no env
-    // indirection, so an empty TYPESAFE_API_KEY in the daemonized service env
-    // can no longer poison it. Without the file, tools return an auth error.
+    // jev-mcp — TypeSafe Jev judgment tools (verify/screen/noul/find/rerank/
+    // classify/decide/compare/extract/audit/review/gate): diff review gate,
+    // completion gate, screening, ranking. Binary: @jkudish/jev-mcp via the
+    // `jev-mcp-keyfile` wrapper (home/modules/opencode), which exports
+    // TYPESAFE_API_KEY from ~/.config/typesafe/key (0600) — this build has NO
+    // key-file fallback, so the wrapper is the only key path. Never put the key
+    // back into an {env:...} block: an empty residual value would win and poison
+    // every judgment.
     "jev-mcp": {
       "type": "local",
-      "command": ["jev-mcp"],
+      "command": ["jev-mcp-keyfile"],
       "enabled": true
     },
     // Cloudflare MCP servers (2026-10-03) — official remote servers from

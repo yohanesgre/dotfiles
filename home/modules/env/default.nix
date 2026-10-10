@@ -78,11 +78,13 @@
         unset -f _load_toml 2>/dev/null || true
   '';
 
-  # jev-mcp reads its key from ~/.config/typesafe/key (its JEV_KEY_FILE default).
-  # Writing it here from .env.toml removes the MCP child's dependency on the
-  # daemonized opencode service inheriting the systemd user env: an empty
-  # TYPESAFE_API_KEY in that env is not nullish, so it would win over the file
-  # and poison every judgment with an auth error. Never echoed to the log.
+  # @jkudish/jev-mcp reads its key ONLY from the environment (TYPESAFE_API_KEY,
+  # falling back to JEV_API_KEY) — it has no key-file support. This file is the
+  # single source of truth the `jev-mcp-keyfile` wrapper (home/modules/opencode)
+  # reads to export TYPESAFE_API_KEY into the MCP child, so no client depends on
+  # the daemonized service env: an empty TYPESAFE_API_KEY there is not nullish
+  # and would win over the file, poisoning every judgment with an auth error.
+  # Never echoed to the log.
   home.activation.writeTypeSafeKey = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
         _py=${pkgs.python3}/bin/python3
         if ! [ -x "$_py" ]; then _py=python3; fi
