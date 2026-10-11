@@ -2,6 +2,8 @@
 name: designer
 description: UI/UX design, review, and implementation. Use for styling, responsive design, component architecture and visual polish.
 thinkingLevel: high
+# Route through the modelRoles.designer mapping (config.yml) so the selector stays in one place.
+model: "@designer"
 tools:
   - read
   - glob
