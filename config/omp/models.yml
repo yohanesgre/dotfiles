@@ -1,0 +1,18 @@
+# omp model/provider overrides. Loaded from ~/.omp/agent/models.yml (see
+# omp://models.md). Only the `providers` root key is consumed.
+#
+# commandcode free tier: the gateway caps completion tokens at 32768, but
+# omp's catalog rows for these `:free` models advertise up to 66K max-out, so
+# requests fail with `400 INVALID_REQUEST_BODY: max_tokens (64000) must be
+# between 0 and 32768`. Cap them here; nothing else about the provider changes.
+providers:
+  commandcode:
+    modelOverrides:
+      inclusionai/ling-3.0-flash-sante:free:
+        maxTokens: 32768
+      inclusionai/ling-3.1-flash:free:
+        maxTokens: 32768
+      poolside/laguna-s-2.1-free:
+        maxTokens: 32768
+      stealth/glyph-cluster:free:
+        maxTokens: 32768

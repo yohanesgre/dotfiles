@@ -4,6 +4,23 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-11 — omp: commandcode free-tier max_tokens cap + free-model gate survey
+
+User wanted omp to reach free models on opencode and commandcode (proposed a localhost proxy rewriting `x-opencode-session`). Surveyed the real gates before building anything.
+
+Findings:
+- **`opencode-go` free tier already works from omp** — `opencode-go/longcat-2.5-preview-free` → `OK` with no changes. (`space-bunny-free` → `400 Model is unavailable`, model-specific.)
+- **`opencode-zen/*-free` → `403 FreeTierError: OpenCode's free tier can only be used from within OpenCode`.** Key-independent (the same API key works from the opencode client), and NOT cleared by any client header tried: `x-opencode-session`, `x-opencode-session-id`, `x-opencode-client` ∈ {tui, cli, opencode-cli, desktop, server, app}, `X-Session-Id`, `x-session-affinity`, `User-Agent` ∈ {opencode/cli, opencode/2.0.26, opencode/2.0.26 (cli)}, `x-opencode-project`. ⇒ the proposed header-rewriting proxy is **not a known unlock**; not built. (MITM capture attempt failed too — Bun ignores `HTTPS_PROXY`.)
+- **`commandcode` free is not gated** — the failure was body shape: `400 INVALID_REQUEST_BODY: max_tokens (64000) must be between 0 and 32768`.
+
+Change:
+- `config/omp/models.yml` (restored — `gmi-cloud` retirement had deleted it) caps `maxTokens: 32768` on the four commandcode `:free` rows via `providers.commandcode.modelOverrides`.
+- `home/modules/omp/default.nix` — re-adds `models.yml` to the managed `files` list, drops the stale-delete block, header comment updated.
+
+Verified live (`omp -p --no-tools`): `commandcode/inclusionai/ling-3.1-flash:free` `OK`, `commandcode/poolside/laguna-s-2.1-free` `OK`, `commandcode/stealth/glyph-cluster:free` `OK`; `commandcode/inclusionai/ling-3.0-flash-sante:free` → `404 This model is unavailable for free` (paid-only upstream now; the override is harmless).
+
+Evidence: `bash scripts/validate.sh` rc 0 (1462 passed, 0 failed, 4 skipped); `bash scripts/check-secrets.sh` PASS; `bash scripts/hm-switch.sh` rc 0 (`omp: synced models.yml`); live `~/.omp/agent/models.yml` present.
+
 ## 2026-10-11 — browser-use MCP removed (user request: kept breaking)
 
 User: the browser-use MCP keeps breaking; delete it — another alternative will be chosen later. Removed end-to-end (config + nix + live artifacts).

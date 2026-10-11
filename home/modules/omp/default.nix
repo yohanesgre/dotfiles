@@ -26,13 +26,16 @@ let
   # `engram-serve` systemd user service on 127.0.0.1:7437. omp's OWN memory
   # backends stay off (config.yml: memory.backend "off", memories.enabled false).
   #
-  # models.yml was removed 2026-10-11: it defined the only custom provider
-  # (gmi-cloud), now retired — every agent pins commandcode. modelRoles is
-  # intentionally unset (omp role defaults apply); the activation deletes any
-  # stale live models.yml copy so omp stops advertising the dead provider.
+  # models.yml: override-only provider config (omp://models.md). Removed
+  # 2026-10-11 when its sole custom provider (gmi-cloud) was retired, then
+  # restored the same day to cap `commandcode` free-tier models at the gateway's
+  # 32768 max_tokens — omp's catalog rows advertise up to 66K, so requests
+  # otherwise fail `400 INVALID_REQUEST_BODY: max_tokens ... must be between 0
+  # and 32768`. modelRoles is intentionally unset (omp role defaults apply).
   files = [
     "config.yml"
     "mcp.json"
+    "models.yml"
   ];
 in
 {
@@ -56,12 +59,6 @@ in
           echo "omp: synced $f"
         fi
       done
-      # gmi-cloud retired 2026-10-11 (config/omp/models.yml deleted): drop the
-      # live copy so omp stops loading the dead provider.
-      if [ -f "$DST/models.yml" ]; then
-        $DRY_RUN_CMD rm -f "$DST/models.yml"
-        echo "omp: removed stale models.yml (gmi-cloud retired)"
-      fi
       if [ -d "$SRC/agents" ]; then
         mkdir -p "$DST/agents"
         for a in "$SRC/agents"/*.md; do
