@@ -1,6 +1,8 @@
 ---
 name: librarian
 description: External documentation and library research. Use for official docs lookup, GitHub examples, and understanding library internals.
+# Route through modelRoles.smol (config.yml) so the selector stays in one place.
+model: "@smol"
 tools:
   - read
   - glob

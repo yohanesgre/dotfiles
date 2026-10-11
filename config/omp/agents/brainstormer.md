@@ -1,6 +1,8 @@
 ---
 name: brainstormer
 description: Brainstorming partner. Explores ideas, requirements, and design directions through structured back-and-forth before any code is written. Use when starting a new feature, concept, or ambiguous request.
+# Route through modelRoles.plan (config.yml) so the selector stays in one place.
+model: "@plan"
 thinkingLevel: high
 tools:
   - read

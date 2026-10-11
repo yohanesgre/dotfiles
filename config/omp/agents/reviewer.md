@@ -1,6 +1,8 @@
 ---
 name: reviewer
 description: Code reviewer. Reviews diffs or files for correctness, security, performance, edge cases, and maintainability. Flags issues with location, severity, and concrete fix. Use before merging or committing.
+# Route through modelRoles.plan (config.yml) so the selector stays in one place.
+model: "@plan"
 thinkingLevel: high
 tools:
   - read

@@ -1,6 +1,8 @@
 ---
 name: explorer
 description: Fast codebase search and pattern matching. Use for finding files, locating code patterns, and answering 'where is X?' questions.
+# Route through modelRoles.smol (config.yml) so the selector stays in one place.
+model: "@smol"
 readSummarize: false
 tools:
   - read

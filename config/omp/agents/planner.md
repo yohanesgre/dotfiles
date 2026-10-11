@@ -1,6 +1,8 @@
 ---
 name: planner
 description: Implementation planner. Turns requirements or vague requests into a concrete, ordered, verifiable plan with phases, files, and acceptance criteria. Use before starting multi-step work.
+# Route through modelRoles.plan (config.yml) so the selector stays in one place.
+model: "@plan"
 thinkingLevel: high
 tools:
   - read

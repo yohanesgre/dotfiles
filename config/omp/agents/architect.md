@@ -1,6 +1,8 @@
 ---
 name: architect
 description: Architecture designer. Owns system design and Architecture Decision Records (ADRs) for design-heavy work. Use for service boundaries, data models, tech choices, or any lasting architecture decision, after requirements exist.
+# Route through modelRoles.plan (config.yml) so the selector stays in one place.
+model: "@plan"
 thinkingLevel: high
 tools:
   - read
