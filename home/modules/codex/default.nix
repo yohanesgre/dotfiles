@@ -18,7 +18,11 @@
       "$CODEX_BIN" mcp add "$name" "$@" || echo "codex: could not register MCP server $name" >&2
     }
 
-    ensure_mcp browser-use --env OPENAI_BASE_URL=http://127.0.0.1:49381/v1 --env BROWSER_USE_LLM_MODEL=mimo-v2.6-flash -- "$HOME/.nix-profile/bin/browser-use-mcp"
+    # browser-use removed 2026-10-11 (user request) — drop the stale registration
+    # so codex stops launching the retired MCP server.
+    if "$CODEX_BIN" mcp get browser-use >/dev/null 2>&1; then
+      "$CODEX_BIN" mcp remove browser-use >/dev/null 2>&1 || true
+    fi
     ensure_mcp codegraph --env CODEGRAPH_TELEMETRY=0 --env CODEGRAPH_DAEMON_IDLE_TIMEOUT_MS=1800000 -- "$HOME/.bun/bin/codegraph" serve --mcp
     # jev-mcp: the key lives in ~/.config/typesafe/key, but @jkudish/jev-mcp reads
     # only TYPESAFE_API_KEY from the environment, so the command is the

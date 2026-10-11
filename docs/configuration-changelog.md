@@ -4,6 +4,22 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-11 — browser-use MCP removed (user request: kept breaking)
+
+User: the browser-use MCP keeps breaking; delete it — another alternative will be chosen later. Removed end-to-end (config + nix + live artifacts).
+
+- `config/opencode/opencode.jsonc` — `browser-use` MCP entry + comment removed.
+- `config/opencode/browser-use-llm-proxy.py` — deleted (existed only to inject `x-opencode-session` for browser-use's LLM client).
+- `home/modules/opencode/default.nix` — dropped the `browser-use-mcp` wrapper (`uvx --from 'browser-use[cli]==0.13.10'`), the `xdg.configFile."opencode/browser-use-llm-proxy.py"` link, and the `browser-use-llm-proxy` systemd user service.
+- `home/modules/env/default.nix` — dropped the `writeBrowserUseKey` activation (wrote `~/.config/browser-use/key` from `.env.toml`).
+- `home/modules/browser-use/default.nix` — module deleted; `home/common.nix` import removed. This also removes the Chrome desktop `--remote-debugging-port=9223` launcher override and the `~/.config/browseruse/config.json` copy (both existed only for browser-use's CDP attach). `agent-browser` runs its own Chromium and is unaffected.
+- `home/modules/codex/default.nix` — no longer registers `browser-use`; adds an idempotent `codex mcp remove browser-use` for a stale entry.
+- `.env.toml` / `.env.toml.example` — `OPENCODE_BROWSER_USE_API_KEY` removed.
+- `config/opencode/CONFIGURATION.md` — stack MCP count 8→7, MCP table 9→8 and row removed, gotcha bullet, json block, enabled-MCP sentence, browser-use routing/attachment sections, key-provisioning paragraph, and the removal log updated.
+- Live cleanup after switch: `browser-use-llm-proxy` unit stopped/removed, `~/.config/browseruse` + `~/.config/browser-use` removed, Chrome desktop overrides removed (+ `update-desktop-database`), `browser-use-mcp` wrapper gone.
+
+Evidence: `bash scripts/validate.sh` rc 0 (1462 passed, 0 failed, 4 skipped); `bash scripts/hm-switch.sh` rc 0 (`Stopping units: browser-use-llm-proxy.service`); live — `systemctl --user is-enabled browser-use-llm-proxy` → not-found, unit file absent, `~/.config/opencode/browser-use-llm-proxy.py` absent, `command -v browser-use-mcp` empty, `codex mcp get browser-use` → "No MCP server named 'browser-use' found", grep browser-use in live `~/.config/opencode/opencode.jsonc` = 0, port 49381 free.
+
 ## 2026-10-11 — designer: model pin → `opencode-go/mimo-v2.6-pro` (design judgment split from implementation)
 
 `config/opencode/agents/designer.md` and `swe.md` both pinned `opencode-go/deepseek-v4.1-flash#high`, so the design specialist and the implementer were the same model. The revamped Lexa frontend workflow splits judgment (design) from transcription (implementation) and needs a distinct design model; the owner named MiMo Pro V2.6, and `opencode models` confirms `opencode-go/mimo-v2.6-pro` exists.
