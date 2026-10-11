@@ -4,6 +4,19 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-11 — designer: model pin → `opencode-go/mimo-v2.6-pro` (design judgment split from implementation)
+
+`config/opencode/agents/designer.md` and `swe.md` both pinned `opencode-go/deepseek-v4.1-flash#high`, so the design specialist and the implementer were the same model. The revamped Lexa frontend workflow splits judgment (design) from transcription (implementation) and needs a distinct design model; the owner named MiMo Pro V2.6, and `opencode models` confirms `opencode-go/mimo-v2.6-pro` exists.
+
+No `#effort` suffix: `opencode.jsonc` declares custom variants only for `mimo-v2.6-flash` and `mimo-v2.5`, so a suffix on `mimo-v2.6-pro` is unverified.
+
+- `config/opencode/agents/designer.md` — `model: opencode-go/deepseek-v4.1-flash#high` → `model: opencode-go/mimo-v2.6-pro`; the designer-skill prompt bullet gains one sentence: a project may declare its own frontend workflow skill (Lexa declares `.agents/skills/frontend-workflow/`); when present it is that project's operating procedure and it comes first.
+- `config/opencode/CONFIGURATION.md` — current-state model-pin summary line split so it no longer contradicts the pin: `swe` = `opencode-go/deepseek-v4.1-flash#high`; `designer` = `opencode-go/mimo-v2.6-pro` (2026-10-11 — design judgment split from implementation for the Lexa frontend workflow).
+
+No other agent pin touched (`architect`/`reviewer`/`researcher`/`steward`/`vision` unchanged).
+
+Evidence: `bash scripts/validate.sh` rc 0 (1463 passed, 0 failed, 4 skipped); `bash scripts/check-secrets.sh` PASS; `nix flake check --no-build` rc 0 (`all checks passed!`); `bash scripts/hm-switch.sh` rc 0; live — `grep -n "model:" ~/.config/opencode/agents/designer.md` → `4:model: opencode-go/mimo-v2.6-pro`, `readlink -f ~/.config/opencode/agents/designer.md` → `/nix/store/bg5dxn1j0pgz6dm1ldk96xmdq1ys2icf-hm_agents/designer.md` (every other `*-hm_agents/designer.md` in the store still holds the old pin).
+
 ## 2026-10-11 — jev: standardize on @jkudish/jev-mcp (12 tools) across opencode + codex + omp
 
 User flagged that omp's jev differed from opencode's, then asked to align them, retire gmi-cloud, add engram to omp, and rewrite the omp model roles with jev. Root cause: the **unscoped npm name `jev-mcp` is a different project** (`rashedInt32/jev-mcp`, 6 question-pack tools: classify/score/check/ask/triage/models); `jkudish/jev-mcp` publishes as the scoped **`@jkudish/jev-mcp`** (12 judgment tools).
