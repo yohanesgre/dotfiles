@@ -142,23 +142,19 @@ EOF
 # ── Systemd services ──────────────────────────────────────────
 
 setup_services() {
-    local profiles=("yohanes" "yola" "game-dev-team")
+    # Single host gateway: the default-profile multiplexer serves every profile.
+    # Upstream removed per-profile gateways (gateway migration 42→43); a
+    # `hermes-gateway-<profile>` unit is no longer a supported topology.
+    info "Installing single host gateway (multiplexer serves all profiles)"
 
-    for profile in "${profiles[@]}"; do
-        local service="hermes-gateway-${profile}"
-        local unit_file="$HOME/.config/systemd/user/${service}.service"
-
-        info "Setting up systemd: $service"
-
-        # Only create if hermes is available and unit doesn't exist
-        if command -v hermes >/dev/null 2>&1; then
-            HERMES_HOME="$HERMES_HOME/profiles/$profile" \
-                hermes gateway install --profile "$profile" 2>/dev/null || {
-                warn "  Could not auto-install $service — create manually with:"
-                warn "  HERMES_HOME=$HERMES_HOME/profiles/$profile hermes gateway install"
-            }
-        fi
-    done
+    if command -v hermes >/dev/null 2>&1; then
+        hermes gateway install 2>/dev/null || {
+            warn "  Could not auto-install host gateway — create manually with: hermes gateway install"
+        }
+        # Converge any legacy per-profile units (yohanes/yola/game-dev-team) onto the host.
+        # Idempotent: a half-migrated host converges on the next run.
+        hermes gateway migrate --multiplex --yes 2>/dev/null || true
+    fi
 
     # Enable linger for user services
     if command -v loginctl >/dev/null 2>&1; then

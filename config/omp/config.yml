@@ -34,6 +34,19 @@ modelPresets:
       tiny: opencode-go/mimo-v2.6-flash:low
       commit: opencode-go/mimo-v2.6-flash:low
       vision: opencode-go/glm-5.3-flash:low
+  openai-codex:
+    modelRoles:
+      default: openai-codex/gpt-6-luna:high
+      slow: openai-codex/gpt-6.1-sol:high
+      plan: openai-codex/gpt-6.1-sol:high
+      advisor: openai-codex/gpt-6.1-sol:high
+      designer: openai-codex/gpt-6.1-sol:high
+      task: openai-codex/gpt-6-luna:high
+      smol: openai-codex/gpt-6-luna:low
+      tiny: openai-codex/gpt-6-luna:low
+      commit: openai-codex/gpt-6-luna:low
+      vision: openai-codex/gpt-6-luna:low
+    defaultThinkingLevel: high
 task:
   maxConcurrency: 4
   maxRecursionDepth: 2
