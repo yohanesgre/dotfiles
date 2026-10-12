@@ -1,11 +1,11 @@
 model:
   provider: deepseek
   base_url: https://api.deepseek.com/v1
-  default: deepseek-v4-flash
+  default: deepseek-flash
   api_mode: chat_completions
-  reasoning: medium
 agent:
   max_turns: 150
+  reasoning_effort: high
 web:
   backend: ddgs
   use_gateway: false
@@ -49,10 +49,6 @@ discord:
 gateway:
   systemd_watchdog_seconds: 120
   multiplex_profiles: true
-  multiplex_profile_allowlist:
-    - yohanes
-    - game-dev-team
-    - default
   profile_routes:
     - name: yohanes
       platform: discord
@@ -69,7 +65,7 @@ onboarding:
 updates:
   pre_update_backup: full
   backup_keep: 5
-_config_version: 41
+_config_version: 50
 session_reset:
   mode: none
 platform_toolsets:
@@ -78,6 +74,7 @@ platform_toolsets:
     - clarify
     - code_execution
     - computer_use
+    - connections
     - context_engine
     - cronjob
     - delegation
@@ -95,6 +92,7 @@ platform_toolsets:
     - clarify
     - code_execution
     - computer_use
+    - connections
     - context_engine
     - cronjob
     - delegation
