@@ -1,0 +1,4 @@
+name: model-switcher
+version: 1.1.0
+description: Reasoning-effort presets for DeepSeek V4.1 Flash — /quick, /balanced, /deep
+author: John Ringles

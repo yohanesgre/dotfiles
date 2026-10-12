@@ -4,6 +4,51 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-12 — Luvus Web published through a Cloudflare Tunnel (`cf tunnels`) behind Access email OTP
+
+User asked for the Luvus browser client reachable from the public internet, and to research Cloudflare's newer "publish an app from the machine" flow.
+
+Findings:
+- **`cf` (Cloudflare CLI `1.0.0-beta.14`, already installed) owns Tunnels end-to-end — no `cloudflared` package exists on this box.** `cf tunnels quick-start <url>` publishes a local URL under an ephemeral `trycloudflare.com` hostname (with `--allowed-mail` adding a built-in Access email gate); `cf tunnels create|config update|token|run|login` manage named tunnels whose ingress lives in the API (docs call the route a "Published applications" entry). `cf tunnels run <name>` downloads and drives its **own** cloudflared — here `~/.config/.wrangler/cloudflared/2026.10.0/cloudflared`, reused from Wrangler's cache — so the connector needs no nix package and no local config file.
+- **`luvus web` is deliberately loopback-only** and answers only its loopback address plus the hosts given via `--public-url`/`--origin` (DNS-rebinding guard). The transport provider owns reachability/TLS; Luvus keeps pairing, browser tickets and origin checks. So a tunnel is *the* supported way to publish it — never a raw port forward.
+- **Two Cloudflare accounts** are reachable from this login, so every account-scoped `cf` call (and the tunnel unit) needs `CLOUDFLARE_ACCOUNT_ID`.
+- **One-time PIN is no longer automatic** in current Zero Trust orgs (the Cloudflare IdP replaced it): an Access app created with `allowed_idps: []` rendered only the two Google IdPs. Creating a `onetimepin` IdP and pinning `allowed_idps` to it produced the email-code login page.
+
+Change (repo): `home/hosts/desktop.nix` gains three desktop-only systemd user units plus a header comment recording the whole chain and its ids.
+- `luvus-server` — `Type=oneshot` + `RemainAfterExit` + `KillMode=process`, `ExecStart=%h/.local/bin/luvus server start`. Deliberate: the unit guarantees a server after boot, but can never SIGTERM the daemonised server's panes, and `luvus server start` is a verified no-op while one runs.
+- `luvus-web` — `luvus web --control --no-open --port 4174 --public-url https://luvus.yohanesgre.com --origin https://luvus.yohanesgre.com`, `Requires=luvus-server`, `Restart=on-failure`.
+- `luvus-tunnel` — `%h/.bun/bin/cf tunnels run luvus` with `CLOUDFLARE_ACCOUNT_ID`, `Restart=always`.
+- `scripts/luvus-pair.sh` — mints or re-reads a pairing link without a TTY: the default restarts the unit and reads the link the **new** bridge logged (`_PID`-filtered, so a stale line can never be handed out), `--current` re-reads the current bridge's link inside its 300s window without revoking paired browsers, `--unit`/`--host` retarget it for another bridge, `--no-clip` skips the clipboard. stdout is the link alone, so `link=$(bash scripts/luvus-pair.sh)` works; status and warnings go to stderr.
+
+Cloudflare-side state is API state (not repo state) and was created with `cf` (authenticated login; `CLOUDFLARE_ACCOUNT_ID=8e10f6d35f35bc539a885f0fa9c7039f`):
+
+```bash
+cf tunnels create --name luvus --config-source cloudflare
+cf tunnels config update 93f311c4-c6b6-4413-8aad-36e638016684 \
+  --body '{"config":{"ingress":[{"hostname":"luvus.yohanesgre.com","service":"http://127.0.0.1:4174"},{"service":"http_status:404"}]}}'
+cf dns records create -z yohanesgre.com \
+  --body '{"type":"CNAME","name":"luvus.yohanesgre.com","content":"93f311c4-c6b6-4413-8aad-36e638016684.cfargotunnel.com","proxied":true,"ttl":1}'
+cf zero-trust identity-providers create --body '{"name":"One-time PIN login","type":"onetimepin","config":{}}'
+cf zero-trust access applications create --body '{"name":"Luvus Web","domain":"luvus.yohanesgre.com","type":"self_hosted","session_duration":"24h","allowed_idps":["<onetimepin IdP id>"],"policies":[{"name":"Owner email OTP","decision":"allow","include":[{"email":{"email":"<owner address>"}}]}]}'
+```
+
+Ids in play: tunnel `93f311c4-c6b6-4413-8aad-36e638016684`; Access app `53e9f60a-c0aa-4397-8475-5d566f61d269` (`aud ea11815a11f8432b4bfdcff34058b03924394cb6da9811516e2273d34beae724`), policy `cc986dcd-8315-418a-9806-c44f35db8c00`, One-time PIN IdP `f4bb74d7-0440-4ffc-a807-919500616792`; Zero Trust team `yohanesgre.cloudflareaccess.com`. The tunnel token is a credential and is deliberately stored nowhere in the repo — `cf tunnels run` fetches it through the authenticated login.
+
+Verification (live, 2026-10-12):
+- `systemctl --user is-active/is-enabled` → `luvus-server`, `luvus-web`, `luvus-tunnel` all active+enabled; `systemctl --user restart luvus-web` and `restart luvus-tunnel` both return to a serving state.
+- Loopback: `curl -H 'Host: luvus.yohanesgre.com' http://127.0.0.1:4174/` → 200 `<title>Luvus Web`; `Host: evil.example.com` → 403 with the bridge's own "does not answer to this host name" body.
+- Public: `curl https://luvus.yohanesgre.com/` → 302 to `yohanesgre.cloudflareaccess.com/cdn-cgi/access/login/luvus.yohanesgre.com`; the login page offers `Send login code` + email input and no Google button (Google IdPs still exist on the account, they are simply not allowed for this app).
+- Tunnel→origin leg proven with a temporary second ingress hostname (`luvus-check.yohanesgre.com`, DNS record + ingress rule deleted afterwards): it returned **Luvus's own 403 host-guard body**, i.e. edge → tunnel → cloudflared → `127.0.0.1:4174` reached the bridge (a 502/timeout would have been the failure signature).
+- `cf tunnels connections list --tunnel-id …` shows only the systemd connector after the throwaway connector was stopped, with `status: healthy` per connection.
+- `nix flake check --no-build` rc 0, `nix fmt -- --check flake.nix home/` clean, `deadnix -L --fail` clean.
+- `scripts/luvus-pair.sh` exercised against a throwaway transient bridge (`systemd-run --user --unit=luvus-pair-test --collect … --port 4176`, stopped and collected afterwards): `--current` → that bridge's link; mint → restart plus a **different** fresh link; unknown unit → rc 2 with a clear message; `--current` against the real bridge whose link was already older than 300s → rc 1 with the actionable hint. The mint path was deliberately not run against the live unit (it would revoke the user's pairing); the real unit/host defaults were covered by that rc-1 run and by a manual read of the live journal. Production untouched afterwards: same `MainPID` (926772), `NRestarts=0`, loopback 200, public 302.
+
+Notes / gotchas:
+- **Pairing is per bridge process.** Every `luvus-web` restart (boot, hm-switch, crash) invalidates paired browsers, and the bridge only prints a link when it *starts* — under systemd there is no terminal to press Enter in, and no CLI or UHP method can mint one (checked: `luvus help all`, `luvus uhp capabilities`). Use `bash scripts/luvus-pair.sh` (restart + read the new bridge's link); `--current` re-reads the current link without revoking when it is still inside its 300s window. Raw equivalent: `journalctl --user -u luvus-web.service -n 6 | grep -o 'https://luvus\.yohanesgre\.com/#pair=[A-Za-z0-9_-]*'` (one tab, 5-minute window). After pairing, more links can be minted from the web UI's **Devices** panel without any restart.
+- `--control` means a paired browser types into real PTYs; the Access email-OTP gate (owner address only, 24h session) is what keeps that off the public internet. Origin-side `config.originRequest.access.*` enforcement is intentionally not set — edge Access is the documented gate for a published application, and the loopback bridge is unreachable by any other path.
+- A temporary Access **service token** test (`TEMP verify` policy, token deleted afterwards) never authenticated at the edge (`service_token_status:false` even after the rule persisted and other config propagated). Root cause not investigated; not needed, because the routing proof above used the temporary hostname instead. Do not re-derive this as "service tokens are broken" without a fresh test.
+- `cf tunnels run` depends on this login's OAuth refresh staying valid. If the tunnel ever fails to come up at boot, `journalctl --user -u luvus-tunnel.service` shows the reason and `cf auth login` restores it.
+
 ## 2026-10-11 — omp: commandcode free-tier max_tokens cap + free-model gate survey
 
 User wanted omp to reach free models on opencode and commandcode (proposed a localhost proxy rewriting `x-opencode-session`). Surveyed the real gates before building anything.

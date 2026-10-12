@@ -31,6 +31,10 @@
       if [ -x "$HOME/projects/dotfiles/scripts/render-hermes-config.sh" ]; then
         $DRY_RUN_CMD env PATH="${pkgs.python3}/bin:$PATH" bash "$HOME/projects/dotfiles/scripts/render-hermes-config.sh" 2>&1 | head -20 || true
       fi
+      # push dotfiles-owned plugins into every live profile (config/hermes/plugins -> <profile>/plugins)
+      if [ -x "$HOME/projects/dotfiles/scripts/sync-hermes-plugins.sh" ]; then
+        $DRY_RUN_CMD env PATH="${pkgs.python3}/bin:$PATH" bash "$HOME/projects/dotfiles/scripts/sync-hermes-plugins.sh" 2>&1 | head -20 || true
+      fi
     fi
   '';
 
