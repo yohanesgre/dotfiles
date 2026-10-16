@@ -72,38 +72,31 @@ actually runs, not catalog marketing:
 
 ## Subagents
 
-Every subagent spawned inside a peer run is pinned to a **free** model, chosen per role. The
-pins ride on `OPENCODE_CONFIG_CONTENT`, which merges over `~/.config/opencode/*.jsonc` — no
-config file is written, and the peer's own `-m` model is unaffected. A peer can therefore fan
-out without spending Go-tier quota.
+Every subagent spawned inside a peer run runs on a **free** model with a per-role reasoning
+effort. That is enforced by a **peer-scoped OpenCode server**: `opencode-peer-serve` (systemd
+user unit, `127.0.0.1:49375`, `home/modules/opencode/default.nix`), whose `OPENCODE_CONFIG`
+merges the free pins over your `~/.config/opencode/*.jsonc`. Peer runs are sent there with
+`--server`; your own opencode harness and Luvus panes use the shared background service and keep
+their config-file pins.
 
-**It only applies where the config is loaded.** Agent definitions resolve in the *server*, not
-in the client that sets the variable, so the pins need `standalone: true` (the default): a
-private server per run, which inherits the env. Against the shared background service the
-variable is ignored and subagents keep the config-file pins — hence `standalone: false` is
-~5 s faster per call (2.5-5.5 s vs 8.1-8.7 s) but **not** free-tier. Verified by reading a
-spawned child session's model back out of the store: `muse-spark-1.3-contributor` (file pin)
-against the service, `deepseek-v4.1-flash-free` (override) under `--standalone`.
-
-**The shared service on this box now carries the pins itself** (2026-10-16): it was restarted
-with the same variable (`OPENCODE_CONFIG_CONTENT=… opencode service restart`, pid 3292415 →
-3866753), so `GET /api/agent` reports all nine agents on the free pins with the right provider,
-model and variant, and a spawned `explore` ran on `deepseek-v4.1-flash-free#low` with **no**
-`--standalone` and no per-call cost. Caveats: it is runtime-only (the service starts without the
-variable on reboot — re-apply it, or export it in the shell environment so every opencode
-process inherits it), and it applies to every client of that service, your own panes included.
+Agent definitions resolve in the server that **loads** the config, not in the client that sets
+it — which is why this is a service and not a client-side variable, and why the two earlier
+approaches were rejected: `--standalone` (a private server per call) costs ~5.5 s per call
+(8.1-8.7 s vs 2.5-5.5 s warm), and pointing the *shared* service at the pins repins your own
+harness too.
 
 | agent | pin | why |
 | --- | --- | --- |
-| `architect`, `reviewer` | `glm-5.3-flash-free#max` | architectural / adversarial judgment; a miss is expensive |
-| `designer` | `glm-5.3-flash-free#high` | design judgment, less consequential than review |
+| `architect`, `reviewer`, `designer` | `glm-5.3-flash-free#max` | architectural, adversarial and design judgment; a miss is expensive |
 | `swe`, `researcher`, `general` | `deepseek-v4.1-flash-free#high` | frequent, well-scoped engineering and navigation |
 | `steward`, `vision`, `explore` | `deepseek-v4.1-flash-free#low` | mechanical, perceptual, high-volume fan-out |
 
-The `#low` / `#high` / `#max` suffix is reasoning effort, not a model id. Both models and the
-effort assignment came from a `jev_classify` triage (2026-10-16). To change any pin, edit
-`SUBAGENT_MODELS` in `config/omp/extensions/opencode-peer.ts` and redeploy — it is the only
-place the pins live.
+The `#low` / `#high` / `#max` suffix is reasoning effort, not a model id. Model mix and effort
+came from a `jev_classify` triage (2026-10-16) and are **static** — nothing calls jev at
+runtime. To change a pin, edit `peerSubagentPins` in `home/modules/opencode/default.nix` and
+re-run `hm-switch`: that module restarts the service so the new pins take effect. If the service
+is down the tool fails and names it (`systemctl --user start opencode-peer-serve`) rather than
+silently falling back to the shared service.
 
 ## Lanes: how continuity works
 

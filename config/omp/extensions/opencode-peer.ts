@@ -54,7 +54,7 @@ const MODELS: Record<string, string> = {
 };
 
 const DEFAULT_MODEL = "glm";
-const DEFAULT_AGENT = "plan";
+const DEFAULT_AGENT = "build";
 const DEFAULT_TIMEOUT_MS = 600_000;
 const MAX_PROMPT_CHARS = 120_000;
 
@@ -69,47 +69,21 @@ const LIMIT_ERROR_RE =
 	/QuotaExceeded|RateLimitError|rate[ _-]?limit|usage limit|limit reached|too many requests|\b429\b/i;
 
 /**
- * Runtime pin for subagents: every subagent-capable agent in this box's OpenCode config
- * runs on a FREE model during peer runs, with its reasoning effort chosen per role.
+ * Peer-scoped OpenCode server (systemd unit `opencode-peer-serve`,
+ * home/modules/opencode/default.nix). Runs go here instead of the shared background service
+ * because agent definitions resolve in the server that LOADS the config: the free-tier
+ * subagent pins live in that unit's OPENCODE_CONFIG_CONTENT, so they apply to peer-spawned
+ * subagents only — never to the user's own harness, which keeps the config-file pins.
  *
- * Mechanism: OPENCODE_CONFIG_CONTENT, which OpenCode MERGES over the on-disk config
- * (nothing is written to disk). The catch is WHO loads it: agent definitions resolve in
- * the server that owns the config, not in the client that sets the variable. So the
- * override lands only when the config-loading server inherits this env — i.e. under
- * `--standalone` (a private server per run, the default here), or when the shared
- * background service was itself started with the same variable.
+ * The pins are static; no jev or any other judgment runs here at runtime. The unit holds
+ * the map and its jev_classify triage. Password is the unit's loopback-only value.
  *
- * Verified 2026-10-16 by reading the spawned child session's model back out of the store:
- * against the shared service the child kept the FILE pin (`muse-spark-1.3-contributor`);
- * with `--standalone` the same spawn took the override (`glm-5.3-flash-free`). Cost of
- * `--standalone`: ~5.5s per call (8.1-8.7s vs 2.5-5.5s warm). Pass `standalone: false`
- * to trade the pins back for that speed, and see the skill for the service-restart
- * alternative that needs no per-call cost at all.
- *
- * The pins are mixed across both free models and were triaged with jev_classify
- * (2026-10-16; 7 auto, 2 flagged for review and accepted on a clear margin — designer
- * glm-high 0.77 over dsf-high 0.13, researcher dsf-high 0.83 over dsf-low 0.17):
- * deep thinking on glm for architecture and adversarial review, mid effort for the
- * design/implementation/navigation roles, and minimal effort for the mechanical or
- * perceptual ones. `#low|#high|#max` is reasoning effort, not a model id.
- *
- * `build` is deliberately absent: the peer's own primary model is set by `-m`.
+ * If the server is down the tool fails and names the unit, rather than silently falling
+ * back to the shared service (which would quietly move peer subagents onto the Go-tier
+ * config-file pins).
  */
-const SUBAGENT_MODELS: Record<string, string> = {
-	architect: "opencode/glm-5.3-flash-free#max",
-	reviewer: "opencode/glm-5.3-flash-free#max",
-	designer: "opencode/glm-5.3-flash-free#high",
-	swe: "opencode/deepseek-v4.1-flash-free#high",
-	researcher: "opencode/deepseek-v4.1-flash-free#high",
-	general: "opencode/deepseek-v4.1-flash-free#high",
-	steward: "opencode/deepseek-v4.1-flash-free#low",
-	vision: "opencode/deepseek-v4.1-flash-free#low",
-	explore: "opencode/deepseek-v4.1-flash-free#low",
-};
-
-const SUBAGENT_CONFIG_CONTENT = JSON.stringify({
-	agents: Object.fromEntries(Object.entries(SUBAGENT_MODELS).map(([id, model]) => [id, { model }])),
-});
+const PEER_SERVER = "http://127.0.0.1:49375";
+const PEER_PASSWORD = "omp-peer-loopback-7f3c1d90b2";
 
 /** peer name → OpenCode session id minted by `opencode run`. */
 const sessions = new Map<string, string>();
@@ -271,12 +245,6 @@ export default function opencodePeer(pi: ExtensionAPI): void {
 			cwd: z.string().optional().describe("Working directory for the peer (default this session's cwd)."),
 			new: z.boolean().optional().describe("Drop any remembered session for this peer first."),
 			timeout_ms: z.number().optional().describe("Overall timeout (default 600000)."),
-			standalone: z
-				.boolean()
-				.optional()
-				.describe(
-					"Run with a private OpenCode server so the free-subagent pins take effect (default true). false is ~5s faster but uses the shared service, whose agents keep the config-file pins.",
-				),
 			switch_auth: z
 				.boolean()
 				.optional()
@@ -323,12 +291,10 @@ export default function opencodePeer(pi: ExtensionAPI): void {
 				for (;;) {
 					const sessionId = sessions.get(peer);
 
-					const args = ["run"];
-					// --standalone is what makes SUBAGENT_CONFIG_CONTENT apply: a private server
-					// inherits this env, while the shared background service resolves agents from
-					// the config IT loaded at startup (verified: file pin muse-spark vs override
-					// glm-free for the same spawned subagent).
-					if (params.standalone ?? true) args.push("--standalone");
+					// --server pins this run to the peer server (PEER_SERVER), whose config carries
+					// the free-tier subagent map. Never the shared service: that one resolves the
+					// user's own agent pins.
+					const args = ["run", "--server", PEER_SERVER];
 					args.push("--format", "json", "-m", model, "--agent", agent);
 					if (sessionId) args.push("-s", sessionId);
 					args.push(prompt);
@@ -343,10 +309,10 @@ export default function opencodePeer(pi: ExtensionAPI): void {
 					let code = -1;
 					let killed = false;
 					try {
-						// pi.exec has no `env` option, so the subagent override rides in via env(1).
+						// pi.exec has no `env` option, so the peer server password rides in via env(1).
 						const result = await pi.exec(
 							"env",
-							[`OPENCODE_CONFIG_CONTENT=${SUBAGENT_CONFIG_CONTENT}`, "opencode", ...args],
+							[`OPENCODE_PASSWORD=${PEER_PASSWORD}`, "opencode", ...args],
 							{
 								cwd: params.cwd ?? ctx.cwd,
 								timeout: params.timeout_ms ?? DEFAULT_TIMEOUT_MS,
@@ -391,11 +357,14 @@ export default function opencodePeer(pi: ExtensionAPI): void {
 
 					if (run.error || (code !== 0 && !run.text)) {
 						const detail = run.error ?? (killed ? `timed out after ${elapsedMs}ms` : stderr.trim() || `exit ${code}`);
+						const serverDown = /ECONNREFUSED|connection refused|fetch failed|unable to connect/i.test(detail)
+							? `\n\nPeer server ${PEER_SERVER} looks unreachable — start it with: systemctl --user start opencode-peer-serve`
+							: "";
 						const note = switchedTo.length
 							? `\n\n[auth switched to ${switchedTo.map((label) => `"${label}"`).join(" → ")} after a limit error, and it still failed]`
 							: "";
 						return {
-							content: [{ type: "text" as const, text: `opencode peer error: ${detail}${note}` }],
+							content: [{ type: "text" as const, text: `opencode peer error: ${detail}${note}${serverDown}` }],
 							isError: true,
 							details: { peer, model, agent, sessionId: run.sessionId, elapsedMs, switchedAuth: switchedTo },
 						};
