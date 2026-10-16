@@ -1,14 +1,14 @@
 modelRoles:
   default: commandcode/deepseek/deepseek-v4.1-flash:high
-  slow: commandcode/z-ai/glm-5.3-flash:high
-  plan: commandcode/zai-org/GLM-5.3:high
+  slow: openai-codex/gpt-6.1-sol:medium
+  plan: openai-codex/gpt-6.1-sol:high
   advisor: commandcode/deepseek/deepseek-v4.1-flash
   designer: commandcode/xiaomi/mimo-v2.6-pro
   task: commandcode/deepseek/deepseek-v4.1-flash
   smol: commandcode/xiaomi/mimo-v2.6-flash
   tiny: commandcode/xiaomi/mimo-v2.6-flash
   commit: commandcode/xiaomi/mimo-v2.6-flash
-  vision: commandcode/z-ai/glm-5.3-flash:low
+  vision: commandcode/xiaomi/mimo-v2.6-flash
 modelPresets:
   commandcode:
     modelRoles:
