@@ -9,7 +9,10 @@ let
   # (see omp://config-usage.md). The binary itself is installed by the upstream
   # installer (home/modules/upstream), like bun/rtk/opencode.
   #
-  # top-level config documents omp reads; agents/ holds the subagent definitions
+  # top-level config documents omp reads; agents/ holds the subagent definitions;
+  # extensions/ holds our OMP extension modules and skills/ our OMP-only skills
+  # (both dirs are shared — luvus.ts and skills/luvus are owned by the luvus
+  # integration, so only our files are copied, nothing is pruned)
   #
   # MCP set (mcp.json): codegraph
   # (codegraph serve --mcp, the successor of the removed codebase-memory-mcp —
@@ -67,6 +70,32 @@ in
           if [ ! -f "$DST/agents/$b" ] || ! cmp -s "$a" "$DST/agents/$b"; then
             $DRY_RUN_CMD cp -f "$a" "$DST/agents/$b"
             echo "omp: synced agents/$b"
+          fi
+        done
+      fi
+      # Our extension modules only — the same dir also holds luvus.ts, which the
+      # luvus integration installs and refreshes on its own schedule.
+      if [ -d "$SRC/extensions" ]; then
+        mkdir -p "$DST/extensions"
+        for e in "$SRC/extensions"/*.ts; do
+          [ -f "$e" ] || continue
+          b="$(basename "$e")"
+          if [ ! -f "$DST/extensions/$b" ] || ! cmp -s "$e" "$DST/extensions/$b"; then
+            $DRY_RUN_CMD cp -f "$e" "$DST/extensions/$b"
+            echo "omp: synced extensions/$b"
+          fi
+        done
+      fi
+      # Our skills only — the same root also holds `luvus`, installed and
+      # refreshed by `luvus skill enable`. Per-skill copy, nothing pruned.
+      if [ -d "$SRC/skills" ]; then
+        for s in "$SRC/skills"/*/SKILL.md; do
+          [ -f "$s" ] || continue
+          d="$(basename "$(dirname "$s")")"
+          mkdir -p "$DST/skills/$d"
+          if [ ! -f "$DST/skills/$d/SKILL.md" ] || ! cmp -s "$s" "$DST/skills/$d/SKILL.md"; then
+            $DRY_RUN_CMD cp -f "$s" "$DST/skills/$d/SKILL.md"
+            echo "omp: synced skills/$d/SKILL.md"
           fi
         done
       fi
