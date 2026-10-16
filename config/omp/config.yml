@@ -13,7 +13,7 @@ modelPresets:
   commandcode:
     modelRoles:
       default: commandcode/deepseek/deepseek-v4.1-flash:high
-      slow: commandcode/z-ai/glm-5.3-flash:high
+      slow: commandcode/deepseek/deepseek-v4.1-flash:max
       plan: commandcode/z-ai/glm-5.3-flash:high
       advisor: commandcode/deepseek/deepseek-v4.1-flash
       designer: commandcode/xiaomi/mimo-v2.6-pro
@@ -21,7 +21,22 @@ modelPresets:
       smol: commandcode/xiaomi/mimo-v2.6-flash
       tiny: commandcode/xiaomi/mimo-v2.6-flash
       commit: commandcode/xiaomi/mimo-v2.6-flash
-      vision: commandcode/z-ai/glm-5.3-flash:low
+      vision: commandcode/xiaomi/mimo-v2.6-flash
+  # commandcode open-weight workhorses + one closed OpenAI GPT for planning/review
+  # (reviewer.md routes model: "@plan"). openai-codex is the only reachable OpenAI
+  # route — the pay-per-token `openai` provider has no credential here.
+  commandcode-openai:
+    modelRoles:
+      default: commandcode/deepseek/deepseek-v4.1-flash:high
+      slow: openai-codex/gpt-6.1-sol:medium
+      plan: openai-codex/gpt-6.1-sol:high
+      advisor: commandcode/deepseek/deepseek-v4.1-flash
+      designer: commandcode/xiaomi/mimo-v2.6-pro
+      task: commandcode/deepseek/deepseek-v4.1-flash
+      smol: commandcode/xiaomi/mimo-v2.6-flash
+      tiny: commandcode/xiaomi/mimo-v2.6-flash
+      commit: commandcode/xiaomi/mimo-v2.6-flash
+      vision: commandcode/xiaomi/mimo-v2.6-flash
   opencode-go:
     modelRoles:
       default: opencode-go/deepseek-v4.1-flash:high

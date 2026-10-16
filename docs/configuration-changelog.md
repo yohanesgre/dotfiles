@@ -4,6 +4,22 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-16 — omp: `commandcode-openai` preset (open-weight commandcode + one OpenAI GPT for plan/review)
+
+User wanted a preset crossing commandcode (their open-weight gateway) with an OpenAI GPT, using `gpt-6.1-sol` for plan and review; then asked for `slow` → `deepseek-v4.1-flash:max` and `vision` → `mimo-v2.6-flash` in the commandcode role map.
+
+Findings:
+- **`commandcode` is the open-weight gateway** — 92 rows: deepseek(6), z-ai+zai-org GLM(7), xiaomi MiMo(5), Qwen(11), moonshotai Kimi(5), MiniMaxAI(3), meta(7), mistral, meituan, stepfun, tencent, nvidia, inclusionai, poolside, sakana, stealth — plus closed rows (claude 11, gpt 11, google 7).
+- **commandcode's own `gpt-6.1-sol` row is degraded**: `api: openai-completions`, `reasoning: false`, no thinking efforts, cost 0. The pay-per-token **`openai` provider has no credential here** (no `OPENAI_API_KEY`, no auth entry); `openai-codex` is the only reachable OpenAI route, and its `gpt-6.1-sol` is the real reasoning model (efforts low→max, 500K ctx, $2/$10).
+- **`reviewer.md` pins `model: "@plan"`**, so "plan and review" is one knob.
+- `commandcode/xiaomi/mimo-v2.6-flash` sends image input (vision-capable) but advertises **no thinking efforts** — the vision selector must carry no `:level`; `commandcode/deepseek/deepseek-v4.1-flash` advertises low/high/max, so `:max` is valid.
+
+Change (repo): `config/omp/config.yml` gains `modelPresets.commandcode-openai` — commandcode open-weight roles with `plan: openai-codex/gpt-6.1-sol:high` and `slow: openai-codex/gpt-6.1-sol:medium` — while both `modelPresets.commandcode` and `commandcode-openai` move `vision` → `commandcode/xiaomi/mimo-v2.6-flash`, and `commandcode` moves `slow` → `commandcode/deepseek/deepseek-v4.1-flash:max`. Mirrored to the live `~/.omp/agent/config.yml`.
+
+Evidence: `omp config get modelPresets --json` lists all four presets with the new roles; runtime `/modelpreset list` over `omp --mode rpc` returned `commandcode, commandcode-openai, openai-codex, opencode-go` (`agentInvoked: false`); `omp models find` resolved all three selectors (`commandcode/deepseek/deepseek-v4.1-flash` ×2, `openai-codex/gpt-6.1-sol` ×1, `commandcode/xiaomi/mimo-v2.6-flash` ×1).
+
+Caveat: the repo top-level `modelRoles.plan` (`commandcode/zai-org/GLM-5.3:high`) still differs from the live one (`commandcode/z-ai/glm-5.3-flash:high`) — a preset switch at the terminal rewrote the global roles. Because the omp activation copies the repo file over the live one, the next `hm-switch` restores the repo's top-level plan.
+
 ## 2026-10-12 — Luvus Web published through a Cloudflare Tunnel (`cf tunnels`) behind Access email OTP
 
 User asked for the Luvus browser client reachable from the public internet, and to research Cloudflare's newer "publish an app from the machine" flow.
