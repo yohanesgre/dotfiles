@@ -4,6 +4,25 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-22 — MCP upkeep: engram v3.0.0 → v3.5.2 (+3 agent tools), jev-mcp 0.14.5, codegraph already current
+
+Asked whether codegraph, jev-mcp or engram had upstream updates.
+
+Findings:
+- **codegraph** 1.6.2 installed = npm `@colbymchenry/codegraph` latest and GitHub release `v1.6.2` (2026-10-03). No change.
+- **jev-mcp** `@jkudish/jev-mcp` 0.14.3 → 0.14.5. Both releases are dependency-only (0.14.4: TypeSafe SDK 0.7.0; 0.14.5: Hono 4.13.13, "no tool behavior changes"). Tool surface unchanged at 12; the dotfiles install already tracks `@latest`, so no repo change.
+- **engram** 3.0.0 → 3.5.2 (2026-10-21). The agent MCP profile grows 19 → 22 tools, adding `mem_consolidate`, `mem_judge_many`, `mem_session_finalize`; all 19 previous names remain. Upstream highlights since 3.0.0: atomic consolidation with plan/confirm + ownership checks, compact search, paginated observation history, explicit prompt sharing, local project aliases, session-owned Pi lifecycle, bundled-store upgrade recovery. The OpenCode adapter keeps the same `ENGRAM_BIN`/`ENGRAM_URL`/`ENGRAM_PORT` (default 7437) contract; the v3.0.0→v3.5.2 diff is the Memory Protocol prompt text, V2 foreign-location ownership filtering, global-authority revocation, and `windowsHide`.
+
+Change (live): backed up the store first (`sqlite3 .backup` → `~/.engram/backups/engram-pre-3.5.2-20261022.db`, 11 MB, 746 observations / 279 sessions / 634 prompts verified in the copy), then stopped `engram-serve`, installed the checksum-verified tarball to `~/.local/bin/engram`, and started the unit. jev-mcp updated in place with `bun install -g --trust @jkudish/jev-mcp@latest`. The live OpenCode plugin was refreshed with the same cmp-guarded copy the activation performs (it loads on the next OpenCode start).
+
+Change (repo):
+- `home/modules/upstream/default.nix` — engram pin `v3.0.0` → `v3.5.2` (`engram_3.5.2_linux_amd64.tar.gz`); comment now states the vendored adapter and binary are bumped together.
+- `config/opencode/plugins/engram.ts` — re-vendored byte-for-byte from upstream tag `v3.5.2` (1335 lines, was 1218).
+- `home/modules/opencode/default.nix` — vendored-plugin comment updated to v3.5.2.
+- `config/opencode/CONFIGURATION.md` — server table (codegraph v1.6.0 → v1.6.2, engram v3.5.2 / 22 tools), engram history paragraph, engram plugin bullet (tag, line count, tool count, tarball), and the config-key paragraph.
+
+Evidence: release `checksums.txt` SHA256 `106a43ca8f43a27c2c260a6787151c3be6d91c5ed3d5e454e6140527adf92e01` matched the downloaded tarball; `engram --version` 3.5.2; `/health` reports `version: 3.5.2` with the same `instance_id` and the unit active; `engram stats --all` unchanged at 746/279/634; a live stdio handshake of `engram mcp --tools=agent` lists 22 tools including the three new names; `engram search` returns real memories; `engram doctor` keeps the pre-existing `session_project_directory_mismatch` warning (6 findings, data-level). jev-mcp wrapper handshake lists the same 12 `jev_*` tools at 0.14.5. `bash scripts/validate.sh` → 1464 passed, 0 failed, 4 skipped; `nix build '.#homeConfigurations."yohanes@desktop".activationPackage'` rc 0. No commit, no switch (live binary/plugin updated directly).
+
 ## 2026-10-16 — Luvus `opencode.pulse` module unlinked; dotfiles activation kept but gated off
 
 User asked to disable the Luvus module for OpenCode, then narrowed the ask: unlink it, but keep the code ("don't remove entirely").

@@ -172,7 +172,7 @@ in
   '';
 
   # engram plugin: OpenCode event adapter for the engram HTTP server, vendored
-  # byte-for-byte from upstream v3.0.0 (type-only @opencode-ai/plugin import,
+  # byte-for-byte from upstream v3.5.2 (type-only @opencode-ai/plugin import,
   # zero runtime deps). Sourced from the flake store path (not
   # $HOME/projects/dotfiles) so it deploys from any checkout or worktree —
   # same pattern as the gh plugin below.

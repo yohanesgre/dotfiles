@@ -89,18 +89,20 @@
     curl -fsSL https://raw.githubusercontent.com/rtk-ai/rtk/master/install.sh | sh 2>&1 || warn "rtk install/update failed (continuing)"
 
     # engram: Gentleman-Programming/engram — persistent memory MCP server for
-    # AI coding agents (MIT, Go single binary). Pinned to v3.0.0 (2026-10-01):
-    # gnu/arm64 assets are published upstream, so the pinned tarball is
+    # AI coding agents (MIT, Go single binary). Pinned to v3.5.2 (2026-10-21):
+    # linux amd64/arm64 assets are published upstream, so the pinned tarball is
     # checksum-verified against the release checksums.txt before extraction and
     # installed to ~/.local/bin (mode 755). Re-running installs the pin.
+    # The OpenCode adapter (config/opencode/plugins/engram.ts) is vendored from
+    # the same tag — bump both together.
     if is_upstream engram; then
       info "updating engram..."
     else
       info "installing engram (Gentleman-Programming)..."
     fi
     engram_tmp="$(mktemp -d)"
-    engram_url="https://github.com/Gentleman-Programming/engram/releases/download/v3.0.0"
-    engram_asset="engram_3.0.0_linux_amd64.tar.gz"
+    engram_url="https://github.com/Gentleman-Programming/engram/releases/download/v3.5.2"
+    engram_asset="engram_3.5.2_linux_amd64.tar.gz"
     if curl -fsSL -o "$engram_tmp/$engram_asset" "$engram_url/$engram_asset" \
        && curl -fsSL -o "$engram_tmp/checksums.txt" "$engram_url/checksums.txt"; then
       engram_expected="$(grep -F "  $engram_asset" "$engram_tmp/checksums.txt" | awk '{print $1}')"
@@ -108,7 +110,7 @@
       if [ -n "$engram_expected" ] && [ "$engram_expected" = "$engram_actual" ] \
          && tar -xzf "$engram_tmp/$engram_asset" -C "$engram_tmp" engram \
          && install -m 755 "$engram_tmp/engram" "$HOME/.local/bin/engram"; then
-        info "engram v3.0.0 installed"
+        info "engram v3.5.2 installed"
       else
         warn "engram checksum mismatch, extraction, or install failed (continuing)"
       fi
