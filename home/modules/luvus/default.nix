@@ -4,6 +4,12 @@
   pkgs,
   ...
 }:
+let
+  # opencode.pulse ("OpenCode Pulse") linking — a Luvus module, not a Nix one.
+  # OFF since 2026-10-16: the module was unlinked from the live luvus server.
+  # Flip to true to re-link ~/projects/luvus-opencode-pulse on the next switch.
+  enableOpencodePulseModule = false;
+in
 {
   # luvus (https://luvus.dev) replaced herdr as the agent multiplexer on 2026-09-23.
   # The binary comes from the upstream installer (home/modules/upstream); this module
@@ -79,39 +85,41 @@
   '';
 
   # opencode.pulse ("OpenCode Pulse"): a Luvus module that publishes authoritative
-  # OpenCode pane/child status. It now lives in its own repo/project at
+  # OpenCode pane/child status. It lives in its own repo/project at
   # ~/projects/luvus-opencode-pulse (the repo root is the module root), extracted
-  # from the former vendored dotfiles copy. Link it once from that project; never
-  # re-link or fail activation when the binary, the server, or the module dir is
-  # missing.
-  home.activation.luvusOpencodePulseModule =
-    lib.hm.dag.entryAfter [ "writeBoundary" "upstreamInstall" ]
-      ''
-        MOD="$HOME/projects/luvus-opencode-pulse"
-        LUVUS="$HOME/.local/bin/luvus"
-        JQ="${pkgs.jq}/bin/jq"
-        warn() { echo "luvus: $*" >&2; }
-        if [ ! -x "$LUVUS" ]; then
-          warn "binary missing — opencode.pulse module not linked (continuing)"
-        elif [ ! -f "$MOD/luvus-module.toml" ]; then
-          warn "opencode.pulse module dir missing — not linked (continuing)"
-        elif "$LUVUS" module info opencode.pulse >/dev/null 2>&1; then
-          REGISTERED="$("$LUVUS" module info opencode.pulse 2>/dev/null | "$JQ" -r '.result.root // ""' 2>/dev/null || true)"
-          if [ "$REGISTERED" = "$MOD" ]; then
-            : # already linked to the standalone project
-          else
-            warn "opencode.pulse linked to $REGISTERED; re-linking to $MOD"
-            $DRY_RUN_CMD "$LUVUS" module unlink opencode.pulse >/dev/null 2>&1 || warn "module unlink failed (continuing)"
-            if $DRY_RUN_CMD "$LUVUS" module link "$MOD" >/dev/null 2>&1; then
-              echo "luvus: re-linked module opencode.pulse"
-            else
-              warn "opencode.pulse module link failed (continuing)"
-            fi
-          fi
-        elif $DRY_RUN_CMD "$LUVUS" module link "$MOD" >/dev/null 2>&1; then
-          echo "luvus: linked module opencode.pulse"
+  # from the former vendored dotfiles copy. Linking is gated by
+  # `enableOpencodePulseModule` above — OFF since 2026-10-16, when the module was
+  # unlinked from the live server; the code is kept so re-enabling is one flip.
+  # When enabled: link it once from that project; never re-link or fail activation
+  # when the binary, the server, or the module dir is missing.
+  home.activation.luvusOpencodePulseModule = lib.mkIf enableOpencodePulseModule (
+    lib.hm.dag.entryAfter [ "writeBoundary" "upstreamInstall" ] ''
+      MOD="$HOME/projects/luvus-opencode-pulse"
+      LUVUS="$HOME/.local/bin/luvus"
+      JQ="${pkgs.jq}/bin/jq"
+      warn() { echo "luvus: $*" >&2; }
+      if [ ! -x "$LUVUS" ]; then
+        warn "binary missing — opencode.pulse module not linked (continuing)"
+      elif [ ! -f "$MOD/luvus-module.toml" ]; then
+        warn "opencode.pulse module dir missing — not linked (continuing)"
+      elif "$LUVUS" module info opencode.pulse >/dev/null 2>&1; then
+        REGISTERED="$("$LUVUS" module info opencode.pulse 2>/dev/null | "$JQ" -r '.result.root // ""' 2>/dev/null || true)"
+        if [ "$REGISTERED" = "$MOD" ]; then
+          : # already linked to the standalone project
         else
-          warn "opencode.pulse module link failed (continuing)"
+          warn "opencode.pulse linked to $REGISTERED; re-linking to $MOD"
+          $DRY_RUN_CMD "$LUVUS" module unlink opencode.pulse >/dev/null 2>&1 || warn "module unlink failed (continuing)"
+          if $DRY_RUN_CMD "$LUVUS" module link "$MOD" >/dev/null 2>&1; then
+            echo "luvus: re-linked module opencode.pulse"
+          else
+            warn "opencode.pulse module link failed (continuing)"
+          fi
         fi
-      '';
+      elif $DRY_RUN_CMD "$LUVUS" module link "$MOD" >/dev/null 2>&1; then
+        echo "luvus: linked module opencode.pulse"
+      else
+        warn "opencode.pulse module link failed (continuing)"
+      fi
+    ''
+  );
 }
