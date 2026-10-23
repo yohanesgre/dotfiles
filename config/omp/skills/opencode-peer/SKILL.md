@@ -88,15 +88,17 @@ harness too.
 | agent | pin | why |
 | --- | --- | --- |
 | `architect`, `reviewer`, `designer` | `glm-5.3-flash-free#max` | architectural, adversarial and design judgment; a miss is expensive |
-| `swe`, `researcher`, `general` | `deepseek-v4.1-flash-free#high` | frequent, well-scoped engineering and navigation |
+| `swe` | `deepseek-v4.1-flash-free#max` | implementation (2026-10-22, user directive); a wrong edit is expensive |
+| `researcher`, `general` | `deepseek-v4.1-flash-free#high` | frequent, well-scoped engineering and navigation |
 | `steward`, `vision`, `explore` | `deepseek-v4.1-flash-free#low` | mechanical, perceptual, high-volume fan-out |
 
 The `#low` / `#high` / `#max` suffix is reasoning effort, not a model id. Model mix and effort
-came from a `jev_classify` triage (2026-10-16) and are **static** — nothing calls jev at
-runtime. To change a pin, edit `peerSubagentPins` in `home/modules/opencode/default.nix` and
-re-run `hm-switch`: that module restarts the service so the new pins take effect. If the service
-is down the tool fails and names it (`systemctl --user start opencode-peer-serve`) rather than
-silently falling back to the shared service.
+came from a `jev_classify` triage (2026-10-16), with `swe` raised to `#max` by user directive
+(2026-10-22), and are **static** — nothing calls jev at runtime. To change a pin, edit
+`peerSubagentPins` in `home/modules/opencode/default.nix` and re-run `hm-switch`: that module
+restarts the service so the new pins take effect. If the service is down the tool fails and
+names it (`systemctl --user start opencode-peer-serve`) rather than silently falling back to the
+shared service.
 
 ## Lanes: how continuity works
 

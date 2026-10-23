@@ -1,7 +1,7 @@
 ---
 description: SWE coding agent. General software engineer — implements features and fixes bugs correctly. Minimal, test-driven, bash-first. Use for bounded implementation tasks where the approach is clear.
 mode: all
-model: opencode-go/deepseek-v4.1-flash#high
+model: opencode-go/deepseek-v4.1-flash#max
 steps: 60
 permissions:
   - action: "*"

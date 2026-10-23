@@ -27,7 +27,7 @@ modelPresets:
   # route — the pay-per-token `openai` provider has no credential here.
   commandcode-openai:
     modelRoles:
-      default: commandcode/deepseek/deepseek-v4.1-flash:high
+      default: openai-codex/gpt-6.1-sol:auto
       slow: openai-codex/gpt-6.1-sol:medium
       plan: openai-codex/gpt-6.1-sol:high
       advisor: commandcode/deepseek/deepseek-v4.1-flash

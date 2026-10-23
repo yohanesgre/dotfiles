@@ -3,6 +3,7 @@ name: swe
 description: SWE coding agent. Implements features and fixes bugs with a minimal, test-driven bash-first workflow. Use for bounded implementation tasks where the approach is already clear.
 # Route through modelRoles.task (config.yml) so the selector stays in one place.
 model: "@task"
+thinkingLevel: max
 tools:
   - read
   - glob

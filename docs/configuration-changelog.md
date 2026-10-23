@@ -4,6 +4,46 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-22 — omp `commandcode-openai` preset: `default` → `gpt-6.1-sol:auto`
+
+User: "for commandcode-openai, use sol 6.1 with auto thinking effort. this is for omp only."
+
+Change (repo): `config/omp/config.yml` — `modelPresets.commandcode-openai.modelRoles.default`
+`commandcode/deepseek/deepseek-v4.1-flash:high` → `openai-codex/gpt-6.1-sol:auto`. All other
+roles stay as they were (`slow`/`plan` keep `gpt-6.1-sol:medium`/`:high`, the commandcode
+open-weight roles are untouched), so the preset still crosses commandcode with one closed
+OpenAI model. No opencode-side file changed.
+
+`:auto` is a first-class selector suffix (`off|minimal|low|medium|high|xhigh|max|auto|inherit`,
+`omp://models.md`) and resolves per turn, capped by `providers.autoThinkingMaxEffort` (omp
+default `xhigh`); the session's level follows the suffix when the preset is switched.
+
+Evidence: `omp config get modelPresets --json` → `commandcode-openai.modelRoles.default` is
+`openai-codex/gpt-6.1-sol:auto`; runtime selector check — `omp -p --model
+openai-codex/gpt-6.1-sol:auto` ran on `openai-codex/gpt-6.1-sol` and the session recorded the
+auto-resolved effort (`low` on a trivial prompt), while a `:max` control recorded `max`, so the
+suffix parses and auto resolves dynamically; `bash scripts/validate.sh` 2176 passed, 0 failed.
+
+## 2026-10-22 — every `swe` agent on deepseek-v4.1-flash raised to max reasoning effort
+
+User directive: "for every swe agents that are using dsf 4.1 flash, update it to use max effort."
+`deepseek-v4.1-flash` advertises `low,high,max` (`omp models find`), so `#max` is a native
+effort, not a custom variant. Scope is the three `swe` agent definitions, not the other
+flash-based roles (`researcher`/`general` stay `#high`, `steward`/`vision`/`explore` stay `#low`).
+
+Change (repo):
+- `config/opencode/agents/swe.md` — `model: opencode-go/deepseek-v4.1-flash#high` → `#max`.
+- `config/omp/agents/swe.md` — added `thinkingLevel: max` (model stays `@task`, i.e.
+  `commandcode/deepseek/deepseek-v4.1-flash`, so other `@task` consumers are unaffected).
+- `home/modules/opencode/default.nix` — `peerSubagentPins.swe`
+  `opencode/deepseek-v4.1-flash-free#high` → `#max`; the triage comment now records the
+  override (4 max / 2 high / 3 low).
+- `config/opencode/CONFIGURATION.md` — agent pin summary line.
+- `config/omp/skills/opencode-peer/SKILL.md` — peer pin table splits `swe` out at `#max`.
+
+Effect: `hm-switch` restarts `opencode-peer-serve` (see `opencodePeerServeReload`), so peer
+runs pick up the pin; the user's own opencode harness picks up the agent file on copy/next start.
+
 ## 2026-10-22 — MCP upkeep: engram v3.0.0 → v3.5.2 (+3 agent tools), jev-mcp 0.14.5, codegraph already current
 
 Asked whether codegraph, jev-mcp or engram had upstream updates.

@@ -16,12 +16,13 @@ let
   # Pins are static: no jev or any other judgment runs at runtime. Both the model mix and
   # the reasoning effort were triaged with jev_classify on 2026-10-16 — the effort pass
   # returned 3 max / 3 high / 3 low, 8 auto plus `designer` flagged for review and accepted
-  # on a 0.56 margin. `#low|#high|#max` is reasoning effort, not a model id.
+  # on a 0.56 margin. `swe` was raised high → max by user directive 2026-10-22 (now
+  # 4 max / 2 high / 3 low). `#low|#high|#max` is reasoning effort, not a model id.
   peerSubagentPins = {
     architect = "opencode/glm-5.3-flash-free#max";
     reviewer = "opencode/glm-5.3-flash-free#max";
     designer = "opencode/glm-5.3-flash-free#max";
-    swe = "opencode/deepseek-v4.1-flash-free#high";
+    swe = "opencode/deepseek-v4.1-flash-free#max";
     researcher = "opencode/deepseek-v4.1-flash-free#high";
     general = "opencode/deepseek-v4.1-flash-free#high";
     steward = "opencode/deepseek-v4.1-flash-free#low";

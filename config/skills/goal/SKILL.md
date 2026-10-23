@@ -152,7 +152,7 @@ files. Write the wave graph into `plan.md`.
 
 One folder `status/<plan>/` (name `[a-z0-9-]`). Open it per the
 `work-plans` skill: copy
-`~/.agents/skills/work-plans/assets/plan-template.md` → `plan.md`, fill
+`~/.agents/skills/work-plans/assets/orchestration-plan-template.md` → `plan.md`, fill
 X / Scope / Graph A / E / R / Lanes, write `status.md`
 (`state: PLAN`, `ts`, `msg`), append the PLAN line to `status/TIMELINE.md`.
 `ls status/` shows active plans only; no loose files in `status/` root

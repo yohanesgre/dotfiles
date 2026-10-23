@@ -1,21 +1,39 @@
 ---
 name: work-plans
-description: Per-plan work tracking in status/ folders — open, update, and close work plans with lane heartbeats, chronological TIMELINE, and memory links. This is the tracking plane — it tracks plan state and never authors the plan (authoring is the `writing-plans` skill). Use whenever the user mentions work plans, status plans, opening or closing a plan, plan stubs, lanes inside a plan, plan templates, TIMELINE.md, or organizing status/ artifacts per plan instead of flat files — even if they don't say "work-plans".
+description: Create, track, and work through plans in status/ folders using design-thinking. Default execution is the current session implementing the graph and ordered steps in one dedicated git worktree; orchestration is explicit opt-in only. Use whenever the user mentions work plans, status plans, opening or closing a plan, plan stubs, lanes inside a plan, plan templates, TIMELINE.md, or organizing status/ artifacts per plan instead of flat files.
 metadata:
-  requires: []
+  requires:
+    - design-thinking
 ---
 
 # Work Plans
 
 One folder per plan under `status/`. A plan is a unit of work (a feature, a fix batch,
-a grind). Lanes live inside the plan only when parallel tracks need separate heartbeats.
-Single-track plans skip `lanes/` entirely — never invent a lane to fill the shape.
+a grind). The default is one plan, one worktree, and the current session doing the
+implementation. Planning does not imply orchestration.
 
-## Standalone
+## Default workflow
 
-`work-plans` is a leaf: it requires no other skill and never depends on
-its callers (`goal`, `orchestration`, or any other flow). It owns the
-artifact rules only — callers load it, it never loads them.
+1. Load `design-thinking` and its task-relevant reference. Read the problem (X),
+   draw the implementation graph (A), identify break points (E) and dependencies
+   (R), then create a bounded plan with scope, dependency-ordered waves, exact
+   files, and runnable acceptance checks. For interfaces, include Surface<C,V,N>.
+2. If the user asked only for a plan, stop after writing and validating it. Do not
+   create a worktree or start implementation.
+3. When execution is requested, create or resume one dedicated worktree under the
+   project's git rules, then implement the steps directly in the current session.
+4. Verify the changed behavior and compare implementation to the design graph;
+   fix the code or update the graph if they diverge. Record evidence and close the plan.
+
+Do not offer an orchestration menu, dispatch implementation lanes, open panes, or
+load `orchestration` by default. Use it only when the user explicitly requests
+orchestration or invokes its dedicated flow (`/orchestrate` or `/goal`).
+Task count, risk, and independent steps do not opt a plan into orchestration.
+
+This skill owns the plan lifecycle and tracking artifacts; `writing-plans` can
+supply detailed implementation-plan authoring. Neither requires orchestration.
+Explicit orchestrated callers retain ownership of dispatch, gates, and integration;
+they use the optional lane rules below rather than the default execution path.
 
 ## Layout
 
@@ -23,43 +41,41 @@ artifact rules only — callers load it, it never loads them.
 status/
   TIMELINE.md                # append-only, one line per event
   <plan>/                    # name: [a-z0-9-] (e.g. deploy-dashboard)
-    plan.md                  # X, scope, graph — written once at open
-    status.md                # 3-line heartbeat, overwritten on every action
-    lanes/                   # ONLY when parallel; one 3-line file per lane
+    plan.md                  # X, scope, design graph, worktree, acceptance, steps
+    status.md                # 3-line heartbeat, overwritten on significant actions
+    lanes/                   # ONLY for explicitly orchestrated parallel tracks
       <lane>.md
     report.md                # written once at close (DONE | FAILED)
 ```
 
-`ls status/` must show active plans only. No loose files in `status/` root except
-`TIMELINE.md`. Finished plans stay in place until explicitly archived
-(`status/archive/YYYY-MM-DD-<plan>/`); archiving is a move of the whole folder.
+No loose files in `status/` root except `TIMELINE.md`. Finished plans stay in place
+until explicitly archived (`status/archive/YYYY-MM-DD-<plan>/`); archiving is a
+move of the whole folder.
 
 ## Open a plan
 
 Copy `assets/plan-template.md` to `status/<plan>/plan.md` and fill it in.
+Use `assets/orchestration-plan-template.md` only for an explicitly orchestrated
+flow; its dispatch graph, gate, iteration, lanes, and crumb tables are not default
+fields. The implementation design graph remains part of every graph-shaped plan.
 
 States: `PLAN | WAIT | WORKING | DONE | FAILED` (mirror of AGENTS.md).
 `WAIT` = blocked, msg names the blocker. `FAILED` = closed without meeting
-scope within budget; `report.md` is still required.
+scope; `report.md` is still required.
 
-Header fields: `gate:` = execution-gate ack (`<ISO8601> <who> <branch>`)
-when a gated flow drives the plan; `iter:` = current
-`W<n>i<m>` loop position. Omit when unused.
+`plan.md` is the plan of record. Write X, concrete In/Out scope, the
+`design-thinking` graph (A), break points (E), and dependencies (R). These describe
+the implementation, not worker dispatch. Group `## Steps` under wave headings
+(`### W1: ...`, `### W2: ...`). Each wave names its predecessor waves, concrete
+steps and files, and a runnable completion check. One wave is enough for a small
+plan; add waves where dependencies or verification boundaries justify them.
+Record the intended worktree path, branch, and base ref. Mark completed steps as
+work proceeds. `## Acceptance` carries plan-level criteria, one per line, each
+ending `— verify: <runnable command>`.
 
-`plan.md` is the plan of record for the flow that opened it. Design/plan
-artifacts produced elsewhere (a `writing-plans` document, specs, ADRs,
-project plan docs) are inputs — link them, never duplicate them here. The
-`writing-plans` skill authors the plan document; this skill tracks it.
-
-`## Acceptance` carries plan-level criteria, one per line, each ending
-`— verify: <runnable command>`. `## Tasks` maps the atomic crumbs of each splitting lane
-(one table per lane under a `### <lane>` heading): `id` unique per lane (`T1`…);
-`files` comma-separated real paths (never `—`); `resources`
-(lockfiles/artifacts/env/ports) space- or comma-separated, `—` for none;
-`acceptance` non-empty; `gate` an exact command; `edges` direct predecessor ids only.
-Two crumbs in one lane without a direct edge must stay file- and resource-disjoint —
-that is what makes them parallelizable. Delete `## Tasks` unless a lane actually splits;
-`## Acceptance` stays always.
+Specs, ADRs, and existing implementation plans are linked inputs, not duplicate
+plans to maintain. When `writing-plans` authors a new tracked plan, use
+`status/<plan>/plan.md` directly and preserve these tracking fields.
 
 Then write `status/<plan>/status.md`:
 
@@ -79,6 +95,35 @@ Why the 3-line heartbeat: readers (human or agent) see plan state in one glance
 without opening the full plan. Detail lives in `plan.md`, never in `status.md`.
 
 ## Work the plan
+### Isolate before implementation
+
+Keep `status/<plan>/` and `status/TIMELINE.md` in the control checkout. Run all
+implementation edits, setup, checks, and runtime smoke scenarios in the recorded
+worktree; use absolute paths or explicit tool working directories so tracking
+updates do not accidentally redirect implementation into the control checkout.
+
+Load `git-workflow` before creating a branch/worktree or integrating changes.
+Check the project's worktree convention, ignored path, branch/path collisions,
+and base ref. Obtain any approval required by those rules; requesting a plan
+does not authorize git lifecycle actions.
+
+Reuse an existing plan worktree only after verifying its path, branch, and
+existing changes belong to this plan. Otherwise create one dedicated worktree
+(conventional path `.worktrees/<plan>`, branch `omos/<plan>`, from the project's
+declared base). Record the actual path, branch, and base in `plan.md` before
+implementation. Run declared setup and baseline checks inside it. A failed
+creation or unrelated dirty worktree means WAIT with the cause, not a fallback
+to implementation in the control checkout.
+
+Execute waves in dependency order in this session, with steps sequential by
+default in the same worktree. Verify a wave's completion check before starting
+its dependent waves. Independent steps may share a wave; that does not authorize
+parallel dispatch. Update checkboxes and the heartbeat with the current wave
+after significant actions. Resume from the recorded worktree and first unfinished
+wave/step; do not spawn a lane just to execute a plan.
+
+### Heartbeats
+
 
 On every significant action, overwrite `status.md` with fresh `ts`:
 
@@ -89,19 +134,36 @@ msg: <one line: latest step>
 ```
 
 Blocked → `state: WAIT` with a msg naming the blocker; never leave a blocked
-plan silently WORKING. Lane files use the same states.
+plan silently WORKING.
 
-Multi-track: one file per lane under `lanes/` in the same 3-line format.
-The plan-level `status.md` stays the summary — it mirrors the slowest lane, it never
-dumps lane logs. Lane files stay small for the same reason as `status.md`.
-A lane flips DONE only when its PR merges (or it is terminally parked);
-while its PR sits open through review/CI it stays WORKING, msg naming the PR.
+### Optional orchestration tracking
+
+Only an explicitly orchestrated flow uses lane tracking. One file per parallel
+lane under `lanes/` uses the same 3-line heartbeat. The plan-level `status.md`
+summarizes the slowest lane; it never dumps lane logs. A lane flips DONE only
+when its PR merges (or it is terminally parked); while review/CI is open it
+stays WORKING with the PR in its msg.
+
+The orchestration template's `gate:` records its execution-gate acknowledgment
+(`<ISO8601> <who> <branch>`); `iter:` records `W<n>i<m>`. Omit unused fields.
+Its optional `## Tasks` maps atomic crumbs per splitting lane: one table under
+each `### <lane>` heading, with `id` (`T1`…), `owner`, comma-separated real
+`files`, `resources` (`—` for none), `acceptance`, exact `gate` command, and
+direct predecessor `edges`. Crumbs without a direct edge must be file- and
+resource-disjoint. Omit `## Tasks` unless a lane actually splits.
 
 Reopened work flips out of DONE first: any new request on a DONE plan (commit,
 fixup, follow-up) → overwrite `status.md` to WORKING/WAIT before acting, then
 append a TIMELINE line. Never act on a DONE plan while it still reads DONE.
 
 ## Close a plan (DONE)
+For default execution, DONE means the scoped implementation and acceptance
+checks are complete, not that a PR merged. Record whether changes are
+uncommitted or awaiting integration; do not claim they shipped. Keep the
+worktree and branch for review or follow-up. Commit, push, PR, merge, and
+worktree removal remain separate actions governed by `git-workflow`.
+Explicit orchestrated flows keep their own merge-based close-out rules.
+
 
 1. Write `status/<plan>/report.md`:
 
@@ -109,7 +171,7 @@ append a TIMELINE line. Never act on a DONE plan while it still reads DONE.
 # Report: <plan>
 created: YYYY-MM-DD
 sessions: <session ids>
-result: <what shipped, where>
+result: <what was implemented, worktree/branch, integration state>
 tests: <command + one-line output each>
 deviations: <contract breaks, or "none">
 ```
@@ -122,10 +184,10 @@ deviations: <contract breaks, or "none">
 
 ## Close a plan (FAILED)
 
-Acceptance can't be met within budget: write `report.md` the same way
-(`result: failed — <what shipped>; blockers: ...`), flip `status.md` to
-`state: FAILED`, append the TIMELINE line. A plan never stays WORKING after
-effort stops.
+Acceptance cannot be met and work is being closed: write `report.md` the same
+way (`result: failed — <what was implemented>; blockers: ...`), flip `status.md`
+to `state: FAILED`, append the TIMELINE line. Use WAIT instead when work is
+blocked but expected to resume.
 
 ## Chronology
 
@@ -169,12 +231,12 @@ verdict never opens, blocks, or closes a plan.
 - **Open (before work starts).** `jev_triage` on `plan.md` (pass it as a
   `path` item — read server-side, never into context) with checks:
   `scope_bounded` (In and Out both concrete), `acceptance_verifiable`
-  (every criterion names a runnable verify command), `graph_valid` (waves
-  ordered by dependency; one owner per node; no shared-file collision),
-  `crumb_disjoint` (parallel crumbs in one lane share no file/resource and no
-  missing edge), `acceptance_coverage` (each frozen criterion carries a verify
-  command and a matching gate row), `no_placeholders` (no TBD/TODO/empty
-  sections). A `no` is fixed before the execution gate — never executed past.
+  (every criterion names a runnable verify command), `no_placeholders` (no
+  TBD/TODO/empty sections). For explicitly orchestrated plans also check
+  `graph_valid` (dependency-ordered waves, one owner per node, no shared-file
+  collision), `crumb_disjoint`, and `acceptance_coverage` against gate rows.
+  Fix artifact issues before work starts; do not confuse the implementation
+  graph with a dispatch graph or invent an orchestration execution gate.
 - **Close (before flipping DONE/FAILED).** `jev_check` on a small assembled
   state — the frozen acceptance list from `plan.md` plus `report.md` and
   `status.md`: "does every frozen criterion have matching evidence in the
@@ -186,7 +248,7 @@ Failure mode: jev unreachable, errors, or `abstain` → skip; fall back to
 
 ## Non-scope
 
-This skill never touches implementation code or design docs (whatever
-paths the project declares).
-It never commits, pushes, or merges — hand that to `git-workflow`.
+Planning-only requests never start implementation. Execution stays within the
+plan's scope and recorded worktree; it does not authorize automatic commits,
+pushes, PRs, merges, or worktree deletion. Follow `git-workflow` for those actions.
 Plan names use `[a-z0-9-]`; anything else is rejected at the boundary.

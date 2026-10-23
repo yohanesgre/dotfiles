@@ -1,9 +1,9 @@
 # Plan: <name>
 created: YYYY-MM-DD
-source: <origin, if migrated — else omit>
-state: PLAN | WAIT | WORKING | DONE | FAILED
-gate: <ISO8601 approved + who + branch, after execution gate — else omit>
-iter: <W<n>i<m> current position>
+source: <linked input plan or spec — omit when none>
+worktree: <absolute path; intended until execution starts>
+branch: <plan branch>
+base: <project base ref>
 
 ## X (problem)
 1–3 sentences: what + why. No background essay — link artifacts instead.
@@ -15,34 +15,35 @@ iter: <W<n>i<m> current position>
 ## Acceptance
 - <criterion> — verify: <runnable command>
 
-## Graph A (happy path)
-```ts
-step 1 → step 2 → DONE
-```
+## Graph A (implementation happy path)
+Draw the actual call/data/content flow using `design-thinking`, not worker lanes.
+For interface work, include Surface<C,V,N>: content flow, void states, and needs.
 
 ## E (break points)
 | Node | Break | Treatment |
 |---|---|---|
+| <implementation node> | <failure or void state> | <handling> |
 
-## R
-{what each step needs: files, sessions, accounts, approvals}
-- memory: `mem_current_project` + `mem_context` at open · `mem_save` on DONE (summary + plan.md/report.md paths)
+## R (dependencies)
+- <what each implementation node needs: exact files, interfaces, services, approvals>
 
-## Lanes (only when parallel — else delete this section)
-- <lane>: <files touched> — <content owned>
+## Steps
+Group steps into dependency-ordered waves; use one wave when no split is needed.
 
-## Tasks (only when a lane splits into crumbs — else delete this section)
-One table per splitting lane; the lane name is the `###` heading above its table.
-Rules: `id` unique per lane (`T1`…); `files` comma-separated real paths (never `—`); `resources`
-`—` or space-/comma-separated tokens (lockfiles/artifacts/env/ports); `acceptance` non-empty; `gate` exact
-command; `edges` `—` or comma-separated predecessor ids (DIRECT dependency only). Two crumbs in
-one lane without a direct edge between them must stay file- and resource-disjoint (that is what
-makes them parallelizable).
+### W1: <deliverable>
+Depends on: none
+Completion check: <runnable command and expected result before dependent waves start>
 
-### <lane>
-| id | owner | files | resources | acceptance | gate | edges |
-|---|---|---|---|---|---|---|
-| T1 | <owner> | <paths> | — | <criterion> | <gate cmd> | — |
+- [ ] <implementation step>
+  - Files: <exact paths>
+  - Change: <concrete implementation>
+  - Verify: <runnable command and expected result>
+
+## Blockers
+- <known blocker and resolution — or "none">
+
+## Inputs
+- <governing docs or existing plan links — omit when none>
 
 ## Memory
 - `mem_save` on DONE: summary + paths to plan.md and report.md
