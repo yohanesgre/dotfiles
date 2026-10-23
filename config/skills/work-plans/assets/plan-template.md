@@ -15,6 +15,8 @@ base: <project base ref>
 ## Acceptance
 - <criterion> — verify: <runnable command>
 
+Every criterion must hold at close; unmet acceptance becomes findings and a
+replan, never DONE.
 ## Graph A (implementation happy path)
 Draw the actual call/data/content flow using `design-thinking`, not worker lanes.
 For interface work, include Surface<C,V,N>: content flow, void states, and needs.
@@ -39,6 +41,13 @@ Completion check: <runnable command and expected result before dependent waves s
   - Change: <concrete implementation>
   - Verify: <runnable command and expected result>
 
+## Findings
+Append one row per failed check, review, CI run, or smoke scenario. Fix steps
+stay in this plan (never a new folder); resolve the row with evidence.
+
+| id | source | evidence | affected lanes/files | fix steps | depends on | verify | resolution |
+|---|---|---|---|---|---|---|---|
+| F1 | <check/review/CI/smoke> | <command + short output> | <lane or paths> | <ordered steps> | <finding/step> | <runnable command> | <evidence + date> |
 ## Blockers
 - <known blocker and resolution — or "none">
 
@@ -46,4 +55,5 @@ Completion check: <runnable command and expected result before dependent waves s
 - <governing docs or existing plan links — omit when none>
 
 ## Memory
-- `mem_save` on DONE: summary + paths to plan.md and report.md
+- `mem_save` on DONE: summary + resolved paths to `$PLAN_DIR/plan.md` and
+  `$PLAN_DIR/report.md`

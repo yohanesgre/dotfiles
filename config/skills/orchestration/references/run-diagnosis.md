@@ -7,13 +7,14 @@ durations in the report; the user asks why orchestration is slow/broken.
    `ORCH_REPO=<repo> run-report.sh`. It is the only view of the central log
    (`$HOME/.local/state/orchestration/runs.jsonl`).
 2. **Classify the signal → next evidence.**
-   - lane `rc≠0` → the lane's return file (`<worktree>/../<slug>-return.md`)
-     + its captured log (`<slug>-return.md.tmp`). Classify: brief ambiguity ·
+   - lane failed result → native completion + the coordinator-persisted
+     lane-attempt section in `$PLAN_DIR/plan.md` + the captured gate log.
+     The three-line lane heartbeat points there. Classify: brief ambiguity ·
      missing/wrong gate · environment (binary/auth) · genuine task failure.
      Only the first two are skill problems; environment and a real task
      failure are not.
-   - plan `verdict != DONE` → `status/<plan>/report.md` + `status/TIMELINE.md`
-     + the FIRST breaking wave's return files.
+   - plan `verdict != DONE` → `$PLAN_DIR/report.md` + `$PLAN_ROOT/TIMELINE.md`
+     (resolve both with `plan-root.sh`) + the FIRST breaking wave's persisted lane-attempt sections.
    - repeated failures (same repo/plan/lane) → the brief or gate is
      under-specified.
    - `iter>1` → rework churn; inspect what changed per iteration.
@@ -22,10 +23,11 @@ durations in the report; the user asks why orchestration is slow/broken.
 3. **Find the owning text; edit ONLY there.** Single-writer discipline —
    never restate a rule in two files.
    - routing/caps → `SKILL.md` § Routing + `references/lane-dispatch.md`
-   - brief fields/runner → `SKILL.md` §4.2 + `references/cli-reference.md`
-   - close-out/panes → `references/lane-dispatch.md` step 8 + `SKILL.md`
+   - brief/result/dispatch/join → `SKILL.md` §4.2–4.3 +
+     `references/native-dispatch.md`
+   - close-out/worktrees → `references/lane-dispatch.md` step 8 + `SKILL.md`
      § Phase 5 (plan close-out)
-   - logging/report → `references/cli-reference.md` § Run log
+   - logging/report → `references/native-dispatch.md` § Run log
 4. **Smallest evidence-backed change.** `SKILL.md` ≤500 lines ·
    `bash scripts/validate-skills.sh` rc 0 · no speculative rewrites ·
    advisory layers stay advisory.
@@ -37,4 +39,5 @@ durations in the report; the user asks why orchestration is slow/broken.
    shows history; a skill-wide change also gets a
    `docs/configuration-changelog.md` entry.
 7. **Escalate rather than guess**: an unmappable signal → write the diagnosis
-   into the plan's `TIMELINE.md`/`report.md` and hand it to the user.
+   into the plan's `$PLAN_ROOT/TIMELINE.md`/`$PLAN_DIR/report.md` and hand it
+   to the user.

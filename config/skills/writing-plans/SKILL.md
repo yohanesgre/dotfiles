@@ -18,8 +18,8 @@ implementation steps from that graph. This does not require orchestration.
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
 **Save plans to:** `.agents/plans/YYYY-MM-DD-<feature-name>.md`
-- For a tracked work plan, author directly in `status/<plan>/plan.md` using the `work-plans` template and preserve its worktree, scope, and acceptance fields. Other user preferences for plan location override the default.
-- **Local artifact:** never commit or push the plan. Gitignore the plan directory if it is tracked.
+- For a tracked work plan, author directly in `$PLAN_DIR/plan.md` (`PLAN_ROOT=$(bash ~/.agents/skills/work-plans/scripts/plan-root.sh)`, `PLAN_DIR="$PLAN_ROOT/<plan>"`) using the `work-plans` template and preserve its worktree, scope, and acceptance fields. Tracking artifacts live outside the repository; do not create an in-repo status tree for them. Other user preferences for plan location override the default.
+- **Local artifact:** never commit or push the standalone plan document. Gitignore `.agents/plans/` when it is tracked. A tracked work plan lives outside the repository under `$PLAN_ROOT`.
 
 ## Scope (authoring plane)
 
@@ -27,7 +27,7 @@ This skill **authors** the plan document — the what and how (files, code, test
 
 - `work-plans` owns heartbeat, timeline, worktree setup, and closure. This skill may author its `plan.md` directly; do not create a second implementation-plan document for the same work.
 - If an implementation plan already exists elsewhere, link it as input from the tracked plan rather than maintaining duplicate task lists.
-- Default execution uses `work-plans`: one dedicated worktree, with the current session implementing ordered steps. Load `orchestration` only when explicitly requested or invoked through `/goal` or `/orchestrate`.
+- Default execution uses `work-plans`: one dedicated worktree, with the current session implementing ordered steps. Explicit `/orchestrate` loads `orchestration`; explicit `/goal` loads `goal` first to choose inline single-plan or multi-plan command-center routing.
 
 ## Scope Check
 
@@ -142,14 +142,18 @@ Fix issues inline, then move on. Add a task for any uncovered requirement. For a
 
 After saving the plan, report its path and the default execution context:
 the current session will implement it step by step in one dedicated worktree,
-using `work-plans` for setup, progress, verification, and closure.
+using `work-plans` for setup, progress, verification, and closure. Tracking
+lives under `$PLAN_ROOT` (resolved by `plan-root.sh`), never in the repository
+or the worktree.
 
 - **Planning-only request:** stop after saving and checking the plan. Do not create
   a worktree or begin implementation.
 - **Execution already requested:** continue with the `work-plans` workflow, subject
   to the project's git approvals. Do not ask the user to choose an execution mode.
-- **Explicit orchestration request (`/goal` or `/orchestrate` included):** load
-  `orchestration` and follow its execution gate and lane lifecycle.
+- **Explicit `/goal`:** return the authored plans to `goal` for approval and
+  single-plan versus command-center routing; do not bypass it by starting lanes.
+- **Explicit `/orchestrate`:** load `orchestration` and follow its single-plan
+  execution gate and lane lifecycle.
 
 Do not recommend orchestration, generate a required-orchestration header, or
 load it merely because the plan has several tasks.

@@ -1,234 +1,191 @@
 ---
 name: goal
-description: Goal-driven execution loop — breakdown a user goal, deepen with design graphs, protocol the work, track in work-plans, then hand the frozen plan to the `orchestration` skill to execute in isolated luvus lanes until done. Use ONLY when the user invokes `/goal`. This skill is `/goal`-scoped and does not govern ordinary sessions, other commands, or other agents.
+description: Goal intake, design-thinking, decomposition and acceptance. One plan hands off inline to orchestration; multiple plans keep the active session as command center and use one separate coordinator harness per executing plan through H2H. Use ONLY for an explicit /goal invocation, not ordinary work-plans or unrelated sessions.
 metadata:
   requires:
-    - orchestration
+    - design-thinking
     - work-plans
+    - orchestration
 ---
 
 # Goal
 
-Turn a goal prompt into DONE through a loop. This skill owns the goal
-lifecycle: intake → classify → design → protocol → track. Once the plan is
-frozen and the execution gate is approved, it hands off to the
-`orchestration` skill, which owns execution (isolate → lanes → verify →
-close-out → review ∥ CI → merge → loop). The loop ends only when
-acceptance criteria hold and gates are green — never on effort spent.
+Own the overall goal, not every plan's implementation. Keep one plan of record
+per independently deliverable outcome. `work-plans` owns tracking;
+`orchestration` owns one plan's execution and native lane subagents.
 
-Scope: this skill runs ONLY under an explicit `/goal` invocation. Its
-guard and policies do NOT apply to ordinary sessions, other commands, or
-other agents. Outside `/goal`, the global/repo AGENTS.md rules govern.
+These rules apply only to explicit `/goal`. Ordinary work-plans remains
+standalone and does not opt into orchestration because it has several steps.
 
-Autonomy: planning is human-gated (goal clarity, design direction,
-protocol + model/effort approval); the execution gate is the LAST human
-gate. After it, execution is full-auto and owned by `orchestration` — the
-user reads wave reports async and the loop never blocks on them. Approving
-the gate pre-authorizes exactly the lifecycle `orchestration` enumerates
-(branch → commit → push → PR → review ∥ CI → auto-merge when both green)
-for exactly the named lanes/branches. The gate approves scope and waves.
+## Roles and routing
 
-Runtime: opencode (v2) only; execution runs on luvus lanes. Exact pinned
-CLI signatures live in the `orchestration` skill
-(`orchestration/references/cli-reference.md`) — the ONLY forms to use;
-never probe `--help` (`luvus help all` is the single sanctioned discovery
-command, and only outside a lane). If this session is not opencode, STOP
-and flag before doing anything.
+Choose the role before execution and preserve it:
 
-## Requires
+- **Planning only:** intake, design and tracked plans; no worktrees, processes,
+  branches, execution or activation merely because a plan was saved.
+- **One plan:** this session may become its inline `/orchestrate` coordinator.
+  No additional harness is needed. Load `orchestration` at that handoff.
+- **Multiple concurrent plans:** this session remains the command center.
+  Dispatch one separate coordinator harness per ready plan through H2H;
+  each coordinator runs `/orchestrate` with its own native lane subagents.
+  Two concurrent plans use three harness instances including the center.
 
-- `orchestration` — the execution plane. Load it at the handoff (after
-  Phase 3 + the frozen plan) and follow it from the execution gate onward.
-- `work-plans` — the tracking-plane rules. Load it at Phase 3 to open the
-  plan; `orchestration` re-loads it for in-loop heartbeats and close-out.
+UI, database and backend work within one feature are usually lanes/waves,
+not three plans. Separate plans only when outcomes and acceptance can stand
+on their own. A plan's internal dependencies belong to its coordinator;
+only cross-plan dependencies belong to the center.
 
-## The graph (this skill IS the pipeline for it)
+An already-running inline coordinator cannot silently become a multi-plan
+center while retaining its old ownership. Complete or explicitly hand off
+that ownership under verified shutdown, or use a separate center session.
+A coordinator never invokes `/goal` to bootstrap another center.
 
-```
-A — happy path
-goal → intake → classify → design → protocol → track → GATE
-     [execution owned by the `orchestration` skill:]
-     → isolate → wave{lanes} → verify → per-lane close(PR)
-     → review-wave{reviewer_i ∥ CI} → merge(CI ∧ review) → loop: next wave | DONE
+## Design graph
 
-E — planning break points (coordinator failures, not worker failures)
-wrong context · missing input (invisible edge) · misinterpretation ·
-ambiguous scope · missing acceptance · architecture fork · docs conflict
-[execution break points (luvus/env/model/lane/reviewer): see `orchestration`]
+```text
+/goal -> intake + design-thinking -> bounded plans + dependencies
+      -> frozen acceptance + execution approval
+      -> one plan: inline /orchestrate
+      -> multiple plans: command center
+           -> reserve ready plans -> H2H start coordinator per plan
+           -> native lane execution inside each coordinator
+           -> verify outcome evidence -> release dependent readiness
+           -> all required outcomes + goal acceptance -> aggregate report
 
-R — every lane prompt (built at protocol time) carries
-subgraph (nodes+edges) · WHY · governing docs · acceptance · gate · forbidden
+plan findings -> owning coordinator -> same plan's planning step
+cross-plan conflict -> center -> revise affected graph + approval
 ```
 
-Nodes are tasks; edges are data dependencies. Independent nodes run
-parallel (one lane each); an edge gates the dependent wave. One node, one
-owner. Read this graph before Phase 0; if the work doesn't match it, fix
-the work or fix the graph — never leave them disagreeing. The execution
-half of this graph (lane lifecycle, execution break points, the
-delegated-subgraph boundary) is owned and detailed by the `orchestration`
-skill.
+## Intake and design
 
-## Phase 0 — Intake + triage
+1. Read the goal from the invocation; `/goal` without a goal asks for it.
+2. Load `design-thinking` and the relevant reference. Identify X (problem),
+   draw A (flow), identify E (breaks) and R (dependencies). For an interface,
+   include Surface<C,V,N>. Read the repository's design authority first.
+3. Specify independently verifiable outcomes, scope In/Out, acceptance,
+   files/contracts/resources, prerequisite evidence and failure handling.
+   Resolve material missing scope or architecture choices with the user.
+4. Classify internal lane work within each plan through `orchestration` at
+   execution time. File count alone neither splits plans nor creates lanes.
+5. Use read-only native consultations for research/design when needed. They
+   are not separate plan coordinators and cannot bypass the execution gate.
 
-1. Take the goal from the invocation (`/goal <text>`) or ask for it.
-   (`/goal` with no goal is the ONE case that waits for user input.)
-2. Break the goal into work items (what must be true when done, not how).
-3. Ambiguous scope, missing acceptance, or architecture fork → ask the
-   user with the question tool (this is the human-gated planning zone).
-   Never guess on architecture; state what you would otherwise do.
-4. Triage the route BEFORE designing, using § Routing. Isolation is NOT
-   triaged: every route executes in a fresh worktree (orchestration Phase 4
-   isolate, after work-plans + gate) — never in the invoking checkout, which
-   other agents share. The orchestrator never edits code in any route.
-   - **Simple**: exactly one mutation lane in the single plan worktree.
-   - **Complex**: one mutation lane per track — one worktree + pane +
-     agent each; a single-track complex task is still one lane.
-   State the chosen route + lane count + why in one line before proceeding.
+## Plan and approval
 
-## Routing: simple vs complex (lane count — risk + scope)
+Resolve tracking with the existing work-plans resolver. Author each plan
+in `$PLAN_ROOT/<plan>/plan.md`, not a second copied task list. Record its
+exact intended worktree/branch/base, dependency-ordered waves, checks,
+acceptance and findings. Keep heartbeats exactly three lines with existing
+states `PLAN|WAIT|WORKING|DONE|FAILED`. Append shared timeline events only
+through `plan-event.sh`; never create repo-local `status/` directories.
 
-Classify before designing. When unsure, it is complex. This picks how many
-mutation lanes and how deep the review runs.
+Before execution, freeze and obtain approval for:
 
-**Simple** — ALL must hold:
-- one concern, one track
-- touches no named contract surface (the project's schema/API/layer
-  invariant docs and migrations)
-- no change to the project's design authority (design artifacts,
-  design-system primitives)
-- no shared-file collision (migrations, CHANGELOG, submodule gitlinks,
-  lockfiles)
-- no second parallelizable track
+- the plan graph and required outcome/evidence contracts;
+- each plan's scope and approved revision;
+- exact worktrees/branches, coordinator harness and any explicit model choice;
+- coordinator concurrency, native-worker limits and shared resources;
+- named permitted lifecycle/git/tool actions per plan.
 
-**Complex** — ANY one makes it complex:
-- touches a schema/API/architecture invariant, a service/repo/error
-  contract, or a migration
-- touches the project's design authority
-- multi-concern or broad refactor (one concern per lane)
-- ≥2 independent tracks (even small ones)
-- shared-file collision, or risk too broad for one brief
+Launching a coordinator does not authorize commit, push, PR, merge, rebase,
+deployment, production changes or destructive cleanup. A gate covers only
+its explicitly enumerated actions. Changed scope/contracts/authorization
+invalidate affected approvals; never weaken original acceptance to pass.
 
-Route: **simple** → exactly one mutation lane in the single plan worktree.
-**complex** → one mutation lane per track (1..N; single track = one lane).
-File count is a hint, never a gate — classify on contract surface.
-(`orchestration` re-uses this same routing at the execution gate.)
+For one plan, hand the frozen plan to `orchestration`, which owns its
+execution gate, lane lifecycle and close-out. Do not create a manager or
+extra coordinator just to wrap that inline handoff.
 
-## Phase 1 — Deepen (design before protocol)
+## Multi-plan command center
 
-- UI/surface work → `design-thinking`: draw Surface<C,V,N> first. C =
-  happy-path content flow, V = void states
-  (empty/loading/partial/error/denied), N = needs
-  (data/permission/prior-step/viewport).
-- Backend/state work → `design-thinking`: A = happy-path call graph,
-  E = break points, R = dependencies.
-- Orchestration work → the graph above (execution half in `orchestration`)
-  + `design-thinking/references/graph-protocol.md`: nodes, edges, waves,
-  E, R. Compare the delegated subgraph vs the implemented graph before
-  any gate; extra/missing node = off-script.
-- Read-only reasoning nodes run here as `subagent` calls: `architect`
-  (brainstorm/design/ADR/plan), `researcher` (lookup). Their output feeds
-  `plan.md`; nothing they produce bypasses the gate. A `writing-plans`
-  artifact is input, not a second plan of record: `status/<plan>/plan.md`
-  stays the single source — fold its files/tasks/tests into
-  `R`/`Graph A`, and persist the plan doc only if acceptance requires it
-  (mutation lane, linked from `plan.md`). The artifact's own execution
-  handoff (subagent-driven / inline) is overridden — execution is always
-  the orchestration lane model.
-- Skill missing → fall back to the behavior described inline, record the
-  gap in the lane/plan.
-- Conflicting docs or requirements → STOP, report, wait. No scope creep:
-  report missing pieces, don't build them.
+Read `references/command-center.md` for the H2H request contract, progress
+and recovery limits. Use the native `h2h_control` tool in OMP or OpenCode;
+its shared runtime owns registry mutations and process control. If the tool
+or a required capability is unavailable, WAIT with the missing prerequisite;
+never replace it with shell-launched harnesses, terminal scraping or Luvus
+message passing.
 
-## Phase 2 — Protocol (wave graph)
+The center may plan unowned artifacts. After exact-plan ownership ACK, only
+that plan's coordinator writes its runtime artifacts. The center writes its
+own external registry and aggregate report, and sends findings/instructions
+through H2H instead of editing a running child plan. Native lane workers
+never write coordinator tracking or another plan.
 
-Order waves by dependency, not enthusiasm. Independent tracks may run in
-parallel; an edge gates the dependent wave (e.g. the project's
-design-artifact lane DONE — edit + build green — before any
-implementation lane starts). Name lanes, assign one owner per node, and
-assign file ownership per lane so parallel tracks never write the same
-files. Write the wave graph into `plan.md`.
+For every ready plan:
 
-## Phase 3 — Track (work-plans)
+1. Validate approved revision, predecessor evidence, conflicts/resources,
+   concurrency and authorization. Worktree separation alone does not make
+   shared contracts, lockfiles or migrations safe to run together.
+   Prepare the exact approved coordinator worktree through the repository's
+   git/setup workflow before H2H start. Preparation is not implementation and
+   needs its own named branch/worktree approval; a missing worktree blocks
+   launch instead of falling back to the control checkout.
+2. Persist reservation and launch intent before starting a process. Require
+   real runtime/session identity and exact plan/revision/attempt ACK before
+   execution. A locally generated request ID is not a harness session ID.
+3. Dispatch only that plan's `/orchestrate` brief. Choose the coordinator
+   independently of the center: OMP→OMP, OMP→OpenCode, OpenCode→OMP and
+   OpenCode→OpenCode use the same H2H control core over ACP.
+4. Supervise via H2H status/wait and semantic progress. Each coordinator
+   dispatches, joins and resumes its own native lanes; the center does not
+   become their lane-level orchestrator.
+5. Inspect the report and acceptance evidence for the current approved
+   revision. Record verification explicitly before unblocking dependents.
+   An ended ACP turn, process exit, parked lane or cached DONE is not proof.
 
-One folder `status/<plan>/` (name `[a-z0-9-]`). Open it per the
-`work-plans` skill: copy
-`~/.agents/skills/work-plans/assets/orchestration-plan-template.md` → `plan.md`, fill
-X / Scope / Graph A / E / R / Lanes, write `status.md`
-(`state: PLAN`, `ts`, `msg`), append the PLAN line to `status/TIMELINE.md`.
-`ls status/` shows active plans only; no loose files in `status/` root
-besides `TIMELINE.md`.
+Independent approved plans may continue when another plan blocks. Dependent
+plans remain WAIT until their exact required evidence is verified.
 
-Fill the template's graph sections — this skill's graph IS the plan:
-- **Graph A**: the wave graph (waves + lanes, one owner per node).
-- **E**: execution break points (see `orchestration` § Break points).
-- **R**: the delegated subgraph per lane — role agent + resolved
-  model+variant, nodes (files/units), edges (inputs consumed, outputs
-  produced), acceptance, gate. Resolve the model from the role agent's
-  markdown `model:` field (`~/.config/opencode/agents/<role>.md`); the
-  agent md is the single source of truth for model+effort.
-- **Lanes**: only when parallel. The simple route is one track → delete the
-  section and skip `lanes/` (never invent a lane to fill the shape).
-- Header `gate:` = execution-gate ack (`<ISO8601> <who> <branch>`);
-  `iter:` = current `W<n>i<m>`.
+## Progress and findings
 
-Freeze acceptance in `plan.md` BEFORE any lane executes: one verifiable
-criterion per work item, each paired with its verify command (the
-project's gate commands — typecheck, touched test suites, manual smoke).
-Waves verify against this frozen list — never invent new acceptance
-mid-execution.
+Keep coordinator lifecycle, plan state and observation freshness separate.
+ACP activity updates are not durable plan progress. Use coordinator-owned
+artifacts and validated structured reports for waves, lanes, blockers and
+results. Unknown values remain unknown; do not invent percentages.
 
-**Reopen rule**: any new request on a DONE plan → flip `status.md` to
-WORKING first + TIMELINE line, then act. In-loop heartbeats (`status.md`
-mirroring the slowest lane, 3-line lane files) and the DONE close-out —
-including `mem_save` — are owned by `orchestration` § Plan close-out;
-this section states only the artifact rules applied at open. `report.md`
-follows the work-plans report template. Tracking artifacts have their own
-break points (3-line overflow, orphan lane, DONE-without-report, pointerless
-memory save) — fix the artifact per `work-plans`, don't duplicate them here.
-Finished plans stay in `status/` until archived; archiving is outside `/goal`.
+The shared observer coalesces read-only artifact refreshes without repeated
+model prompts. Use status/wait for meaningful changes: phase/wave changes,
+blockers, pending permission, failed checks and verified completion. Do not
+flood the user with token events or unchanged snapshots. A quiet long tool
+is not automatically dead; show observation age and actual wait context.
 
-Prefix lane status msgs with `W<n>i<m>` so loop position survives scrollback.
-Validate tracking at open with
-`bash ~/.agents/skills/work-plans/scripts/plan-check.sh <plan>`; when
-`jev-mcp` is reachable, also run the work-plans open judgment
-(`work-plans` § Jev judgment) before the execution gate. (The pre-DONE
-plan-check + closure judgment are owned by `orchestration`.)
+A failed check/review/CI/smoke adds findings to the **existing owning plan**:
+evidence, affected work, fix steps/dependencies and verification. Restart
+from that plan's planning step, then execute and verify affected work.
+Preserve completed steps, merged work, PRs, frozen acceptance and iteration/
+no-progress counters. Do not create a new fix plan for each finding.
 
-## Handoff — execution is owned by `orchestration`
+Escalate cross-plan conflicts, changed acceptance/authorization, invalidated
+predecessors and ambiguous ownership to the center. Replan only affected
+outcomes and obtain renewed approval where required.
 
-After Phase 3 the plan is frozen. Load the `orchestration` skill and follow
-it from the execution gate onward: it owns the gate (LAST human gate), the
-main-session guard, the simple/complex lane routing, Phase 4
-(isolate/dispatch/return), Phase 5 (verify/loop/close-out/review/merge/plan
-close-out), the break points, and the standing guardrails. This skill's
-loop is complete when `orchestration` reaches DONE/FAILED and the tracking
-plane is finalized.
+## Recovery and stopping
 
-`/orchestrate` loads the same skill directly when a frozen plan/wave graph
-already exists and only execution remains.
+- One live coordinator owns a canonical repository+plan across all centers.
+  Repeated requests return recorded outcomes, not duplicate launches.
+- A timeout, lost ACK, disconnected pipe or stale heartbeat means unknown
+  outcome. Keep ownership/resources reserved and reconcile actual state.
+- Load/resume of stored history is not live-process reattachment. Never use
+  latest-session/--continue guesses or adopt a running session by loading it.
+- Preserve explicit session IDs, attempts, exact worktrees and accumulated
+  evidence. Reject identity drift rather than silently updating the owner.
+- Cancel only the recorded turn; it can leave native children running.
+  Stop requires actual owned-runtime shutdown/quiescence. Unknown shutdown
+  stays RECONCILING; never release resources because a cancel returned.
+- Do not kill processes by harness name, delete live worktrees or reset
+  registry files to recover. Native permissions and configured services
+  depend on effective runtime policy; ACP is not an OS sandbox.
 
-## Close-out
+## Goal completion and guardrails
 
-The tracking-plane close-out is owned by `orchestration` (§ Plan
-close-out): it writes `report.md`, flips `status.md` to DONE/FAILED,
-appends the TIMELINE line, runs `plan-check.sh` + the jev closure judgment,
-and `mem_save`s. Goal's loop ends at the handoff — it does not touch
-tracking artifacts after that. Finished plans stay in `status/` until
-archived; archiving is outside `/goal`.
+The center verifies every required child outcome and the goal-level
+acceptance. Failed/cancelled/parked work is not success. Record the aggregate
+outcome alongside the external goal registry, referencing original child
+reports rather than rewriting or duplicating them. Preserve integration
+state: uncommitted or awaiting integration is not shipped.
 
-## Guardrails (goal side)
-
-- The main session writes ONLY the `status/` tracking plane
-  (`status/<plan>/**`, `status/TIMELINE.md`) + memory. It never edits
-  implementation code, design docs, or skill/config files — behavior
-  mutation goes to a luvus lane, non-behavior upkeep to `steward` (worktree
-  chore → lane, in-place → subagent), read-only work to a `subagent`. A
-  self-made edit is a violation: revert + re-dispatch.
-  Full execution guardrails (worktree isolation, lane roles, destructive-step
-  policy, git guardrails) are owned by `orchestration`.
-- Repo bindings, before touching code: load the project's declared design
-  authority in the order its `AGENTS.md` gives (typically schema → layers
-  → API → design artifacts → architecture rationale). Names and
-  invariants verbatim. Docs conflict → STOP + report, never resolve alone.
-- Design-artifact-first for UI: the project's design authority + its build
-  before implementation.
+Inside `/goal`, the center does not implement code, edit design/config files,
+or run a second plan through its own mutation subagents. Each plan's
+coordinator owns that work under `orchestration`; inline mode follows that
+same single-plan skill. Preserve repository git guards and read-only review
+boundaries. Do not activate changed configuration without approval.

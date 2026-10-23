@@ -214,6 +214,7 @@ async function switchAccount(pi: ExtensionAPI, integrationId: string, label: str
 }
 
 export default function opencodePeer(pi: ExtensionAPI): void {
+	if (process.env.WORK_PLANS_H2H_ROLE === "coordinator") return;
 	const z = pi.zod;
 
 	pi.setLabel("OpenCode peer");

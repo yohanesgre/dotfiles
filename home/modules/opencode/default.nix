@@ -105,72 +105,81 @@ in
   # imports from file realpath, so node_modules next to a nix-store copy is
   # never consulted. opencodeSyncPlugins copies it from dotfiles on every
   # switch, preserving node_modules across recopies.
-  home.activation.opencodeSyncPlugins = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-    BUN_BIN="$HOME/.bun/bin/bun"
-    if [ ! -x "$BUN_BIN" ]; then BUN_BIN="${pkgs.bun}/bin/bun"; fi
-    SRC="$HOME/projects/dotfiles/config/opencode/plugins/opencode-subagents"
-    DST="$HOME/.config/opencode/plugins/opencode-subagents"
-    if [ -d "$SRC" ]; then
-      mkdir -p "$HOME/.config/opencode/plugins"
-      NODE_MODULES_TMP="$HOME/.config/opencode/plugins/.opencode-subagents-node_modules-tmp"
-      HAD_NODE_MODULES=0
-      if [ -d "$DST/node_modules" ]; then
-        HAD_NODE_MODULES=1
-        rm -rf "$NODE_MODULES_TMP"
-        mv "$DST/node_modules" "$NODE_MODULES_TMP"
-      fi
-      rm -rf "$DST"
-      cp -a "$SRC" "$DST"
-      rm -rf "$DST/node_modules" "$DST/bun.lock"
-      if [ "$HAD_NODE_MODULES" = 1 ]; then
-        mv "$NODE_MODULES_TMP" "$DST/node_modules"
-      fi
-      echo "opencode: synced opencode-subagents plugin from dotfiles"
-      if [ -f "$DST/package.json" ] && [ ! -d "$DST/node_modules" ]; then
-        echo "opencode: installing plugin deps via bun..."
-        (cd "$DST" && "$BUN_BIN" install) \
-          && echo "opencode: plugin deps installed" \
-          || echo "opencode: bun install for plugin failed (continuing)"
-      fi
-    fi
+  home.activation.opencodeSyncPlugins =
+    lib.hm.dag.entryAfter [ "writeBoundary" "goalH2HDependencies" ]
+      ''
+        BUN_BIN="$HOME/.bun/bin/bun"
+        if [ ! -x "$BUN_BIN" ]; then BUN_BIN="${pkgs.bun}/bin/bun"; fi
+        SRC="$HOME/projects/dotfiles/config/opencode/plugins/opencode-subagents"
+        DST="$HOME/.config/opencode/plugins/opencode-subagents"
+        if [ -d "$SRC" ]; then
+          mkdir -p "$HOME/.config/opencode/plugins"
+          NODE_MODULES_TMP="$HOME/.config/opencode/plugins/.opencode-subagents-node_modules-tmp"
+          HAD_NODE_MODULES=0
+          if [ -d "$DST/node_modules" ]; then
+            HAD_NODE_MODULES=1
+            rm -rf "$NODE_MODULES_TMP"
+            mv "$DST/node_modules" "$NODE_MODULES_TMP"
+          fi
+          rm -rf "$DST"
+          cp -a "$SRC" "$DST"
+          rm -rf "$DST/node_modules" "$DST/bun.lock"
+          if [ "$HAD_NODE_MODULES" = 1 ]; then
+            mv "$NODE_MODULES_TMP" "$DST/node_modules"
+          fi
+          echo "opencode: synced opencode-subagents plugin from dotfiles"
+          if [ -f "$DST/package.json" ] && [ ! -d "$DST/node_modules" ]; then
+            echo "opencode: installing plugin deps via bun..."
+            (cd "$DST" && "$BUN_BIN" install) \
+              && echo "opencode: plugin deps installed" \
+              || echo "opencode: bun install for plugin failed (continuing)"
+          fi
+        fi
 
-    # opencode-go-limit TUI plugin: renders JSX in the TUI, so it needs its
-    # node_modules next to the real files for the same reason as above.
-    SRC="$HOME/projects/dotfiles/config/opencode/plugins/opencode-go-limit"
-    DST="$HOME/.config/opencode/plugins/opencode-go-limit"
-    if [ -d "$SRC" ]; then
-      mkdir -p "$HOME/.config/opencode/plugins"
-      NODE_MODULES_TMP="$HOME/.config/opencode/plugins/.opencode-go-limit-node_modules-tmp"
-      HAD_NODE_MODULES=0
-      if [ -d "$DST/node_modules" ]; then
-        HAD_NODE_MODULES=1
-        rm -rf "$NODE_MODULES_TMP"
-        mv "$DST/node_modules" "$NODE_MODULES_TMP"
-      fi
-      rm -rf "$DST"
-      cp -a "$SRC" "$DST"
-      rm -rf "$DST/node_modules" "$DST/bun.lock"
-      if [ "$HAD_NODE_MODULES" = 1 ]; then
-        mv "$NODE_MODULES_TMP" "$DST/node_modules"
-      fi
-      echo "opencode: synced opencode-go-limit plugin from dotfiles"
-      if [ -f "$DST/package.json" ] && [ ! -d "$DST/node_modules" ]; then
-        echo "opencode: installing opencode-go-limit plugin deps via bun..."
-        (cd "$DST" && "$BUN_BIN" install) \
-          && echo "opencode: opencode-go-limit plugin deps installed" \
-          || echo "opencode: bun install for opencode-go-limit plugin failed (continuing)"
-      fi
-    fi
+        # opencode-go-limit TUI plugin: renders JSX in the TUI, so it needs its
+        # node_modules next to the real files for the same reason as above.
+        SRC="$HOME/projects/dotfiles/config/opencode/plugins/opencode-go-limit"
+        DST="$HOME/.config/opencode/plugins/opencode-go-limit"
+        if [ -d "$SRC" ]; then
+          mkdir -p "$HOME/.config/opencode/plugins"
+          NODE_MODULES_TMP="$HOME/.config/opencode/plugins/.opencode-go-limit-node_modules-tmp"
+          HAD_NODE_MODULES=0
+          if [ -d "$DST/node_modules" ]; then
+            HAD_NODE_MODULES=1
+            rm -rf "$NODE_MODULES_TMP"
+            mv "$DST/node_modules" "$NODE_MODULES_TMP"
+          fi
+          rm -rf "$DST"
+          cp -a "$SRC" "$DST"
+          rm -rf "$DST/node_modules" "$DST/bun.lock"
+          if [ "$HAD_NODE_MODULES" = 1 ]; then
+            mv "$NODE_MODULES_TMP" "$DST/node_modules"
+          fi
+          echo "opencode: synced opencode-go-limit plugin from dotfiles"
+          if [ -f "$DST/package.json" ] && [ ! -d "$DST/node_modules" ]; then
+            echo "opencode: installing opencode-go-limit plugin deps via bun..."
+            (cd "$DST" && "$BUN_BIN" install) \
+              && echo "opencode: opencode-go-limit plugin deps installed" \
+              || echo "opencode: bun install for opencode-go-limit plugin failed (continuing)"
+          fi
+        fi
 
-    # rtk auto-rewrite plugin: standalone (zero runtime imports; uses the global
-    # `Bun`). Copied as a real file for the same reason as above.
-    RTK_SRC="$HOME/projects/dotfiles/config/opencode/plugins/rtk.ts"
-    if [ -f "$RTK_SRC" ]; then
-      mkdir -p "$HOME/.config/opencode/plugins"
-      cp -a "$RTK_SRC" "$HOME/.config/opencode/plugins/rtk.ts"
-      echo "opencode: synced rtk rewrite plugin from dotfiles"
-    fi
-  '';
+        # rtk auto-rewrite plugin: standalone (zero runtime imports; uses the global
+        # `Bun`). Copied as a real file for the same reason as above.
+        RTK_SRC="$HOME/projects/dotfiles/config/opencode/plugins/rtk.ts"
+        if [ -f "$RTK_SRC" ]; then
+          mkdir -p "$HOME/.config/opencode/plugins"
+          cp -a "$RTK_SRC" "$HOME/.config/opencode/plugins/rtk.ts"
+          echo "opencode: synced rtk rewrite plugin from dotfiles"
+        fi
+
+        H2H_SRC="$HOME/projects/dotfiles/config/opencode/plugins/goal-coordinators.ts"
+        if [ -f "$H2H_SRC" ]; then
+          mkdir -p "$HOME/.config/opencode/plugins"
+          cp -a "$H2H_SRC" "$HOME/.config/opencode/plugins/goal-coordinators.ts"
+          echo "opencode: synced shared H2H host binding"
+        fi
+      '';
 
   # engram plugin: OpenCode event adapter for the engram HTTP server, vendored
   # byte-for-byte from upstream v3.5.2 (type-only @opencode-ai/plugin import,

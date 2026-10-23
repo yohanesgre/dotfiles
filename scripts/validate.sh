@@ -92,6 +92,16 @@ _plugin_bun_tests() {
         "$REPO_ROOT/config/opencode/plugins/opencode-subagents/useSubagents.test.ts"
 }
 
+_goal_h2h_tests() {
+    local runtime="$REPO_ROOT/config/skills/goal/runtime"
+    (
+        cd "$runtime" &&
+        bun install --frozen-lockfile --ignore-scripts &&
+        bun run typecheck &&
+        bun test
+    )
+}
+
 # Helper: check if a string contains a line exactly matching the given value
 _in_lines() {
     local value="$1" lines="$2"
@@ -277,6 +287,14 @@ if ! command -v bun >/dev/null 2>&1; then
     skip "bun not in PATH"
 else
     check "OpenCode plugin bun tests" _plugin_bun_tests
+fi
+echo ""
+
+echo -e "${BOLD}Check 7c: Goal H2H Runtime${NC}"
+if ! command -v bun >/dev/null 2>&1; then
+    skip "bun not in PATH"
+else
+    check "Goal H2H runtime typecheck and tests" _goal_h2h_tests
 fi
 echo ""
 

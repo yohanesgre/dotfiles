@@ -1,9 +1,9 @@
 ---
-description: Run a goal to DONE — breakdown, design, protocol, track, then hand the frozen plan to the orchestration skill to execute lanes until achieved
+description: Plan a goal with design-thinking; coordinate one plan inline or supervise multiple plan harnesses through H2H
 ---
 
-Load the `goal` skill with the skill tool and follow it exactly, looping until the goal below is achieved. `goal` owns planning (intake → classify → design → protocol → track) and hands off to the `orchestration` skill at the execution gate, which runs the lanes and the verify/close-out/review/merge loop. Park-and-report on blockers per the skill; halt only on secrets exposure.
+Load `goal` and follow its intake, design-thinking, planning and approval workflow. Planning-only requests stop before execution. One plan may hand off inline to `orchestration`; multiple concurrent plans keep this session as command center and use `h2h_control` to dispatch one separate coordinator harness per ready plan.
 
-Main session orchestrates only — never call `edit`/`write` on implementation code or design docs (whatever the project declares in its `AGENTS.md`), or on skill/config files. Every mutation goes to a luvus lane (simple → one lane; complex → one per track); `subagent` calls are read-only. Direct writes are allowed only on the `status/` tracking plane.
+Each coordinator runs `/orchestrate` with native lane subagents. Do not launch a harness per lane, recursively invoke `/goal` in children, or implement several plans through this center's own mutation workers. Preserve per-plan ownership, explicit lifecycle/git approvals, external tracking and same-plan findings/replanning. Verify child reports and goal acceptance; an ACP turn finishing does not mean a plan is DONE. Unknown ownership/shutdown blocks replacement.
 
 Goal: $ARGUMENTS
