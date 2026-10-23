@@ -1,6 +1,6 @@
 ---
 name: writing-plans
-description: Use when you have a spec or requirements for a multi-step task, before touching code. Authors the implementation-plan document (authoring plane); runtime tracking is the separate `work-plans` skill.
+description: Use when you have a spec or requirements for a multi-step task, before touching code. Authors the implementation-plan document; work-plans manages tracking and default execution in one worktree. Orchestration is explicit opt-in only.
 ---
 
 # Writing Plans
@@ -11,19 +11,23 @@ Write an implementation plan an engineer with zero context for this codebase can
 
 Assume a skilled developer who knows almost nothing about this toolset or problem domain.
 
+Keep `design-thinking` as the design discipline: load its task-relevant reference,
+read X, draw A, identify E and R (Surface<C,V,N> for interfaces), then derive
+implementation steps from that graph. This does not require orchestration.
+
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
 **Save plans to:** `.agents/plans/YYYY-MM-DD-<feature-name>.md`
-- User preferences for plan location override this default.
-- **Local artifact:** never commit or push the plan. Gitignore the plan directory if it is tracked.
+- For a tracked work plan, author directly in `$PLAN_DIR/plan.md` (`PLAN_ROOT=$(bash ~/.agents/skills/work-plans/scripts/plan-root.sh)`, `PLAN_DIR="$PLAN_ROOT/<plan>"`) using the `work-plans` template and preserve its worktree, scope, and acceptance fields. Tracking artifacts live outside the repository; do not create an in-repo status tree for them. Other user preferences for plan location override the default.
+- **Local artifact:** never commit or push the standalone plan document. Gitignore `.agents/plans/` when it is tracked. A tracked work plan lives outside the repository under `$PLAN_ROOT`.
 
 ## Scope (authoring plane)
 
 This skill **authors** the plan document — the what and how (files, code, tests, verify commands). It is the *authoring plane*, not the tracking plane:
 
-- It never creates or edits `status/` or `status/TIMELINE.md` — runtime tracking is the `work-plans` skill.
-- Under `/goal` (or the Orchestrated handoff), `status/<plan>/plan.md` stays the single plan of record; **this document is an input artifact** — its files/tasks/tests are folded into that plan and linked from it, never duplicated.
-- The Orchestrated handoff loads `orchestration`, which requires `work-plans` (tracking); the Inline handoff needs neither.
+- `work-plans` owns heartbeat, timeline, worktree setup, and closure. This skill may author its `plan.md` directly; do not create a second implementation-plan document for the same work.
+- If an implementation plan already exists elsewhere, link it as input from the tracked plan rather than maintaining duplicate task lists.
+- Default execution uses `work-plans`: one dedicated worktree, with the current session implementing ordered steps. Explicit `/orchestrate` loads `orchestration`; explicit `/goal` loads `goal` first to choose inline single-plan or multi-plan command-center routing.
 
 ## Scope Check
 
@@ -43,16 +47,20 @@ Each step is one action (2-5 minutes): write the failing test; run it to confirm
 
 ## Plan Document Header
 
-Every plan MUST start with this header:
+Standalone implementation plans start with this header. For a tracked plan,
+keep the `work-plans` header and add the relevant implementation details under
+`## Steps` instead.
 
 ```markdown
 # [Feature Name] Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use the `orchestration` skill to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **Execution:** Use `work-plans` to implement the steps in the current session in one dedicated worktree. Steps use checkbox (`- [ ]`) syntax for tracking. Use orchestration only on explicit request.
 
 **Goal:** [One sentence describing what this builds]
 
 **Architecture:** [2-3 sentences about approach]
+
+**Design graph:** [Implementation flow (A), break points (E), and dependencies (R) from `design-thinking`; Surface<C,V,N> for interfaces]
 
 **Tech Stack:** [Key technologies/libraries]
 
@@ -132,14 +140,20 @@ Fix issues inline, then move on. Add a task for any uncovered requirement. For a
 
 ## Execution Handoff
 
-After saving the plan, offer the execution choice:
+After saving the plan, report its path and the default execution context:
+the current session will implement it step by step in one dedicated worktree,
+using `work-plans` for setup, progress, verification, and closure. Tracking
+lives under `$PLAN_ROOT` (resolved by `plan-root.sh`), never in the repository
+or the worktree.
 
-**"Plan complete and saved to `.agents/plans/<filename>.md`. Two execution options:**
+- **Planning-only request:** stop after saving and checking the plan. Do not create
+  a worktree or begin implementation.
+- **Execution already requested:** continue with the `work-plans` workflow, subject
+  to the project's git approvals. Do not ask the user to choose an execution mode.
+- **Explicit `/goal`:** return the authored plans to `goal` for approval and
+  single-plan versus command-center routing; do not bypass it by starting lanes.
+- **Explicit `/orchestrate`:** load `orchestration` and follow its single-plan
+  execution gate and lane lifecycle.
 
-**1. Orchestrated (recommended)** — hand the plan to the `orchestration` skill: dispatch tasks into isolated lanes, run the execution gate, verify, and review per lane. Tracking opens via the `work-plans` skill (required by `orchestration`) — this plan doc becomes its linked input, not a second plan of record.
-**2. Inline Execution** — execute the plan in this session in batches with checkpoints.
-
-**Which approach?"**
-
-- **If Orchestrated:** REQUIRED SUB-SKILL: Use the `orchestration` skill.
-- **If Inline:** execute in this session in batches with checkpoints for review.
+Do not recommend orchestration, generate a required-orchestration header, or
+load it merely because the plan has several tasks.

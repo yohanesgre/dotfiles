@@ -1,0 +1,18 @@
+{
+  "name": "goal-runtime",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun test",
+    "typecheck": "tsc --noEmit --strict --skipLibCheck --target ES2022 --module ESNext --moduleResolution bundler --lib ES2022,DOM --types node acp-client.ts control-message.ts launch-profiles.ts systemd-lifecycle.ts coordinator-state.ts progress.ts command-center.ts",
+    "smoke": "GOAL_ACP_SMOKE=1 bun test acp-client.test.ts"
+  },
+  "dependencies": {
+    "@agentclientprotocol/sdk": "2.0.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@types/node": "26.0.1",
+    "typescript": "6.0.2"
+  }
+}

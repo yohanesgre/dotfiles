@@ -4,6 +4,69 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-22 — `/goal` command center and harness-to-harness communication
+
+- `/goal` separates planning-only, one-plan inline execution and concurrent
+  multi-plan supervision. The active session remains the command center;
+  each executing plan has one coordinator harness, with native subagents for
+  its lanes. Standalone work-plans still uses design-thinking and waves without
+  implicit orchestration.
+- Added shared ACP v1 runtime with pinned SDK 2.0.1, thin OMP/OpenCode native
+  `h2h_control` bindings, exact no-work acknowledgment, explicit work delivery,
+  scoped permission review, cancellation and quiescence-gated release.
+  Linux lifecycle containment uses transient user-systemd units and cgroups;
+  no extra broker, private-RPC fallback or per-lane harness is introduced.
+- Explicit coordinator model and effort are selected and confirmed per session
+  before acknowledgment. Unsupported or stale settings fail closed; later drift
+  blocks work and requires reconciliation. No global model/account changes.
+- External registry/ownership/journal state records approval revisions,
+  dependencies, resource conflicts, attempts and significant observations.
+  Progress distinguishes lifecycle, coordinator-owned plan/lane state and
+  freshness. Token activity, a completed turn and child DONE are not goal success.
+  Findings reopen the same plan; prior evidence and counters remain preserved.
+  Wave/action displays use coordinator-owned `iter`/`next_action` metadata;
+  absent actions remain unknown rather than being inferred from checkboxes.
+- Managed OMP coordinators omit the external peer helper while retaining native
+  Task delegation. This registration boundary is not an OS sandbox.
+- Repository Check 7c now installs frozen dependencies without lifecycle scripts,
+  typechecks the shared runtime and runs its deterministic regression suite.
+  Actual authenticated harness execution is a separately approved smoke.
+- Home Manager installs pinned runtime dependencies before host bindings.
+  Existing external storage and migration backups are unchanged; no repeat
+  status migration or live entrypoint activation is part of this source change.
+  Rollback: prevent new launches, reconcile owned coordinators, preserve the
+  registry/evidence, then restore affected entrypoints. Reverting files does
+  not prove running coordinators stopped.
+
+Verification: all four actual OMP/OpenCode host/coordinator combinations passed
+on one frozen shared core, including native lane children and bound reports.
+Two-plan execution used distinct linked worktrees and overlapping acknowledged
+coordinators. Exact-session manager recovery, interrupted startup, coordinator
+crash, permission denial, cancellation and quiescent release were exercised;
+history recovery is not live reattachment.
+
+Gates: 112 runtime tests passed (2 optional live-smoke skips), strict typecheck,
+89 workflow helper checks, 37-skill conformance (5 warnings), and repository
+validation 385 passed / 0 failed / 4 legacy/home-file skips. Dependency activation
+passed five isolated HOME cases; this was not live activation. Independent
+runtime, registry, workflow and installation reviews approved their scopes.
+
+## 2026-10-22 — Standalone work plans, native orchestration lanes, external tracking
+
+- `work-plans` retains `design-thinking`, dependency-ordered waves, and verification checkpoints. Default execution uses the current session in one worktree; plan-only requests do not start implementation.
+- Explicit orchestration uses one harness/coordinator per plan and built-in subagents for lanes. Concurrent plans use separate coordinator instances. Removed pane layout, per-lane harness runners, CLI-only runtime restrictions, and sentinel wait scripts.
+- Failed checks and review findings return to planning in the same `plan.md`, preserving completed/merged work, existing PRs, frozen acceptance, and counters. Structured lane-attempt results live in `plan.md`; lane heartbeats stay three lines.
+- `plan-root.sh` resolves an external XDG state root keyed by the canonical Git common directory. Linked worktrees share it; checkout-contained paths and repository-root symlink aliases are rejected.
+- `plan-event.sh` serializes shared TIMELINE appends. Migration shares that lock, stages and validates a complete store, preserves verified backups, and atomically quarantines originals outside repositories instead of recursively deleting live sources. Conflicts, omitted nonempty roots, unsafe paths, and races fail explicitly.
+
+Verification: resolver 16, validator 22, timeline 5, migration 30, lane verification 9, logging 7 checks passed. Actual external lifecycle and migration CLI smoke passed; two native subagents validated one plan from separate worktrees without changing coordinator tracking. Eight routing scenarios passed. Independent migration and native-workflow reviewers approved after their findings were fixed.
+
+Repository validation: `bash scripts/validate.sh` → 383 passed, 0 failed, 4 skipped; skill validation scanned 37 skills with 5 warnings. Initial worktree plugin checks needed the existing plugin dependency directories linked into the worktree; no dependency versions or test expectations changed.
+
+Live cutover: 11 completed plans / 37 files and 101 timeline entries migrated to the resolver-derived external root; all 11 plans validated through the activated skill entrypoint. The missing designer-model-pin timeline event was explicitly backfilled from its existing report after preserving an original backup. A separate 98-byte POC run log was retained verbatim outside the repo, not converted into a fabricated plan. Original sources remain in external backup/quarantine with recovery manifests.
+
+Activation is temporary and uncommitted: four skill links and two command links point to the verified `omos/work-plans-storage` worktree, with previous link targets backed up. Preserve that worktree until integration; a future home-manager switch may restore managed links. No commit, push, PR, merge, or home-manager switch was performed.
+
 ## 2026-10-22 — MCP upkeep: engram v3.0.0 → v3.5.2 (+3 agent tools), jev-mcp 0.14.5, codegraph already current
 
 Asked whether codegraph, jev-mcp or engram had upstream updates.

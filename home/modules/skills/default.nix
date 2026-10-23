@@ -1,4 +1,4 @@
-{ lib, ... }:
+{ lib, pkgs, ... }:
 let
   # committed skills = every directory under config/skills (sources.json is a file)
   committed = lib.filterAttrs (_: type: type == "directory") (
@@ -37,6 +37,34 @@ in
       fi
     done
   '';
+
+  home.activation.goalH2HDependencies =
+    lib.hm.dag.entryAfter [ "writeBoundary" "skillsLinks" "upstreamInstall" ]
+      ''
+        SRC="$HOME/projects/dotfiles/config/skills/goal/runtime"
+        BUN_BIN="$HOME/.bun/bin/bun"
+        for required in package.json bun.lock command-center.ts; do
+          if [ ! -f "$SRC/$required" ]; then
+            echo "goal H2H: required runtime source is missing: $SRC/$required" >&2
+            exit 1
+          fi
+        done
+        EFFECTIVE="$HOME/.agents/skills/goal/runtime"
+        if ! EFFECTIVE_REAL=$(${pkgs.coreutils}/bin/realpath -e "$EFFECTIVE"); then
+          echo "goal H2H: installed runtime is missing: $EFFECTIVE" >&2
+          exit 1
+        fi
+        SOURCE_REAL=$(${pkgs.coreutils}/bin/realpath -e "$SRC")
+        if [ "$EFFECTIVE_REAL" != "$SOURCE_REAL" ]; then
+          echo "goal H2H: installed runtime $EFFECTIVE_REAL differs from intended source $SOURCE_REAL; preserved skill directories were not overwritten" >&2
+          exit 1
+        fi
+        if [ ! -x "$BUN_BIN" ]; then
+          echo "goal H2H: bun is required to install pinned runtime dependencies" >&2
+          exit 1
+        fi
+        (cd "$SRC" && "$BUN_BIN" install --frozen-lockfile --ignore-scripts)
+      '';
 
   # Externalized skills install globally on every switch via `npx skills`
   # (-a universal from $HOME -> ~/.agents/skills). Upstream owns their content,

@@ -18,15 +18,15 @@ primary session is allowed.
   (background or issued together), one `jev_ask` over the proposed
   lanes/children with the Parallel Execution Checklist as checks (disjoint
   files, independent outputs, self-contained prompts, batch-dispatched —
-  every wave lane fired before any wait, no per-lane start/wait loop;
-  non-interactive for script lanes). On return, after the return file appears (`lane-wait.ts`
-  prints only its last ~4000 chars), `jev_triage` the full artifact —
-  `report.md`, log files, `path` items read server-side, never entering
-  orchestrator context — with checks `failed` / `needs_action` before opening
-  any more of it; bound long artifacts (`tail`) — the file is read whole and
-  an oversized item fails rather than truncates (`JEV_MAX_STATE_CHARS`).
-  Write-capable children are prompted to leave their full report in a file
-  and reply with only its path plus a one-line status. Advisory:
+  every wave lane dispatched before any join, no per-lane start/wait loop).
+  On native completion, `jev_triage` the coordinator-persisted result in
+  `plan.md`'s lane-attempt section, `report.md`, or captured logs, with checks
+  `failed` / `needs_action` before opening more of it;
+  bound long artifacts before advisory submission — the file is read
+  whole and an oversized item fails rather than truncates
+  (`JEV_MAX_STATE_CHARS`). Children return their result in the native
+  completion; the coordinator persists it (read-only children never write
+  reports). Advisory:
   unavailable/abstain → the manual checklist plus the existing reviewer path.
 - **Review pre-filter (Phase 5).** `jev_triage` over each lane's
   `git diff` — pass the diff as a `path` item so its contents are read
@@ -51,4 +51,7 @@ artifacts below the allowed root (the repo): the worktree and its
 `/tmp`) get `file_access`. Credential files are refused by the server.
 
 The tracking-plane judgments — plan-readiness at open, plan-closure before
-DONE — live in the `work-plans` skill (§ Jev judgment).
+DONE — live in the `work-plans` skill (§ Jev judgment). Tracking artifacts
+live outside the repository under `$PLAN_ROOT` (resolved by `plan-root.sh`);
+when that root is outside the server's allowed file root, pass bounded artifact
+text or skip the advisory pass — never copy tracking into the repository.

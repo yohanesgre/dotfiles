@@ -66,3 +66,6 @@ status/
 
 # local worktrees (feature branches)
 .worktrees/
+
+# shared H2H runtime dependencies
+config/skills/goal/runtime/node_modules/

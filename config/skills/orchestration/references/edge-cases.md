@@ -16,14 +16,24 @@ Traps that recur across waves. Read this before closing a wave.
   merge; rebase + re-run if needed (only a diff-changing rebase needs a
   re-review). CI red caused by the rebase → fix loop (counts toward the
   loop guard).
-- Files are truth: a pane persists through the loop but is not durable (it can be closed,
-  and the orchestrator's own view is compacted). Lane progress lives
-  in lane files + `report.md`. After context compaction, re-read
-  `plan.md` + lane files AND run `mem_session_summary` + `mem_context` before
-  continuing — never assume file or memory state. If memory is unreadable,
-  proceed on files alone and note it.
-- Plan-env hygiene: if `status/<plan>/` already exists, suffix the plan
-  name (date/slug) — never reuse. `status/` stays in the control checkout;
-  the worktree never owns tracking files. Every lane brief pins the binary
-  PATH and sets cwd to the assigned worktree (missing tools = declare
-  deviation, use closest equivalent).
+- Files are truth: a native worker's completion is runtime evidence and is
+  not durable (the coordinator's own view can be compacted). Lane progress
+  lives in `$PLAN_DIR/lanes/` + `$PLAN_DIR/report.md`. After context
+  compaction, re-read `$PLAN_DIR/plan.md` + those lane files AND run
+  `mem_session_summary` + `mem_context` before continuing — never assume file
+  or memory state. If memory is unreadable, proceed on files alone and note it.
+- One coordinator, one plan: a second plan offered mid-loop is not absorbed.
+  Pause it and require a separate user-authorized harness instance; no
+  cross-plan writers or shared ownership. A coordinator writes only its own
+  `$PLAN_DIR`.
+- Plan-env hygiene: when opening a genuinely new plan, suffix its name
+  (date/slug) if `$PLAN_DIR` already belongs to another plan. Resume, reopen,
+  and findings-driven replanning retain the existing plan identity after
+  verifying ownership; preserve its completed steps, PRs, and loop counters.
+  Tracking stays under `$PLAN_ROOT` (resolved
+  by `plan-root.sh`), outside the control checkout and every worktree; no lane
+  brief or implementation writes there, and no in-repo status directory is
+  created. The shared `TIMELINE.md` is append-only and written only through
+  `plan-event.sh`; never rewrite, truncate, or replace it. Every lane brief
+  sets cwd to the assigned worktree and uses the toolchain the harness already
+  exposes (missing tools = declare deviation, use closest equivalent).

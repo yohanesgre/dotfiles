@@ -51,7 +51,7 @@ in
   # Runtime state in the same directory (agent.db, history.db, sessions/, blobs/,
   # cache/, skills/, extensions/) is NOT managed here — omp and the Luvus
   # integration own it.
-  home.activation.ompSyncConfig = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
+  home.activation.ompSyncConfig = lib.hm.dag.entryAfter [ "writeBoundary" "goalH2HDependencies" ] ''
     SRC="$HOME/projects/dotfiles/config/omp"
     DST="$HOME/.omp/agent"
     if [ -d "$SRC" ]; then

@@ -1,24 +1,64 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ROOT="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-cd "$ROOT"
-[ -d status ] || { echo "plan-check: status/ not found under $ROOT (run inside the project repo)"; exit 2; }
+SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+RESOLVER="$SCRIPT_DIR/plan-root.sh"
 
+usage() { printf 'usage: plan-check.sh [--root <absolute existing root>] <plan>\n' >&2; }
+
+ROOT=""
+HAVE_ROOT=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --root)
+      [ $# -ge 2 ] || { usage; exit 2; }
+      ROOT=$2; HAVE_ROOT=1; shift 2 ;;
+    --root=*)
+      ROOT=${1#--root=}; HAVE_ROOT=1; shift ;;
+    --)
+      shift; break ;;
+    -h|--help)
+      usage; exit 0 ;;
+    -*)
+      echo "plan-check: unknown option: $1" >&2; usage; exit 2 ;;
+    *)
+      break ;;
+  esac
+done
+[ $# -eq 1 ] || { usage; exit 2; }
+PLAN=$1
+
+# Plan IDs are a single safe basename. The charset excludes . and .. too.
+case "$PLAN" in
+  ''|.|..) echo "plan-check: invalid plan name '$PLAN' (want [a-z0-9-])" >&2; exit 2 ;;
+  *[!a-z0-9-]*) echo "plan-check: invalid plan name '$PLAN' (want [a-z0-9-])" >&2; exit 2 ;;
+esac
+
+if [ "$HAVE_ROOT" -eq 1 ]; then
+  # Explicit root: validate a migration staging tree; never resolve identity.
+  case "$ROOT" in
+    /*) ;;
+    *) echo "plan-check: --root must be an absolute path: $ROOT" >&2; exit 2 ;;
+  esac
+  [ -d "$ROOT" ] || { echo "plan-check: --root does not exist: $ROOT" >&2; exit 2; }
+else
+  [ -f "$RESOLVER" ] || { echo "plan-check: resolver not found: $RESOLVER" >&2; exit 2; }
+  if ! ROOT=$(bash "$RESOLVER"); then
+    echo "plan-check: cannot resolve the external tracking root" >&2
+    exit 2
+  fi
+  [ -n "$ROOT" ] || { echo "plan-check: resolver returned an empty root" >&2; exit 2; }
+  case "$ROOT" in
+    /*) ;;
+    *) echo "plan-check: resolver returned a non-absolute root: $ROOT" >&2; exit 2 ;;
+  esac
+fi
+
+DIR="$ROOT/$PLAN"
 fail=0
 ok() { printf "  ok: %s\n" "$*"; }
 bad() { printf "  fail: %s\n" "$*"; fail=1; }
 
-PLAN="${1:-}"
-if [ -z "$PLAN" ]; then
-  echo "usage: plan-check.sh <plan>"
-  exit 2
-fi
-case "$PLAN" in
-  *[!a-z0-9-]*) echo "plan-check: invalid plan name '$PLAN' (want [a-z0-9-])" >&2; exit 2 ;;
-esac
-
-DIR="status/$PLAN"
 [ -f "$DIR/plan.md" ] || { bad "$DIR/plan.md missing"; }
 [ -f "$DIR/status.md" ] || { bad "$DIR/status.md missing"; }
 
@@ -163,15 +203,18 @@ if [ -f "$DIR/status.md" ]; then
   fi
 fi
 
-LOOSE="$(find status -maxdepth 1 -type f ! -name TIMELINE.md -print || true)"
+LOOSE="$(find "$ROOT" -maxdepth 1 -type f ! -name TIMELINE.md -print 2>/dev/null || true)"
 if [ -z "$LOOSE" ]; then
-  ok "no loose files in status/"
+  ok "no loose files in tracking root"
 else
-  bad "loose files in status/: $LOOSE"
+  bad "loose files in tracking root: $LOOSE"
 fi
 
-grep -q "| $PLAN |" status/TIMELINE.md 2>/dev/null \
-  && ok "TIMELINE has $PLAN" || bad "TIMELINE missing $PLAN"
+if grep -q "| $PLAN |" "$ROOT/TIMELINE.md" 2>/dev/null; then
+  ok "TIMELINE has $PLAN"
+else
+  bad "TIMELINE missing $PLAN"
+fi
 
 if [ -d "$DIR/lanes" ]; then
   shopt -s nullglob
@@ -189,7 +232,7 @@ else
   ok "no lanes dir (single-track)"
 fi
 
-if [ $fail -eq 0 ]; then
+if [ "$fail" -eq 0 ]; then
   echo "plan-check GREEN for $PLAN"
 else
   echo "plan-check RED for $PLAN"
