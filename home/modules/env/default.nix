@@ -23,6 +23,10 @@
         print(f"toml parse error {p}: {e}", file=sys.stderr)
         sys.exit(1)
     def emit(k, v):
+        # Gateway credentials are per-profile (.env under HERMES_HOME). Exporting them from the
+        # shared .env.toml makes the "default" profile claim yohanes's bot token and collide.
+        if k.startswith(("DISCORD_BOT_TOKEN", "DISCORD_ALLOWED_USERS", "OWNER_DISCORD_USER_ID")):
+            return
         if isinstance(v, dict):
             for sk, sv in v.items():
                 emit(f"{k}_{sk}", sv)
@@ -47,6 +51,8 @@
     except Exception:
         sys.exit(1)
     def keys(k, v):
+        if k.startswith(("DISCORD_BOT_TOKEN", "DISCORD_ALLOWED_USERS", "OWNER_DISCORD_USER_ID")):
+            return
         if isinstance(v, dict):
             for sk, sv in v.items():
                 yield from keys(f"{k}_{sk}", sv)
@@ -69,6 +75,15 @@
             _load_toml "$_base/.env.toml"
           fi
         done
+
+        # Heal a previously imported copy: the user-manager env is inherited by every service,
+        # so a leaked DISCORD_BOT_TOKEN makes 'default' claim a profile's bot and collide.
+        _leaked=$(${pkgs.systemd}/bin/systemctl --user show-environment 2>/dev/null \
+          | sed -n 's/^\(DISCORD_BOT_TOKEN[^=]*\|DISCORD_ALLOWED_USERS[^=]*\|OWNER_DISCORD_USER_ID[^=]*\)=.*/\1/p')
+        if [ -n "$_leaked" ]; then
+          ${pkgs.systemd}/bin/systemctl --user unset-environment $_leaked 2>/dev/null || true
+        fi
+        unset _leaked
 
         # Hermes per-profile .env.toml NOT loaded globally — each gateway reads its
         # own profile's .env.toml via hermes_cli/env_loader (HERMES_HOME). Loading them
