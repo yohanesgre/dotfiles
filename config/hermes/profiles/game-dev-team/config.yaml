@@ -117,3 +117,7 @@ known_plugin_toolsets:
 # fallback_model:
 #   provider: openrouter
 #   model: anthropic/claude-sonnet-4
+mcp_servers:
+  jev:
+    command: /home/yohanes/.nix-profile/bin/jev-mcp-keyfile
+    enabled: true
