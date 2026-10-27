@@ -4,6 +4,17 @@ Repo-level notes for coding agents. OpenCode-specific rules (tool calling,
 output compression, delegation, codegraph/jg routing) live in
 `config/opencode/AGENTS.md`.
 
+## Secrets and `.env.toml`
+
+- `.env.toml` (repo root, gitignored) holds every real secret. Agents MUST NOT
+  read, grep, print, diff, or commit its contents.
+- When a change needs an env var, update `.env.toml.example` with a placeholder
+  and document the variable there. The user fills `.env.toml`.
+- Never copy a real value into the repo, a Nix store path, logs, AGENTS.md,
+  chat, or a service unit. Reference the variable or file path instead.
+- `.env.toml` is loaded into the systemd user environment by
+  `home/modules/env` and sourced by `config/zsh/extra.zsh`.
+
 ## Paseo daemon
 
 Local coding-agent control plane, Nix-managed in `home/modules/paseo`.

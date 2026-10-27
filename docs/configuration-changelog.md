@@ -27,7 +27,9 @@ Repo state:
 - `.env.toml.example` — `PASEO_PASSWORD` placeholder only; the real value lives
   in `.env.toml` (gitignored) and `~/.config/paseo/paseo.env` (0600).
 - `AGENTS.md` (repo root) — Paseo section (endpoint, auth, version caveat,
-  removal); `config/opencode/AGENTS.md` stays OpenCode-specific.
+  removal) plus a repo-wide `.env.toml` secret rule: never read/print it;
+  document new variables in `.env.toml.example` only. `config/opencode/AGENTS.md`
+  stays OpenCode-specific.
 
 Account state (not repo state):
 - Tunnel `paseo` `7df182c4-9b53-4b03-85d8-922ae5a98f30`, remotely managed
