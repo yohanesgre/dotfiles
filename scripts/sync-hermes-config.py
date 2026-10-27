@@ -91,7 +91,7 @@ COMMON_KEYS = {
 # Toolset policy is per-profile by design: yola is the no-code bot (no terminal/code_execution/
 # computer_use), so copying yohanes' platform_toolsets over it silently grants those back.
 PROFILE_KEYS = {
-    "discord", "gateway", "platform_toolsets", "known_plugin_toolsets",
+    "discord", "gateway", "platform_toolsets", "known_plugin_toolsets", "mcp_servers",
 }
 
 
@@ -201,7 +201,7 @@ def sync_configs(profiles: list[str], dry_run: bool = False) -> bool:
             "skills", "security", "tools", "plugins", "approvals",
             "discord", "gateway",
             "onboarding", "updates", "_config_version",
-            "session_reset", "platform_toolsets", "known_plugin_toolsets",
+            "session_reset", "platform_toolsets", "known_plugin_toolsets", "mcp_servers",
         ]
         # Add any keys not in desired_order at the end
         for key in output_sections:
