@@ -45,7 +45,7 @@ discord:
   history_backfill: true
   reactions: true
   group_sessions_per_user: true
-  home_channel: '1531031722064478279'
+  home_channel: '@HERMES_HOME_YOLA@'
 gateway:
   systemd_watchdog_seconds: 120
 onboarding:

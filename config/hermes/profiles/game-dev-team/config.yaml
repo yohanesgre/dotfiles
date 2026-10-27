@@ -40,7 +40,7 @@ plugins:
     whisper-model:
       allow_tool_override: false
 discord:
-  home_channel: '1531032272118091786'
+  home_channel: '@HERMES_HOME_GAMEDEV@'
 gateway:
   systemd_watchdog_seconds: 120
 onboarding:
