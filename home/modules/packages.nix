@@ -9,4 +9,8 @@
   #   installers — home/modules/upstream/default.nix
   # - engram: upstream installer — home/modules/upstream/default.nix
   # - GUI/GPU stays pacman: browsers, nvidia/mesa, DE, steam (nixGL mismatch).
+  #
+  # Exception: `paseo` comes from nixpkgs (home/modules/paseo), pinned through
+  # the `nixpkgs-paseo` flake input because the main nixpkgs pin does not
+  # carry it. Remove that module to drop the exception.
 }

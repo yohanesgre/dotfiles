@@ -19,6 +19,7 @@
     ./modules/opencode
     ./modules/codex
     ./modules/omp
+    ./modules/paseo
     ./modules/luvus
     ./modules/neovim
     ./modules/nix

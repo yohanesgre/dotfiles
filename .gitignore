@@ -61,8 +61,9 @@ status/
 # codegraph index (per-project, rebuilt via `codegraph init`)
 .codegraph/
 
-# config-level agent rules: track this one AGENTS.md despite the global ~/.gitignore
+# config-level agent rules: track these AGENTS.md despite the global ~/.gitignore
 !config/opencode/AGENTS.md
+!/AGENTS.md
 
 # local worktrees (feature branches)
 .worktrees/

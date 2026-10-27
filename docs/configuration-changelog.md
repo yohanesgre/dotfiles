@@ -4,6 +4,56 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-28 — Paseo daemon: Nix-managed, published through Cloudflare Tunnel
+
+User: "lets install this paseo sh and expose it with cloudflare tunnel" → "how about install it with nix?"
+
+Paseo (coding-agent control plane: daemon + CLI, Apache-2.0) runs on this host
+and is reachable at **https://paseo.yohanesgre.com**.
+
+Repo state:
+- `flake.nix` — new pinned input `nixpkgs-paseo` (rev `d3b13ad`, 2026-10-24) because
+  the main nixpkgs pin has no `paseo`; passes `paseoPkgs` as `extraSpecialArgs`.
+- `home/modules/paseo/default.nix` — `home.packages` entry plus the
+  `paseo.service` systemd user unit. ExecStart is the store path from
+  `paseoPkgs.paseo` (not `~/.bun`). Hardening: `NoNewPrivileges`, `PrivateTmp`,
+  `ProtectSystem=full`, `ProtectKernel*`, `RestrictSUIDSGID`, `LockPersonality`,
+  `RestrictAddressFamilies`. `ProtectHome` stays off because the agents Paseo
+  drives need `$HOME` (repos, credentials, their own configs) — this is a
+  package/runtime boundary, not a sandbox.
+- `home/common.nix` — imports `./modules/paseo`.
+- `home/hosts/desktop.nix` — `paseo-tunnel` unit: `cf tunnels run paseo` with
+  `CLOUDFLARE_ACCOUNT_ID=8e10f6d35f35bc539a885f0fa9c7039f`, `Restart=always`.
+- `.env.toml.example` — `PASEO_PASSWORD` placeholder only; the real value lives
+  in `.env.toml` (gitignored) and `~/.config/paseo/paseo.env` (0600).
+- `AGENTS.md` (repo root) — Paseo section (endpoint, auth, version caveat,
+  removal); `config/opencode/AGENTS.md` stays OpenCode-specific.
+
+Account state (not repo state):
+- Tunnel `paseo` `7df182c4-9b53-4b03-85d8-922ae5a98f30`, remotely managed
+  (`config_src=cloudflare`), ingress `paseo.yohanesgre.com -> http://127.0.0.1:6767`,
+  catch-all `http_status:404`.
+- DNS: proxied CNAME `paseo.yohanesgre.com -> 7df182c4-….cfargotunnel.com`.
+
+Secrets: `~/.config/paseo/paseo.env` (mode 600), referenced by
+`EnvironmentFile`; never in the Nix store. It sets `PASEO_PASSWORD`,
+`PASEO_LISTEN=127.0.0.1:6767`, `PASEO_HOSTNAMES=paseo.yohanesgre.com`,
+`PASEO_APP_BASE_URL=https://paseo.yohanesgre.com`,
+`PASEO_CORS_ORIGINS=https://paseo.yohanesgre.com`. The daemon rejects other
+Host headers (verified: `paseo…` 200, `evil.example` 403) and requires
+`Authorization: Bearer $PASEO_PASSWORD` on `/api/*` (`/api/status` 401 without,
+200 with). `/api/health` is public.
+
+Version caveat: nixpkgs carries **0.12.0**; the App Store app is **0.13.2**.
+The app's `isVersionMismatch` only badges the daemon, it does not block the
+connection. Bump via `overrideAttrs` (version/src/npmDepsHash) if a feature
+needs 0.13.x.
+
+Removal: drop the import + module (and `paseo-tunnel`), `home-manager switch`,
+`nix-collect-garbage -d`; delete `~/.paseo/` and `~/.config/paseo/` for state.
+The tunnel/DNS side is account state: `cf tunnels delete 7df182c4-…` and delete
+the CNAME.
+
 ## 2026-10-22 — omp `commandcode-openai` preset: `default` → `gpt-6.1-sol:auto`
 
 User: "for commandcode-openai, use sol 6.1 with auto thinking effort. this is for omp only."

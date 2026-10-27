@@ -91,5 +91,30 @@
       };
       Install.WantedBy = [ "default.target" ];
     };
+
+    # Paseo daemon (home/modules/paseo) published at paseo.yohanesgre.com
+    # through the remotely managed "paseo" tunnel
+    # (7df182c4-9b53-4b03-85d8-922ae5a98f30). Ingress + DNS are account
+    # state; the daemon's PASEO_PASSWORD is the auth gate.
+    paseo-tunnel = {
+      Unit = {
+        Description = "Cloudflare Tunnel 'paseo' — public HTTPS endpoint for the Paseo daemon";
+        Wants = [
+          "paseo.service"
+          "network-online.target"
+        ];
+        After = [
+          "paseo.service"
+          "network-online.target"
+        ];
+      };
+      Service = {
+        ExecStart = "%h/.bun/bin/cf tunnels run paseo --log-level info";
+        Environment = [ "CLOUDFLARE_ACCOUNT_ID=8e10f6d35f35bc539a885f0fa9c7039f" ];
+        Restart = "always";
+        RestartSec = 5;
+      };
+      Install.WantedBy = [ "default.target" ];
+    };
   };
 }
