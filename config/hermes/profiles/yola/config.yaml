@@ -62,8 +62,6 @@ platform_toolsets:
   cli:
     - browser
     - clarify
-    - code_execution
-    - computer_use
     - connections
     - context_engine
     - cronjob
@@ -72,7 +70,6 @@ platform_toolsets:
     - memory
     - session_search
     - skills
-    - terminal
     - todo
     - tts
     - vision
@@ -80,8 +77,6 @@ platform_toolsets:
   discord:
     - browser
     - clarify
-    - code_execution
-    - computer_use
     - connections
     - context_engine
     - cronjob
@@ -90,7 +85,6 @@ platform_toolsets:
     - memory
     - session_search
     - skills
-    - terminal
     - todo
     - tts
     - vision
