@@ -105,3 +105,33 @@ cgs() {
   target="$(_codegraph_safe_target "${1:-$PWD}")" || return 1
   codegraph status "$target"
 }
+
+# Unity CLI needs the graphical session variables even when the shell was
+# started outside KDE (e.g. from a daemon or an IDE). Pull the missing values
+# from the systemd user manager so `unity open` works without a prefix. The
+# external `env` call keeps this function from recursing into itself.
+unity() {
+  local display="${DISPLAY:-}"
+  local wayland="${WAYLAND_DISPLAY:-}"
+  local xauth="${XAUTHORITY:-}"
+  if [[ -z "$display" || -z "$xauth" ]]; then
+    local envdump
+    envdump=$(systemctl --user show-environment 2>/dev/null)
+    [[ -z "$display" ]] && display=$(print -r -- "$envdump" | sed -n 's/^DISPLAY=//p' | head -n1)
+    [[ -z "$wayland" ]] && wayland=$(print -r -- "$envdump" | sed -n 's/^WAYLAND_DISPLAY=//p' | head -n1)
+    [[ -z "$xauth" ]] && xauth=$(print -r -- "$envdump" | sed -n 's/^XAUTHORITY=//p' | head -n1)
+  fi
+  if [[ -z "$xauth" ]]; then
+    local candidate
+    for candidate in "${XDG_RUNTIME_DIR:-/run/user/$UID}"/xauth_*(N); do
+      xauth="$candidate"
+      break
+    done
+  fi
+
+  local -a unity_env
+  [[ -n "$display" ]] && unity_env+=("DISPLAY=$display")
+  [[ -n "$wayland" ]] && unity_env+=("WAYLAND_DISPLAY=$wayland")
+  [[ -n "$xauth" ]] && unity_env+=("XAUTHORITY=$xauth")
+  command env "${unity_env[@]}" unity "$@"
+}
