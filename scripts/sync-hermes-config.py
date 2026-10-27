@@ -83,13 +83,15 @@ def redact_ids(text: str, mapping: dict[str, str]) -> str:
 COMMON_KEYS = {
     "model", "fallback_model", "fallback", "agent", "web", "browser", "display", "tts",
     "skills", "security", "tools", "plugins", "approvals", "onboarding", "updates",
-    "session_reset", "platform_toolsets", "known_plugin_toolsets",
+    "session_reset",
     "_config_version",
 }
 
-# Keys that are PROFILE-SPECIFIC (preserved per-profile, never overwritten by common sync)
+# Keys that are PROFILE-SPECIFIC (preserved per-profile, never overwritten by common sync).
+# Toolset policy is per-profile by design: yola is the no-code bot (no terminal/code_execution/
+# computer_use), so copying yohanes' platform_toolsets over it silently grants those back.
 PROFILE_KEYS = {
-    "discord", "gateway",
+    "discord", "gateway", "platform_toolsets", "known_plugin_toolsets",
 }
 
 
