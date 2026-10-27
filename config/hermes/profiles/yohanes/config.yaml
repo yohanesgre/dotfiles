@@ -45,18 +45,18 @@ discord:
   history_backfill: true
   reactions: true
   group_sessions_per_user: true
-  home_channel: '@HERMES_HOME_YOHANES@'
+  home_channel: '1531032701371682896'
 gateway:
   systemd_watchdog_seconds: 120
   multiplex_profiles: true
   profile_routes:
     - name: yohanes
       platform: discord
-      chat_id: '@HERMES_HOME_YOHANES@'
+      chat_id: '1531032701371682896'
       profile: yohanes
     - name: game-dev
       platform: discord
-      chat_id: '@HERMES_HOME_GAMEDEV@'
+      chat_id: '1531032272118091786'
       profile: game-dev-team
 onboarding:
   seen:
