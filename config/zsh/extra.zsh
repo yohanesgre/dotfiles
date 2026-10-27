@@ -31,6 +31,10 @@ except Exception as e:
     print(f"toml parse error {p}: {e}", file=sys.stderr)
     sys.exit(1)
 def emit(k, v):
+    # Gateway credentials belong to each profile's own .env under HERMES_HOME. Exporting them
+    # into the session makes the CLI's "default" profile claim another profile's bot token.
+    if k.startswith(("DISCORD_BOT_TOKEN", "DISCORD_ALLOWED_USERS", "OWNER_DISCORD_USER_ID")):
+        return
     if isinstance(v, dict):
         for sk, sv in v.items():
             emit(f"{k}_{sk}", sv)
@@ -56,40 +60,10 @@ elif [[ -f "$HOME/.env.toml" ]]; then
 fi
 unset -f __load_toml_env 2>/dev/null || true
 
-# Also load per-profile hermes env files if present (TOML only)
-__load_toml_env_hermes() {
-  local f="$1"
-  [[ -f "$f" ]] || return 1
-  local _py_out
-  _py_out=$(python3 - "$f" 2>/dev/null <<'PY'
-import sys, tomllib, shlex, pathlib
-p = pathlib.Path(sys.argv[1])
-try:
-    data = tomllib.load(open(p, "rb"))
-except Exception as e:
-    print(f"toml parse error {p}: {e}", file=sys.stderr)
-    sys.exit(1)
-def emit(k, v):
-    if isinstance(v, dict):
-        for sk, sv in v.items():
-            emit(f"{k}_{sk}", sv)
-        return
-    if isinstance(v, bool):
-        v = str(v).lower()
-    elif v is None:
-        v = ""
-    else:
-        v = str(v)
-    print(f"export {k}={shlex.quote(v)}")
-for k, v in data.items():
-    emit(k, v)
-PY
-) || return 1
-  [[ -n "$_py_out" ]] && eval "$_py_out"
-}
-for _hf in "$HOME/apps/hermes/profiles"/*/.env.toml(N); do [[ -f "$_hf" ]] && { set -a; __load_toml_env_hermes "$_hf"; set +a; }; done 2>/dev/null
-unset _hf
-unset -f __load_toml_env_hermes 2>/dev/null || true
+# Per-profile hermes env is NOT loaded into interactive shells: each profile's .env/.env.toml
+# is owned by that profile's gateway (hermes_cli/env_loader under HERMES_HOME). Sourcing all of
+# them here made the last profile (yola) overwrite DISCORD_BOT_TOKEN for every shell, which is
+# exactly the collision `hermes gateway status` reports as a duplicate credential.
 
 export HERMES_HOME="$HOME/apps/hermes"
 
