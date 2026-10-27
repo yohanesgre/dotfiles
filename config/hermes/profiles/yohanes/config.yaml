@@ -65,7 +65,7 @@ onboarding:
 updates:
   pre_update_backup: full
   backup_keep: 5
-_config_version: 50
+_config_version: 51
 session_reset:
   mode: none
 platform_toolsets:
