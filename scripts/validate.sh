@@ -15,6 +15,29 @@ HOME_AGENTS="$HOME/AGENTS.md"
 source "$SCRIPT_DIR/lib.sh"
 extend_path
 
+# Include the server's existing Bun installation without adding a dependency.
+export PATH="$PATH:/data/host-bun/bin"
+cd "$REPO_ROOT"
+TRACKED_FILES=()
+git ls-files >/dev/null
+while IFS= read -r -d '' rel; do
+    TRACKED_FILES+=("$rel")
+done < <(git ls-files -z)
+
+JS_RUNTIME=""
+for runtime in node bun; do
+    if command -v "$runtime" >/dev/null 2>&1; then
+        JS_RUNTIME="$runtime"
+        break
+    fi
+done
+JSON_RUNTIME=""
+for runtime in jq node bun; do
+    if command -v "$runtime" >/dev/null 2>&1; then
+        JSON_RUNTIME="$runtime"
+        break
+    fi
+done
 FAILED=0
 SKIPPED=0
 PASSED=0
@@ -53,23 +76,40 @@ check() {
 }
 
 skip() {
-    echo -e "  ${YELLOW}[SKIP]${NC} $1"
+    echo -e "  ${YELLOW}SKIP:${NC} $1"
     SKIPPED=$((SKIPPED + 1))
 }
 
 # Helper: test if a file has valid JSON content (for non-JSONC files)
-_json_valid() { python3 -m json.tool "$1" > /dev/null 2>&1; }
-
-# Helper: test if a file has valid JSONC content (strips // comments at line start + trailing commas)
-_jsonc_valid() {
-    node -e "
-        var fs = require('fs');
-        var raw = fs.readFileSync('$1', 'utf8')
-            .replace(/^\\s*\\/\\/.*\$/gm, '')
-            .replace(/,(\s*[}\\]])/g, '\$1');
-        JSON.parse(raw);
-    " > /dev/null 2>&1
+_json_valid() {
+    if [ "$JSON_RUNTIME" = jq ]; then
+        jq -s -e 'length == 1' "$1" >/dev/null 2>&1
+    else
+        "$JSON_RUNTIME" -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$1" >/dev/null 2>&1
+    fi
 }
+
+# Preserve strings while stripping JSONC comments and trailing commas.
+# Pass paths as arguments, not interpolated JavaScript source.
+_jsonc_query() {
+    "$JS_RUNTIME" -e '
+        const raw = require("fs").readFileSync(process.argv[1], "utf8")
+            .replace(/"(?:\\.|[^"\\])*"|\/\/[^\r\n]*|\/\*[\s\S]*?\*\//g,
+                token => token.startsWith("\"") ? token : " ")
+            .replace(/("(?:\\.|[^"\\])*")|,\s*(?=[}\]])/g,
+                (token, string) => string || "");
+        const data = JSON.parse(raw);
+        if (process.argv[2] === "validate") process.exit(0);
+        for (const cfg of Object.values(data.mcp || {})) {
+            if (process.argv[2] === "commands" && cfg.type === "local" &&
+                cfg.enabled !== false && cfg.command?.length) console.log(cfg.command[0]);
+            if (process.argv[2] === "urls" && cfg.type === "remote" &&
+                cfg.url !== undefined) console.log(cfg.url);
+        }
+    ' "$1" "${2:-validate}"
+}
+
+_jsonc_valid() { _jsonc_query "$1" >/dev/null 2>&1; }
 
 # Helper: check skill exists in at least one skill directory
 _skill_dir_exists() {
@@ -82,15 +122,7 @@ _skill_dir_exists() {
 
 _cmd_exists() { check_cmd "$1"; }
 
-# Helper: run scoped OpenCode plugin test suites
-_plugin_bun_tests() {
-    bun test "$REPO_ROOT/config/opencode/plugins/gh.test.ts" &&
-    bun --cwd "$REPO_ROOT/config/opencode/plugins/opencode-go-limit" test &&
-    bun test \
-        "$REPO_ROOT/config/opencode/plugins/opencode-subagents/MoreDialog.test.tsx" \
-        "$REPO_ROOT/config/opencode/plugins/opencode-subagents/variants.test.ts" \
-        "$REPO_ROOT/config/opencode/plugins/opencode-subagents/useSubagents.test.ts"
-}
+_url_valid() { [[ "$1" =~ ^https?:// ]]; }
 
 _goal_h2h_tests() {
     local runtime="$REPO_ROOT/config/skills/goal/runtime"
@@ -115,15 +147,20 @@ _suggest() { echo -e "         ${CYAN}→ $*${NC}"; }
 
 # ── Check 1: JSON Validity ─────────────────────────────────────────────────
 echo -e "${BOLD}Check 1: JSON Validity${NC}"
+echo -e "  JSON parser: ${JSON_RUNTIME:-none}; JSONC parser: ${JS_RUNTIME:-none}"
 
-for f in $(find "$REPO_ROOT" -type f \( -name '*.json' -o -name '*.jsonc' \) \
-    ! -path '*/node_modules/*' ! -path '*/.git/*' ! -path '*/.tmp/*' 2>/dev/null | sort); do
-    rel="${f#$REPO_ROOT/}"
-    if [[ "$f" == *.jsonc ]]; then
-        check "parse $rel" _jsonc_valid "$f"
-    else
-        check "parse $rel" _json_valid "$f"
-    fi
+if [ -z "$JSON_RUNTIME" ]; then
+    skip "JSON parsing unavailable — install jq, node, or bun (also checked /data/host-bun/bin/bun)"
+fi
+if [ -z "$JS_RUNTIME" ]; then
+    skip "JSONC parsing unavailable — node or bun required"
+fi
+for rel in "${TRACKED_FILES[@]}"; do
+    f="$REPO_ROOT/$rel"
+    case "$rel" in
+        *.jsonc) [ -z "$JS_RUNTIME" ] || check "parse $rel" _jsonc_valid "$f" ;;
+        *.json) [ -z "$JSON_RUNTIME" ] || check "parse $rel" _json_valid "$f" ;;
+    esac
 done
 echo ""
 
@@ -161,23 +198,21 @@ if [ "$CI_MODE" = true ]; then
 elif [ ! -f "$HOME_AGENTS" ]; then
     skip "~/AGENTS.md not found"
     _suggest "skills auto-discover from ~/.agents/skills/; externalized skills install per project via scripts/skills-sync.sh"
+elif ! command -v python3 >/dev/null 2>&1; then
+    skip "home skill references — python3 not in PATH"
 else
-    SKILL_NAMES=$(python3 -c "
+    if ! SKILL_NAMES=$(python3 -c "
 import re
 with open('$HOME_AGENTS') as f:
     print('\n'.join(re.findall(r'<name>(.*?)</name>', f.read())))
-" 2>/dev/null || true)
-
-    if [ -z "$SKILL_NAMES" ]; then
+" 2>/dev/null); then
+        check "read skill references from ~/AGENTS.md" false
+    elif [ -z "$SKILL_NAMES" ]; then
         skip "no skill <name> entries found in ~/AGENTS.md"
     else
-            while IFS= read -r skill; do
-                [ -z "$skill" ] && continue
-                if _skill_dir_exists "$skill"; then
-                    check "skill '$skill' exists on disk" true
-                else
-                    check "skill '$skill' exists on disk" false
-                fi
+        while IFS= read -r skill; do
+            [ -z "$skill" ] && continue
+            check "skill '$skill' exists on disk" _skill_dir_exists "$skill"
         done <<< "$SKILL_NAMES"
     fi
 fi
@@ -189,25 +224,14 @@ echo -e "${BOLD}Check 5: Path Existence (MCP commands, binaries)${NC}"
 if [ "$CI_MODE" = true ]; then
     skip "CI mode — skipping local binary path checks"
 else
-    OPENCODE_TMPL="$OC_DIR/opencode.json.tmpl"
-    if [ ! -f "$OPENCODE_TMPL" ]; then
-        skip "opencode.json.tmpl not found"
+    OPENCODE_CONFIG="$OC_DIR/opencode.jsonc"
+    if [ ! -f "$OPENCODE_CONFIG" ]; then
+        skip "config/opencode/opencode.jsonc not found"
+    elif [ -z "$JS_RUNTIME" ]; then
+        skip "MCP binary paths — JSONC reader requires node or bun"
+    elif ! COMMANDS=$(_jsonc_query "$OPENCODE_CONFIG" commands); then
+        check "read MCP commands from config/opencode/opencode.jsonc" false
     else
-        RESOLVED=$(sed "s|{{ \.chezmoi\.homeDir }}|$HOME|g" "$OPENCODE_TMPL")
-
-        COMMANDS=$(echo "$RESOLVED" | python3 -c "
-import json, sys, os
-data = json.load(sys.stdin)
-# Extend PATH to include common install locations
-os.environ['PATH'] += ':' + os.path.expanduser('~/.bun/bin:/opt/homebrew/bin:/usr/local/bin')
-for name, cfg in data.get('mcp', {}).items():
-    if cfg.get('type') != 'local' or cfg.get('enabled') == False:
-        continue
-    cmd = cfg.get('command', [])
-    if cmd:
-        exe = cmd[0].replace('{{ .chezmoi.homeDir }}', os.environ.get('HOME', ''))
-        print(exe)
-" 2>/dev/null || echo "")
 
         while IFS= read -r exe; do
             [ -z "$exe" ] && continue
@@ -242,8 +266,12 @@ for agents_file in "$OC_DIR/AGENTS.md" "$HOME_AGENTS"; do
         fi
         continue
     fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        skip "duplicate names in $fname$dir_label — python3 not in PATH"
+        continue
+    fi
 
-    DUPES=$(python3 -c "
+    if ! DUPES=$(python3 -c "
 import re
 from collections import Counter
 with open('$agents_file') as f:
@@ -251,7 +279,10 @@ with open('$agents_file') as f:
 dupes = [name for name, count in Counter(names).items() if count > 1]
 if dupes:
     print('\n'.join(dupes))
-" 2>/dev/null || true)
+" 2>/dev/null); then
+        check "read skill names from $fname$dir_label" false
+        continue
+    fi
 
     if [ -n "$DUPES" ]; then
         check "no duplicate names in $fname$dir_label" false
@@ -269,6 +300,8 @@ echo -e "${BOLD}Check 7: Agent Skills Format${NC}"
 
 if [ ! -f "$SCRIPT_DIR/validate-skills.sh" ]; then
     skip "scripts/validate-skills.sh not found"
+elif ! command -v python3 >/dev/null 2>&1; then
+    skip "Agent Skills spec validation — python3 not in PATH"
 else
     if [ -f "$REPO_ROOT/config/skills/sources.json" ]; then
         check "config/skills conform to Agent Skills spec + sources manifest" \
@@ -286,12 +319,28 @@ echo -e "${BOLD}Check 7b: OpenCode Plugin Tests${NC}"
 if ! command -v bun >/dev/null 2>&1; then
     skip "bun not in PATH"
 else
-    check "OpenCode plugin bun tests" _plugin_bun_tests
+    check "OpenCode GitHub plugin bun tests" bun test "$OC_DIR/plugins/gh.test.ts"
+    for plugin in opencode-go-limit opencode-subagents; do
+        # bun's global cache can resolve require() while `bun test` still cannot
+        # load the preload/JSX runtime, so gate on the package's own install.
+        if [ ! -d "$OC_DIR/plugins/$plugin/node_modules" ]; then
+            skip "$plugin tests — dependencies not installed (run bun install in config/opencode/plugins/$plugin)"
+        elif [ "$plugin" = opencode-go-limit ]; then
+            check "$plugin bun tests" bun --cwd "$OC_DIR/plugins/$plugin" test
+        else
+            check "$plugin bun tests" bun test \
+                "$OC_DIR/plugins/$plugin/MoreDialog.test.tsx" \
+                "$OC_DIR/plugins/$plugin/variants.test.ts" \
+                "$OC_DIR/plugins/$plugin/useSubagents.test.ts"
+        fi
+    done
 fi
 echo ""
 
 echo -e "${BOLD}Check 7c: Goal H2H Runtime${NC}"
-if ! command -v bun >/dev/null 2>&1; then
+if [ "$CI_MODE" = true ]; then
+    skip "CI mode — Goal H2H runtime tests probe installed omp/opencode versions"
+elif ! command -v bun >/dev/null 2>&1; then
     skip "bun not in PATH"
 else
     check "Goal H2H runtime typecheck and tests" _goal_h2h_tests
@@ -301,29 +350,20 @@ echo ""
 # ── Check 8: MCP URL Validity ──────────────────────────────────────────────
 echo -e "${BOLD}Check 8: MCP URL Validity${NC}"
 
-OPENCODE_TMPL="$OC_DIR/opencode.json.tmpl"
-if [ ! -f "$OPENCODE_TMPL" ]; then
-    skip "opencode.json.tmpl not found"
+OPENCODE_CONFIG="$OC_DIR/opencode.jsonc"
+if [ ! -f "$OPENCODE_CONFIG" ]; then
+    skip "config/opencode/opencode.jsonc not found"
+elif [ -z "$JS_RUNTIME" ]; then
+    skip "MCP URL validation — JSONC reader requires node or bun"
+elif ! URLS=$(_jsonc_query "$OPENCODE_CONFIG" urls); then
+    check "read MCP URLs from config/opencode/opencode.jsonc" false
+elif [ -z "$URLS" ]; then
+    skip "no remote MCP URLs in config/opencode/opencode.jsonc"
 else
-    URLS=$(python3 -c "
-import json
-with open('$OPENCODE_TMPL') as f:
-    data = json.load(f)
-for name, cfg in data.get('mcp', {}).items():
-    if cfg.get('type') == 'remote' and 'url' in cfg:
-        print(cfg['url'])
-" 2>/dev/null || echo "")
-
-    if [ -z "$URLS" ]; then
-        skip "no remote MCP URLs found"
-    else
-        while IFS= read -r url; do
-            [ -z "$url" ] && continue
-            check "valid URL format: $url" bash -c "
-                [[ '$url' =~ ^https?:// ]]
-            "
-        done <<< "$URLS"
-    fi
+    while IFS= read -r url; do
+        [ -z "$url" ] && continue
+        check "valid URL format: $url" _url_valid "$url"
+    done <<< "$URLS"
 fi
 echo ""
 
@@ -336,40 +376,40 @@ else
     check "no secrets in tracked files" bash "$REPO_ROOT/scripts/check-secrets.sh"
 fi
 
-# hermes yamls must use placeholders, never raw snowflake IDs
-if grep -rEq "'[0-9]{17,19}'" "$REPO_ROOT/config/hermes/profiles/" 2>/dev/null; then
-    check "hermes configs use placeholders (no raw channel IDs)" false
-    grep -rEn "'[0-9]{17,19}'" "$REPO_ROOT/config/hermes/profiles/" | cut -d: -f1,2 | while IFS= read -r loc; do
-        echo -e "         ${RED}→ raw ID in $loc${NC}"
-    done
-else
-    check "hermes configs use placeholders (no raw channel IDs)" true
-fi
+# Hermes configs must use placeholders, never raw snowflake IDs.
+for rel in "${TRACKED_FILES[@]}"; do
+    [[ "$rel" == config/hermes/profiles/* ]] || continue
+    if grep -Eq "'[0-9]{17,19}'" "$rel"; then
+        check "$rel uses placeholders (no raw channel IDs)" false
+    else
+        check "$rel uses placeholders (no raw channel IDs)" true
+    fi
+done
 echo ""
 
 # ── Check 11: Design-Systems Corpus Gate ───────────────────────────────────
 echo -e "${BOLD}Check 11: Design-Systems Corpus Gate${NC}"
 
-if [ -d "$REPO_ROOT/config/skills/designer/references/design-systems" ]; then
+if [ ! -d "$REPO_ROOT/config/skills/designer/references/design-systems" ]; then
+    skip "design-systems corpus not present"
+elif ! command -v jq >/dev/null 2>&1; then
+    skip "design-systems corpus gate — jq not in PATH"
+else
     check "design-systems corpus gate (--check)" \
         bash "$REPO_ROOT/scripts/design-systems-sync.sh" --check
-else
-    skip "design-systems corpus not present"
 fi
 echo ""
 
 # ── Additional Checks ──────────────────────────────────────────────────────
 echo -e "${BOLD}Additional Checks${NC}"
 
-check "no broken symlinks in repo" bash -c "
-    broken=\$(find '$REPO_ROOT' -type l ! -exec test -e {} \; -print 2>/dev/null)
-    [ -z \"\$broken\" ]
-"
-
-for script in "$SCRIPT_DIR"/*.sh; do
-    [ ! -f "$script" ] && continue
-    rel="${script#$REPO_ROOT/}"
-    check "$rel is executable" test -x "$script"
+for rel in "${TRACKED_FILES[@]}"; do
+    if [ -L "$rel" ]; then
+        check "symlink $rel resolves" test -e "$rel"
+    fi
+    case "$rel" in
+        scripts/*.sh) check "$rel is executable" test -x "$rel" ;;
+    esac
 done
 echo ""
 
