@@ -35,3 +35,31 @@ Local coding-agent control plane, Nix-managed in `home/modules/paseo`.
 - Removal: drop `home/modules/paseo` + `paseo-tunnel`, `scripts/hm-switch.sh`,
   `nix-collect-garbage -d`; delete `~/.paseo`/`~/.config/paseo`; delete the
   tunnel and CNAME in Cloudflare.
+
+## OpenBot Docker server
+
+Self-hosted OpenBot server as a Nix-managed Docker container in
+`home/modules/openbot`.
+
+- Unit: `openbot.service` (systemd user, linger already on). The image is
+  `ghcr.io/nightly-labs/openbot:0.52.1`; bump `version` and the seccomp hash
+  together in the module.
+- The host Docker daemon comes from pacman; the unit uses
+  `pkgs.docker-client` only. No port is published: the container connects out
+  to the account server and providers. Use the desktop/phone app or
+  `openbot.run/app`.
+- Data is the named volume `openbot-data` mounted at `/data`; it contains the
+  session, provider sign-ins, keyring, agents, and conversations. Back it up
+  by stopping the unit and copying the volume.
+- Login and phone pairing are interactive inside the container:
+  `docker exec -it openbot openbot login`, then
+  `docker exec -it openbot openbot mobile-connect`. Status:
+  `docker exec openbot openbot status`.
+- The container is removed on stop (`--rm`), the volume persists. Removal:
+  drop the import + module, `home-manager switch`, then
+  `docker volume rm openbot-data`.
+- Host omp is a CLI wrapper at `/usr/local/bin/omp`, not an ACP provider.
+  The unit mounts `~/.bun` read-only, `~/.omp` read-write, and `~/projects`
+  at `/data/projects`. OpenBot agents keep their OpenCode/DeepSeek provider
+  and run `omp -p ...` under `/data/projects`. Do not mount `~/.pi`: that makes
+  the managed Pi runtime exit (1).

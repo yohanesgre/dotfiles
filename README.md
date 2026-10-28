@@ -48,7 +48,7 @@ hm-validate  # scripts/validate.sh
 flake.nix                   # nixpkgs-unstable + home-manager; mkHome (4 homeConfigurations); devShells; nixfmt
 home/common.nix             # shared config + imports
 home/hosts/{desktop,laptop}.nix   # host overrides (desktop imports hermes)
-home/modules/pacman/        # declarative pacman CLI list, synced every switch
+home/modules/pacman/        # declarative pacman + AUR list, synced every switch
 home/modules/upstream/      # bun / codegraph / rtk / icm / luvus / omp / jev-mcp installers
 home/modules/manual/        # manual activation hook (no-op; installers live in upstream/)
 home/modules/               # env, shell, terminal, opencode, omp, luvus, neovim, nix, hermes, skills, gloss
@@ -64,6 +64,7 @@ scripts/                    # bootstrap, install-nix, hm-switch, pacman-sync, in
 
 - **Nix** — declarative config only (dotfiles, symlinks, activation scripts). No nixpkgs CLI packages; `home.packages` empty (policy 2026-09-07). Exceptions: `meslo-lgs-nf` (ghostty), `stdenv.cc.cc.lib` (opencode sharp).
 - **pacman/CachyOS** — stable CLI (git/curl/jq/ripgrep/fd/fzf/bat/eza/zoxide/nodejs/npm/go/neovim/zsh/p10k) plus GUI/GPU/DE/browsers/gaming (avoids nixGL mismatch). Declared in `home/modules/pacman`; installed if missing each switch.
+- **AUR (prebuilt)** — `ghostty-nightly-bin` only: the repos ship `ghostty` 1.3.1 while upstream master is ahead (1.4.0 tagged 2026-10-27, no official Linux binaries; `ghostty-git` does not build with zig 0.17). Same pacman activation installs it via `yay`/`paru` — only when missing, never rebuilt on a switch — after removing the repo trio `ghostty`/`-shell-integration`/`-terminfo`; updates ride `yay -Syu`.
 - **Upstream > pacman** — if a tool ships `curl|sh`/`go install`/`npm`/`cargo`, prefer it over `pacman -S` (avoids distro lag). Installers run/update every switch.
 - **Dev shells** — `nix develop` pins per-project only (`default`: nodejs_22+go, `node24`); nothing global.
 

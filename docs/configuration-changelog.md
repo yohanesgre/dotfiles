@@ -4,6 +4,86 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-28 — OpenBot server: Docker container managed by Nix
+
+User: "okay let's just use docker. but we use nix for the docker. declarative is good lol"
+
+Replaced the custom `openbot-server-flake` wrapper/profile and its systemd
+unit with the official OpenBot Docker image, declared in
+`home/modules/openbot/default.nix` and imported from `home/common.nix`.
+
+Repo state:
+- `home/modules/openbot` — `openbot.service` runs
+  `docker run --rm --name openbot` with the release's `seccomp.json`
+  (`sha256-ZlKJ…`), `no-new-privileges`, `--shm-size 1g`, `--stop-timeout 60`,
+  log rotation, and the `openbot-data` volume at `/data`.
+- Image is pinned to `ghcr.io/nightly-labs/openbot:0.52.1`; upgrade by bumping
+  `version` and the seccomp hash together.
+- The unit waits for the Docker daemon, removes a stale container, and restarts
+  on failure. The host daemon is pacman's; only `pkgs.docker-client` comes from
+  nixpkgs. User linger was already enabled, so it starts at boot.
+- `AGENTS.md` — OpenBot section (unit, image pin, data volume, login/mobile
+  commands, removal).
+
+Account state:
+- Old user unit `openbot-server.service` disabled and removed; old profile
+  `~/.local/state/nix/profiles/openbot` removed (openbot-ctl,
+  openbot-server-flake).
+- Container started; image pulled. Login and provider setup happen in the app
+  after `docker exec -it openbot openbot login`; no secret enters the Nix store.
+
+### Host omp CLI for OpenBot agents (not a custom provider)
+
+- Removed the custom ACP agent and `/data/.config/OpenBot/custom-agents.json`.
+- `home/modules/openbot` mounts `~/.bun` read-only at `/data/host-bun`,
+  `~/.omp` read-write, and `~/projects` read-write at `/data/projects`.
+  It does **not** mount `~/.pi`: that mount made the managed Pi runtime exit
+  (1), which broke the Pi and DeepSeek providers.
+- `/usr/local/bin/omp` is a wrapper that runs host omp 18.13.2 inside the
+  container with the host `.omp` credentials. OpenBot agents keep their
+  OpenCode/DeepSeek provider and shell out to `omp -p ...` under
+  `/data/projects`.
+- Verified `omp --version` from the container PATH and a nested
+  `omp -p "Reply with the single word OK"` returned `OK` (host MCP servers
+  `codegraph`/`jev-mcp`/`engram` warn because their host paths are not in the
+  container); DeepSeek is `available` and Pi is `sign-in-required` (runtime
+  error fixed).
+- The generated unit was applied directly because `hm-switch` is still blocked
+  by the unrelated missing `ghostty-git`; the Nix module is the source of truth
+  and the next successful switch reconciles it.
+
+## 2026-10-28 — Ghostty: AUR prebuilt nightly (`ghostty-nightly-bin`), not the repo package
+
+User: "let's change ghostty package from direct upstream. i want to always get latest version of ghostty and pacman is not that updated" → "current ghostty latest version is 1.4" → "make sure dont build/rebuild every hm-switch"
+
+Evidence: `cachyos-extra-v3/ghostty` = 1.3.1-2.2 (`extra/ghostty` 1.3.1-2), the
+nixpkgs pin 1.3.1, upstream tag `v1.4.0` = 2026-10-27. Ghostty officially builds
+only macOS binaries, so on Linux "latest" comes from the AUR. `ghostty-git`
+(source) was tried first and rejected with proof: build 1 died in `zig fetch`
+(segfault on the codeberg dep), build 2 fetched all deps then failed with
+`package not found` for `zigimg`/`uucode`/`translate_c` — zig 0.17 leaves
+dependency *archives* in `zig-global-cache/p/` while the PKGBUILD passes that
+dir as `--system` (expects unpacked packages). AUR comments report the same plus
+a CachyOS glibc/SFrame zig-linker failure. `ghostty-nightly-bin` repackages the
+CI build of ghostty master (2026-10-27, r18451.g68640f3): no toolchain, no
+compile.
+
+Repo state:
+- `home/modules/pacman/default.nix` — `aurPackages = [ "ghostty-nightly-bin" ]`,
+  `aurConflicts = [ ghostty ghostty-shell-integration ghostty-terminfo ]`.
+  `pacmanSync` (still `entryBefore installPackages`): repo packages → remove the
+  repo trio when present (`pacman -R`, no cascade) → install missing AUR
+  packages via `yay` (fallback `paru`), non-blocking `|| warn`.
+- No rebuild per switch: activation only runs the helper when
+  `pacman -Qq ghostty-nightly-bin` fails, so an installed ghostty is never
+  rebuilt. Updates ride a plain `yay -Syu` (date-based pkgver).
+- `scripts/pacman-sync.sh` — mirrored AUR block; the repo step no longer
+  `exit 0`s before it.
+- `README.md` — package-boundary bullet `AUR (prebuilt)`; pacman layout line.
+
+Account state: repo `ghostty` 1.3.1 replaced by `ghostty-nightly-bin`; a running
+ghostty keeps the old binary until restarted.
+
 ## 2026-10-28 — Paseo daemon: Nix-managed, published through Cloudflare Tunnel
 
 User: "lets install this paseo sh and expose it with cloudflare tunnel" → "how about install it with nix?"
