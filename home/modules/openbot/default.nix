@@ -1,4 +1,9 @@
-{ config, lib, pkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}:
 let
   # Pin the release tag; bump it and the seccomp hash together.
   version = "0.52.1";
@@ -12,6 +17,12 @@ let
   };
 
   docker = "${pkgs.docker-client}/bin/docker";
+
+  # The image ships no /usr/share/zoneinfo at all, so TZ alone only renames the
+  # zone (UTC + a "Asia" label). Bind the store tzdata in and set TZ so local
+  # time, log stamps and every scheduled turn use wall-clock Jakarta time.
+  timezone = "Asia/Jakarta";
+  tzdata = pkgs.tzdata;
 
   # Host omp CLI for OpenBot agents. The provider stays OpenCode/DeepSeek;
   # the agent's shell tool runs `omp` as a nested coding agent. omp uses the
@@ -64,15 +75,24 @@ in
       # own provider (OpenCode/DeepSeek) and shell out to `omp` for host work.
       # Do not mount ~/.pi: the managed Pi runtime keeps its account state in
       # the container's /data/.pi and the host mount makes Pi exit (1).
-      ExecStart = "${docker} run --rm --name openbot"
+      ExecStart =
+        "${docker} run --rm --name openbot"
         + " --security-opt seccomp=${seccomp}"
         + " --security-opt no-new-privileges:true"
         + " --shm-size 1g --stop-timeout 60"
         + " --log-opt max-size=10m --log-opt max-file=3"
+        + " -e TZ=${timezone}"
+        + " -v ${tzdata}/share/zoneinfo:/usr/share/zoneinfo:ro"
         + " -v openbot-data:/data"
         + " -v ${config.home.homeDirectory}/.bun:/data/host-bun:ro"
         + " -v ${config.home.homeDirectory}/.omp:/data/.omp"
         + " -v ${config.home.homeDirectory}/projects:/data/projects"
+        # Skills: ~/.agents/skills holds one link per skill, and those links are
+        # ABSOLUTE host paths ($HOME/projects/dotfiles/config/skills/<name>).
+        # Mounting ~/.agents alone leaves them dangling inside the container, so
+        # the repo must also appear at the same absolute path the links name.
+        + " -v ${config.home.homeDirectory}/.agents:/data/.agents:ro"
+        + " -v ${config.home.homeDirectory}/projects:${config.home.homeDirectory}/projects"
         + " -v ${ompWrapper}:/usr/local/bin/omp:ro"
         + " ${image}";
       ExecStop = "-${docker} stop -t 60 openbot";

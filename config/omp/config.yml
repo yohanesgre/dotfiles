@@ -98,3 +98,7 @@ memory:
   backend: "off"
 memories:
   enabled: false
+dev:
+  autoqaConsent: granted
+codexResets:
+  autoRedeem: "no"

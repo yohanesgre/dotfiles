@@ -63,3 +63,22 @@ Self-hosted OpenBot server as a Nix-managed Docker container in
   at `/data/projects`. OpenBot agents keep their OpenCode/DeepSeek provider
   and run `omp -p ...` under `/data/projects`. Do not mount `~/.pi`: that makes
   the managed Pi runtime exit (1).
+- `~/.omp` is bind-mounted, so `/data/.omp` inside the container IS the host
+  directory — same files, same inode. There is no separate container omp
+  config: `~/.omp/agent/config.yml` is the single file both instances read,
+  which is why the omp model-role drift is one file, not two.
+- Timezone is `Asia/Jakarta` (`timezone` in the module). The image ships no
+  `/usr/share/zoneinfo`, so the unit binds `pkgs.tzdata` there read-only and
+  sets `-e TZ=Asia/Jakarta`. Without the mount, `TZ` only relabels UTC.
+- Server name is `Homestation`, set with `docker exec openbot openbot name
+  Homestation`. It lives in the `openbot-data` volume
+  (`/data/.config/OpenBot/openbot-team-server-v2.json`), so it survives the
+  `--rm` container but not `docker volume rm openbot-data`.
+- Skills reach container omp through two mounts:
+  `~/.agents` → `/data/.agents` (read-only) and `~/projects` at the absolute
+  path `${config.home.homeDirectory}/projects`. The second one is required:
+  every link in `~/.agents/skills` names an absolute host path
+  (`$HOME/projects/dotfiles/config/skills/<name>`), so mounting `~/.agents`
+  alone leaves them dangling and omp silently drops those skills. With both
+  mounts the container sees the same skill set as the host from the dotfiles
+  checkout. Repo stays the source; nothing is copied into the volume.
