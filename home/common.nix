@@ -20,7 +20,6 @@
     ./modules/codex
     ./modules/omp
     ./modules/openbot
-    ./modules/paseo
     ./modules/luvus
     ./modules/neovim
     ./modules/nix

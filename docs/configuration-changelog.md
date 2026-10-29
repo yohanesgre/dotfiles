@@ -4,6 +4,27 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-10-29 — Paseo removed
+
+Paseo is no longer used, so the whole Nix wiring is gone rather than left
+dormant.
+
+Repo state:
+- `home/modules/paseo/` — deleted.
+- `home/common.nix` — `./modules/paseo` import removed.
+- `home/hosts/desktop.nix` — `paseo-tunnel` unit removed (the luvus tunnel
+  stays).
+- `flake.nix` / `flake.lock` — `nixpkgs-paseo` input, its `outputs` argument
+  and the `paseoPkgs` `extraSpecialArgs` removed; lock regenerated.
+- `home/modules/packages.nix` — the nixpkgs-package exception comment is gone;
+  the "no nixpkgs packages in the profile" rule has no exceptions again.
+- `AGENTS.md` — Paseo section removed.
+
+Account state still to clean up by hand (not repo state): Cloudflare tunnel
+`7df182c4-9b53-4b03-85d8-922ae5a98f30` and the `paseo.yohanesgre.com` CNAME;
+local state `~/.paseo/` and `~/.config/paseo/paseo.env` (holds
+`PASEO_PASSWORD`).
+
 ## 2026-10-28 — OpenBot server: Docker container managed by Nix
 
 User: "okay let's just use docker. but we use nix for the docker. declarative is good lol"

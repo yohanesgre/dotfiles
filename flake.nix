@@ -7,9 +7,6 @@
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    # Paseo is not in the flake's pinned nixpkgs; pin the nixpkgs revision
-    # that carries `paseo` (0.12.0) without moving the main nixpkgs.
-    nixpkgs-paseo.url = "github:NixOS/nixpkgs/d3b13ad75cc492690728f9307e443dec9ef9a20e";
   };
 
   outputs =
@@ -17,7 +14,6 @@
       self,
       nixpkgs,
       home-manager,
-      nixpkgs-paseo,
       ...
     }:
     let
@@ -27,9 +23,6 @@
         hostFile:
         home-manager.lib.homeManagerConfiguration {
           inherit pkgs;
-          extraSpecialArgs = {
-            paseoPkgs = nixpkgs-paseo.legacyPackages.${system};
-          };
           modules = [
             ./home/common.nix
             hostFile
