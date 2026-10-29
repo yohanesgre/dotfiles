@@ -51,7 +51,7 @@ export const LAUNCH_PROFILES: Readonly<Record<LaunchProfileId, LaunchProfile>> =
       executable: "omp",
       argv: Object.freeze(["acp"]) as readonly ["acp"],
       version_argv: Object.freeze(["--version"]) as readonly ["--version"],
-      allowed_versions: Object.freeze(["18.12.6"]),
+      allowed_versions: Object.freeze(["18.13.3"]),
       expected_agent_names: Object.freeze(["omp"]),
       session_mcp_servers: Object.freeze([]) as readonly never[],
       external_service_policy: Object.freeze({
@@ -65,7 +65,7 @@ export const LAUNCH_PROFILES: Readonly<Record<LaunchProfileId, LaunchProfile>> =
       executable: "opencode",
       argv: Object.freeze(["acp"]) as readonly ["acp"],
       version_argv: Object.freeze(["--version"]) as readonly ["--version"],
-      allowed_versions: Object.freeze(["2.1.3"]),
+      allowed_versions: Object.freeze(["2.2.0"]),
       expected_agent_names: Object.freeze(["OpenCode", "opencode"]),
       session_mcp_servers: Object.freeze([]) as readonly never[],
       external_service_policy: Object.freeze({

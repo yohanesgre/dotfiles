@@ -32,10 +32,10 @@ describe("launch profiles", () => {
     expect(omp.executable).toBe("omp");
     expect(omp.argv).toEqual(["acp"]);
     expect(omp.version_argv).toEqual(["--version"]);
-    expect(omp.allowed_versions).toEqual(["18.12.6"]);
+    expect(omp.allowed_versions).toEqual(["18.13.3"]);
     expect(opencode.executable).toBe("opencode");
     expect(opencode.argv).toEqual(["acp"]);
-    expect(opencode.allowed_versions).toEqual(["2.1.3"]);
+    expect(opencode.allowed_versions).toEqual(["2.2.0"]);
     expect(opencode.expected_agent_names).toContain("OpenCode");
     expect(omp.session_mcp_servers).toEqual([]);
     expect(omp.external_service_policy).toEqual({
@@ -94,7 +94,7 @@ describe("launch profiles", () => {
   test.skipIf(!hasOmp)("probes the installed OMP version as pinned", async () => {
     const probe = await probeLaunchProfile("omp");
     if (probe.status !== "pinned") throw new Error(JSON.stringify(probe));
-    expect(probe.observed_version).toBe("18.12.6");
+    expect(probe.observed_version).toBe("18.13.3");
     expect(probe.resolved_executable === null).toBe(false);
   });
 
@@ -102,7 +102,7 @@ describe("launch profiles", () => {
   test.skipIf(!hasOpenCode)("probes the installed OpenCode version as pinned", async () => {
     const probe = await probeLaunchProfile("opencode");
     if (probe.status !== "pinned") throw new Error(JSON.stringify(probe));
-    expect(probe.observed_version).toBe("2.1.3");
+    expect(probe.observed_version).toBe("2.2.0");
   });
 
   test.skipIf(!hasOmp)("prepareLaunch returns the exact fixed spawn command", async () => {
@@ -111,6 +111,6 @@ describe("launch profiles", () => {
     expect(prepared.executable).toBe(resolveExecutablePath("omp"));
     expect(prepared.argv).toEqual(["acp"]);
     expect(isAbsolute(prepared.cwd)).toBe(true);
-    expect(prepared.probe.observed_version).toBe("18.12.6");
+    expect(prepared.probe.observed_version).toBe("18.13.3");
   });
 });

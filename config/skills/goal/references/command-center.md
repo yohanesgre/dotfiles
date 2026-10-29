@@ -110,8 +110,8 @@ Each plan contains:
 - `plan_id`, `approved_revision`, `scope: {in: string[], out: string[]}`,
   `acceptance: string[]`.
 - `runtime: {harness: "omp"|"opencode", runtime_version: string|null,
-  model: string|null, effort?: string|null}`. Profiles pin OMP 18.12.6 and
-  OpenCode 2.1.3. Null/omitted selections retain native defaults. Explicit
+  model: string|null, effort?: string|null}`. Profiles pin OMP 18.13.3 and
+  OpenCode 2.2.0. Null/omitted selections retain native defaults. Explicit
   model/effort values must be advertised ACP choices: startup applies them
   to that new session through `session/set_config_option` and verifies exact
   readback before ACK. Model is the native opaque ID; put reasoning effort

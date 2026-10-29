@@ -1,4 +1,10 @@
-{ config, lib, pkgs, paseoPkgs, ... }:
+{
+  config,
+  lib,
+  pkgs,
+  paseoPkgs,
+  ...
+}:
 {
   # Paseo — coding-agent control plane (daemon + CLI).
   #
@@ -41,9 +47,9 @@
       # the agents Paseo launches still need $HOME (repos, credentials, agent
       # configs), so ProtectHome stays off. For real isolation, run the daemon
       # in a container or under a dedicated user.
-      NoNewPrivileges = true;          # blocks setuid escalation (sudo) inside agent shells
-      PrivateTmp = true;               # hides shared /tmp (may break GUI/X11 tools)
-      ProtectSystem = "full";          # /usr, /boot, /etc read-only
+      NoNewPrivileges = true; # blocks setuid escalation (sudo) inside agent shells
+      PrivateTmp = true; # hides shared /tmp (may break GUI/X11 tools)
+      ProtectSystem = "full"; # /usr, /boot, /etc read-only
       ProtectKernelTunables = true;
       ProtectKernelModules = true;
       ProtectControlGroups = true;
