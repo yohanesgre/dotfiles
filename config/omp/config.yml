@@ -102,3 +102,5 @@ dev:
   autoqaConsent: granted
 codexResets:
   autoRedeem: "no"
+power:
+  sleepPrevention: "off"
