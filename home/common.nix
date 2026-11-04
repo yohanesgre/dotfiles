@@ -20,7 +20,7 @@
     ./modules/codex
     ./modules/omp
     ./modules/openbot
-    ./modules/luvus
+    ./modules/herdr
     ./modules/neovim
     ./modules/nix
     ./modules/gloss

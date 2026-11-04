@@ -659,7 +659,7 @@ async function runRealSmoke(
 test.skipIf(!SMOKE || resolveExecutablePath("omp") === null)(
   "real OMP: ACK before work, structured echo, and graceful owned exit",
   async () => {
-    await runRealSmoke("omp", "18.13.3");
+    await runRealSmoke("omp", "18.16.0");
   },
   300_000,
 );
@@ -667,7 +667,7 @@ test.skipIf(!SMOKE || resolveExecutablePath("omp") === null)(
 test.skipIf(!SMOKE || resolveExecutablePath("opencode") === null)(
   "real OpenCode: ACK before work, structured echo, and graceful owned exit",
   async () => {
-    await runRealSmoke("opencode", "2.2.0");
+    await runRealSmoke("opencode", "2.2.5");
   },
   300_000,
 );

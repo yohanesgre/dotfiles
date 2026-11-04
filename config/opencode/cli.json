@@ -5,7 +5,7 @@
   "tabs": {
     "layout": "horizontal"
   },
-  "plugins": ["./luvus-v2"],
+  "plugins": ["./herdr-opencode"],
   "attention": {
     "sound": true
   },

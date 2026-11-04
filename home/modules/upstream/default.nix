@@ -14,8 +14,8 @@
   # - rtk: nix 0.45.0 vs upstream v0.48.0 (2026-09-04) — 3 releases behind.
   # - codegraph: colbymchenry/codegraph — bun global install (OpenCode MCP); reinstalled
   #   on every switch.
-  # - luvus: RizRiyz/luvus — official installer, replaces herdr (2026-09-23);
-  #   re-running the installer updates the direct install in ~/.local/bin.
+  # - herdr: herdrdev/herdr — official installer, replaces luvus (2026-11-05);
+  #   `herdr update` self-updates the direct install in ~/.local/bin.
   # - omp: oh-my-pi — bun global install (config declarative via home/modules/omp).
   # - jev-mcp: TypeSafe Jev MCP server, @jkudish/jev-mcp (opencode/codex/omp; bin in ~/.bun/bin).
   # - engram: Gentleman-Programming/engram — persistent memory for AI coding
@@ -119,18 +119,18 @@
     fi
     rm -rf "$engram_tmp"
 
-    # luvus: RizRiyz/luvus — official installer (https://luvus.dev/install.sh).
-    # Replaces herdr as the agent multiplexer (2026-09-23). LUVUS_INSTALL_DIR is
-    # pinned: the installer prefers /usr/local/bin whenever that is writable, which
-    # would drop the binary outside the user profile and outside is_upstream's
-    # ~/.local/bin convention. Re-running the installer = update (same as rtk/engram);
-    # `luvus update` also self-updates this direct install.
-    if is_upstream luvus; then
-      info "updating luvus..."
+    # herdr: herdrdev/herdr — official installer (https://herdr.dev/install.sh).
+    # Replaces luvus as the agent multiplexer (2026-11-05). HERDR_INSTALL_DIR is
+    # pinned so the installer never prefers a writable /usr/local/bin (outside the
+    # user profile and outside is_upstream's ~/.local/bin convention).
+    # `herdr update` self-updates this direct install (Nix installs must not).
+    if is_upstream herdr; then
+      info "updating herdr..."
+      herdr update 2>&1 || warn "herdr update failed (continuing)"
     else
-      info "installing luvus (RizRiyz)..."
+      info "installing herdr (herdrdev)..."
+      curl -fsSL https://herdr.dev/install.sh | HERDR_INSTALL_DIR="$HOME/.local/bin" sh 2>&1 || warn "herdr install failed (continuing)"
     fi
-    curl -fsSL https://luvus.dev/install.sh | LUVUS_INSTALL_DIR="$HOME/.local/bin" sh 2>&1 || warn "luvus install/update failed (continuing)"
 
     # omp: oh-my-pi — bun global install (bin: omp). Config is declarative
     # (home/modules/omp copies ~/.omp/agent from config/omp); the binary comes

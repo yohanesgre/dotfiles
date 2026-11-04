@@ -4,6 +4,64 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-11-05 — herdr replaces luvus (reversal of 2026-09-23)
+
+User: "lets change luvus with herdr. i want to go back using herdr instead"
+
+Repo state:
+- `home/modules/luvus/` deleted; `home/modules/herdr/default.nix` added and
+  imported from `home/common.nix`. Activation `herdrWiring` runs after
+  `systemd` and `upstreamInstall`: stops the luvus units/server, removes the
+  luvus artifacts (binary, `~/.luvus`, `~/.config/luvus`, OpenCode `luvus-v2`
+  and skill copy, OMP `luvus.ts` and `skills/luvus`,
+  `~/.agents/skills/luvus`, plus the Claude, Letta and Hermes skill copies),
+  then runs `herdr integration install omp|opencode`
+  and writes `herdr --skill` to `~/.agents/skills/herdr`,
+  `~/.config/opencode/skills/herdr` and `~/.omp/agent/skills/herdr`
+  (cmp-guarded; upstream owns the content).
+- `home/modules/upstream/default.nix` and `scripts/install-manual.sh`: the
+  luvus installer is replaced by herdr (`herdr update` when upstream, else
+  `https://herdr.dev/install.sh` with `HERDR_INSTALL_DIR=~/.local/bin`).
+- `home/hosts/desktop.nix`: `luvus-server`, `luvus-web` and `luvus-tunnel`
+  units plus the Cloudflare-tunnel comment block removed;
+  `scripts/luvus-pair.sh` deleted.
+- `config/opencode/cli.json` plugins `["./luvus-v2"]` -> `["./herdr-opencode"]`.
+  Herdr registers the same V2 entry (and `./herdr-tui-session.js` in
+  `tui.jsonc`), so the cmp-guarded copy activation and the integration agree
+  in either order.
+- Comments/docs updated (`README.md`, `config/zsh/path.zsh`,
+  `home/modules/{manual,packages,omp,opencode}`, `CONFIGURATION.md`); the
+  `goal` and `opencode-peer` skills now say Herdr. Historical docs
+  (`docs/*.html`, `docs/smoke/*`, `plugins/opencode-subagents/RESEARCH.md`)
+  keep their luvus references as point-in-time artifacts.
+- Goal H2H runtime pins bumped to the versions the same switch installed:
+  omp 18.13.3 -> 18.16.0, opencode 2.2.0 -> 2.2.5 (`launch-profiles.ts`, both
+  test files, `references/command-center.md`). Without this the standard
+  `@latest` installer run leaves validation failing `version_drift`.
+
+Live state: `herdr 0.9.5` at `~/.local/bin/herdr`; `herdr integration status`
+reports `omp: current (v10)` and `opencode: current (v13)`; the luvus binary,
+state dir, skill copies, OMP extension and systemd units are gone and no luvus
+process remains.
+
+Account state removed on user follow-up ("i think we can remove this, also luvus
+cloudflare tunnel"): the `luvus` tunnel
+(`93f311c4-c6b6-4413-8aad-36e638016684`), the `luvus.yohanesgre.com` CNAME and
+the `Luvus Web` Access app are deleted (their policy went with the app);
+`~/projects/luvus-opencode-pulse` was archived to
+`~/.local/share/archives/luvus-opencode-pulse-2026-11-05.tar.gz` (5.8 MB, 838
+entries, includes the uncommitted working tree) and deleted. Luvus skill copies
+in `~/.claude`, `~/.letta` and `~/apps/hermes` were also removed and added to
+the `herdrWiring` cleanup. The `chore/luvus-web-cf-tunnel` branch is left in
+place as history (3 commits not merged into `main`, also pushed to `origin`).
+
+Evidence: `nix build '.#homeConfigurations."yohanes@desktop".activationPackage'`
+rc 0; `bash scripts/hm-switch.sh desktop` rc 0 with `herdrWiring` reporting the
+removals, integrations and skill syncs; repo/live `cli.json` byte-identical
+(`cmp`); `bash scripts/validate.sh` 399 passed / 0 failed / 2 skipped;
+`bash scripts/check-secrets.sh` PASS; `cf tunnels list` → `[]`; the zone has no
+`luvus` DNS record; no `Luvus Web` Access app; `dig +short luvus.yohanesgre.com @1.1.1.1` → empty.
+
 ## 2026-10-29 — Paseo removed
 
 Paseo is no longer used, so the whole Nix wiring is gone rather than left

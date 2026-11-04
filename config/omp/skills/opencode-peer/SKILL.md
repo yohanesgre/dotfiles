@@ -76,7 +76,7 @@ Every subagent spawned inside a peer run runs on a **free** model with a per-rol
 effort. That is enforced by a **peer-scoped OpenCode server**: `opencode-peer-serve` (systemd
 user unit, `127.0.0.1:49375`, `home/modules/opencode/default.nix`), whose `OPENCODE_CONFIG`
 merges the free pins over your `~/.config/opencode/*.jsonc`. Peer runs are sent there with
-`--server`; your own opencode harness and Luvus panes use the shared background service and keep
+`--server`; your own opencode harness and Herdr panes use the shared background service and keep
 their config-file pins.
 
 Agent definitions resolve in the server that **loads** the config, not in the client that sets

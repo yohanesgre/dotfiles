@@ -11,8 +11,8 @@ let
   #
   # top-level config documents omp reads; agents/ holds the subagent definitions;
   # extensions/ holds our OMP extension modules and skills/ our OMP-only skills
-  # (both dirs are shared — luvus.ts and skills/luvus are owned by the luvus
-  # integration, so only our files are copied, nothing is pruned)
+  # (both dirs are shared — herdr-omp-agent-state.ts and skills/herdr are owned
+  # by the herdr integration, so only our files are copied, nothing is pruned)
   #
   # MCP set (mcp.json): codegraph
   # (codegraph serve --mcp, the successor of the removed codebase-memory-mcp —
@@ -49,7 +49,7 @@ in
   # dotfiles win on every switch, so pull runtime edits back first
   # (cp ~/.omp/agent/config.yml ~/projects/dotfiles/config/omp/config.yml).
   # Runtime state in the same directory (agent.db, history.db, sessions/, blobs/,
-  # cache/, skills/, extensions/) is NOT managed here — omp and the Luvus
+  # cache/, skills/, extensions/) is NOT managed here — omp and the Herdr
   # integration own it.
   home.activation.ompSyncConfig = lib.hm.dag.entryAfter [ "writeBoundary" "goalH2HDependencies" ] ''
     SRC="$HOME/projects/dotfiles/config/omp"
@@ -73,8 +73,9 @@ in
           fi
         done
       fi
-      # Our extension modules only — the same dir also holds luvus.ts, which the
-      # luvus integration installs and refreshes on its own schedule.
+      # Our extension modules only — the same dir also holds
+      # herdr-omp-agent-state.ts, which the herdr integration installs and
+      # refreshes on its own schedule.
       if [ -d "$SRC/extensions" ]; then
         mkdir -p "$DST/extensions"
         for e in "$SRC/extensions"/*.ts; do
@@ -86,8 +87,8 @@ in
           fi
         done
       fi
-      # Our skills only — the same root also holds `luvus`, installed and
-      # refreshed by `luvus skill enable`. Per-skill copy, nothing pruned.
+      # Our skills only — the same root also holds `herdr`, installed and
+      # refreshed by the herdr module (`herdr --skill`). Per-skill copy, nothing pruned.
       if [ -d "$SRC/skills" ]; then
         for s in "$SRC/skills"/*/SKILL.md; do
           [ -f "$s" ] || continue

@@ -5,7 +5,7 @@
   # - System + CLI tools: pacman/CachyOS repos — declarative list in
   #   home/modules/pacman/default.nix (synced on every switch; standalone:
   #   scripts/pacman-sync.sh)
-  # - Fast-moving tools (bun, rtk, luvus, omp, opencode): upstream
+  # - Fast-moving tools (bun, rtk, herdr, omp, opencode): upstream
   #   installers — home/modules/upstream/default.nix
   # - engram: upstream installer — home/modules/upstream/default.nix
   # - GUI/GPU stays pacman: browsers, nvidia/mesa, DE, steam (nixGL mismatch).

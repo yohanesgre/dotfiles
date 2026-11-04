@@ -87,11 +87,13 @@ in
     mkdir -p "$HOME/.bun/bin"
   '';
 
-  # cli.json is the TUI config, and it is NOT read-only: `luvus integration install
-  # opencode` rewrites it to register its TUI plugin (./luvus-v2). A /nix/store
-  # symlink would be replaced by a real file on that write, and the next switch
-  # would then move the real file to .backup — churn every time. Copy instead
-  # (cmp-guarded, dotfiles win), same pattern as the plugins below.
+  # cli.json is the TUI config, and it is NOT read-only: `herdr integration
+  # install opencode` rewrites it to register its V2 TUI plugin (./herdr-opencode;
+  # the V1 entrypoint goes in tui.jsonc). A /nix/store symlink would be replaced
+  # by a real file on that write, and the next switch would then move the real
+  # file to .backup — churn every time. Copy instead (cmp-guarded, dotfiles win),
+  # same pattern as the plugins below. The repo copy carries the herdr
+  # registration, so either activation order leaves it in place.
   home.activation.opencodeSyncCliJson = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
     SRC="$HOME/projects/dotfiles/config/opencode/cli.json"
     DST="$HOME/.config/opencode/cli.json"
@@ -241,7 +243,7 @@ in
   # Peer-scoped OpenCode server for the omp `opencode_peer` extension (fixed port 49375,
   # loopback only). It carries peerSubagentPins, so peer-spawned subagents run on the free
   # tier while the shared background service — and therefore the user's own harness and
-  # Luvus panes — keeps the config-file pins. The extension connects with
+  # Herdr panes — keeps the config-file pins. The extension connects with
   # `opencode run --server http://127.0.0.1:49375` plus OPENCODE_PASSWORD=peerPassword.
   systemd.user.services.opencode-peer-serve = {
     Unit = {

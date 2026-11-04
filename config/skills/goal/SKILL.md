@@ -102,7 +102,7 @@ Read `references/command-center.md` for the H2H request contract, progress
 and recovery limits. Use the native `h2h_control` tool in OMP or OpenCode;
 its shared runtime owns registry mutations and process control. If the tool
 or a required capability is unavailable, WAIT with the missing prerequisite;
-never replace it with shell-launched harnesses, terminal scraping or Luvus
+never replace it with shell-launched harnesses, terminal scraping or Herdr
 message passing.
 
 The center may plan unowned artifacts. After exact-plan ownership ACK, only
