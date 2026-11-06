@@ -37,18 +37,21 @@ modelPresets:
       tiny: commandcode/xiaomi/mimo-v2.6-flash
       commit: commandcode/xiaomi/mimo-v2.6-flash
       vision: commandcode/xiaomi/mimo-v2.6-flash
+  # Same role -> model/thinking map as `commandcode`, translated to the
+  # opencode-go catalog (models are shared across the two gateways). Keep the
+  # two presets in lockstep: edit both when a role changes.
   opencode-go:
     modelRoles:
       default: opencode-go/deepseek-v4.1-flash:high
-      slow: opencode-go/glm-5.3-flash:high
-      plan: opencode-go/glm-5.3:high
+      slow: opencode-go/deepseek-v4.1-flash:max
+      plan: opencode-go/glm-5.3-flash:high
       advisor: opencode-go/deepseek-v4.1-flash
       designer: opencode-go/mimo-v2.6-pro
       task: opencode-go/deepseek-v4.1-flash
-      smol: opencode-go/mimo-v2.6-flash:low
-      tiny: opencode-go/mimo-v2.6-flash:low
-      commit: opencode-go/mimo-v2.6-flash:low
-      vision: opencode-go/glm-5.3-flash:low
+      smol: opencode-go/mimo-v2.6-flash
+      tiny: opencode-go/mimo-v2.6-flash
+      commit: opencode-go/mimo-v2.6-flash
+      vision: opencode-go/mimo-v2.6-flash
   openai-codex:
     modelRoles:
       default: openai-codex/gpt-6-luna:high
@@ -65,7 +68,7 @@ modelPresets:
 task:
   maxConcurrency: 4
   maxRecursionDepth: 2
-setupVersion: 2
+setupVersion: 3
 hideThinkingBlock: false
 theme:
   dark: dark
@@ -104,3 +107,8 @@ codexResets:
   autoRedeem: "no"
 power:
   sleepPrevention: "off"
+update:
+  auto: true
+browser:
+  relay: true
+  headless: false

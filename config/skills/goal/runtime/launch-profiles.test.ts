@@ -32,7 +32,7 @@ describe("launch profiles", () => {
     expect(omp.executable).toBe("omp");
     expect(omp.argv).toEqual(["acp"]);
     expect(omp.version_argv).toEqual(["--version"]);
-    expect(omp.allowed_versions).toEqual(["18.16.0"]);
+    expect(omp.allowed_versions).toEqual(["18.17.0"]);
     expect(opencode.executable).toBe("opencode");
     expect(opencode.argv).toEqual(["acp"]);
     expect(opencode.allowed_versions).toEqual(["2.2.5"]);
@@ -94,7 +94,7 @@ describe("launch profiles", () => {
   test.skipIf(!hasOmp)("probes the installed OMP version as pinned", async () => {
     const probe = await probeLaunchProfile("omp");
     if (probe.status !== "pinned") throw new Error(JSON.stringify(probe));
-    expect(probe.observed_version).toBe("18.16.0");
+    expect(probe.observed_version).toBe("18.17.0");
     expect(probe.resolved_executable === null).toBe(false);
   });
 
@@ -111,6 +111,6 @@ describe("launch profiles", () => {
     expect(prepared.executable).toBe(resolveExecutablePath("omp"));
     expect(prepared.argv).toEqual(["acp"]);
     expect(isAbsolute(prepared.cwd)).toBe(true);
-    expect(prepared.probe.observed_version).toBe("18.16.0");
+    expect(prepared.probe.observed_version).toBe("18.17.0");
   });
 });

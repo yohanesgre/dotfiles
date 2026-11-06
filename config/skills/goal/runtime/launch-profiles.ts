@@ -51,7 +51,7 @@ export const LAUNCH_PROFILES: Readonly<Record<LaunchProfileId, LaunchProfile>> =
       executable: "omp",
       argv: Object.freeze(["acp"]) as readonly ["acp"],
       version_argv: Object.freeze(["--version"]) as readonly ["--version"],
-      allowed_versions: Object.freeze(["18.16.0"]),
+      allowed_versions: Object.freeze(["18.17.0"]),
       expected_agent_names: Object.freeze(["omp"]),
       session_mcp_servers: Object.freeze([]) as readonly never[],
       external_service_policy: Object.freeze({

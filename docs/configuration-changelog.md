@@ -4,6 +4,47 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-11-06 — omp `opencode-go` preset mirrors `commandcode`
+
+User: "update omp model preset, make opencode-go align with commandcode"
+
+- `config/omp/config.yml`: `modelPresets.opencode-go.modelRoles` now carries the
+  same role -> model/thinking map as `modelPresets.commandcode`, translated to
+  opencode-go ids (both gateways expose the same models, only the id
+  namespacing differs): `slow` = `deepseek-v4.1-flash:max` (was
+  `glm-5.3-flash:high`), `plan` = `glm-5.3-flash:high` (was `glm-5.3:high`),
+  and `smol`/`tiny`/`commit`/`vision` = `mimo-v2.6-flash` with no explicit
+  level (previously `:low`, and `vision` was `glm-5.3-flash:low`). A comment on
+  the preset marks the pair as lockstep.
+- Top-level `modelRoles` untouched — it stays the commandcode/openai-codex
+  hybrid, and the preset must be selected explicitly.
+- Verified: every selector matches an `omp models opencode-go` row supporting
+  that thinking level; `bash scripts/hm-switch.sh` rc 0, repo file == live
+  `~/.omp/agent/config.yml`, `omp config get modelPresets` shows the new map;
+  one-shot `omp -p` runs on `deepseek-v4.1-flash:max`, `glm-5.3-flash:high` and
+  `mimo-v2.6-flash` each answered `ok`.
+
+## 2026-11-06 — omp browser relay always on
+
+User: "make browser-relay always on"
+
+- `config/omp/config.yml`: added `browser: { relay: true, headless: false }`.
+  Every omp session now defaults `browser.open` to the user's signed-in Chrome
+  through the local CDP relay; `app: { relay: false }` opts out per call and
+  `PI_BROWSER_RELAY` still overrides. Also pulled back runtime drift written by
+  omp's setup wizard: `setupVersion: 2 -> 3`, `update: { auto: true }`.
+- No systemd unit: omp lazily starts the relay daemon under its machine-global
+  broker at `127.0.0.1:9224` when a browser consumer appears, so "always on" is
+  a persisted setting, not a service. `~/.omp/browser-relay/extension` stays
+  user-installed (Load unpacked in `chrome://extensions`).
+- Goal H2H runtime pin bumped omp 18.16.0 -> 18.17.0 (`launch-profiles.ts`,
+  both test files, `references/command-center.md`) — the installed binary was
+  already 18.17.0, so the repo gate failed `version_drift` before this change.
+- Verified: `omp config get browser.relay` → `true`; `bash scripts/hm-switch.sh`
+  rc 0 (`omp: synced config.yml`), repo and `~/.omp/agent/config.yml` identical;
+  `GET /json/version` on 9224 → 200 with `ompExtensionVersion: 18.17.0` and
+  `/json/list` returns the live Chrome tabs.
+
 ## 2026-11-05 — herdr replaces luvus (reversal of 2026-09-23)
 
 User: "lets change luvus with herdr. i want to go back using herdr instead"
