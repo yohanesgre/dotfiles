@@ -4,6 +4,23 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-11-06 — git-workflow: drop stale `omos/` worktree branch prefix
+
+User: "let's check why gitworkflow creating worktree with omos/"
+
+- `config/skills/git-workflow/SKILL.md` and `.agents/skills/git-workflow/SKILL.md`:
+  worktree branches use the same conventional type form as every other branch
+  (`feat/`, `fix/`, `chore/`, `docs/`); a lane is identified by its
+  `.worktrees/<slug>` path, not a branch namespace.
+- `config/skills/work-plans/SKILL.md`: the dedicated plan worktree branch is
+  `<type>/<plan>` (the plan's primary change type) instead of `omos/<plan>`.
+- Why: `omos/` was the namespace of the deleted oh-my-opencode-slim `worktrees`
+  skill (removed in `af99d80`); the prefix outlived it through lexa's
+  git-workflow copy (`9eec56b`) and the global generalization (`ca60dba`).
+- Also updated lexa's project-local `.agents/skills/git-workflow/SKILL.md`.
+- Verified: `grep -rn omos config/skills .agents/skills` returns nothing;
+  `bash scripts/validate-skills.sh` passes (37 skills, 5 pre-existing warnings).
+
 ## 2026-11-06 — omp `opencode-go` preset mirrors `commandcode`
 
 User: "update omp model preset, make opencode-go align with commandcode"

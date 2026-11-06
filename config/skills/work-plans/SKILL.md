@@ -183,9 +183,10 @@ does not authorize git lifecycle actions.
 
 Reuse an existing plan worktree only after verifying its path, branch, and
 existing changes belong to this plan. Otherwise create one dedicated worktree
-(conventional path `.worktrees/<plan>`, branch `omos/<plan>`, from the project's
-declared base). Record the actual path, branch, and base in `plan.md` before
-implementation. Run declared setup and baseline checks inside it. A failed
+(conventional path `.worktrees/<plan>`, branch `<type>/<plan>` from the
+project's declared base; `<type>` is the plan's primary change type). Record
+the actual path, branch, and base in `plan.md` before implementation. Run
+declared setup and baseline checks inside it. A failed
 creation or unrelated dirty worktree means WAIT with the cause, not a fallback
 to implementation in the control checkout.
 
