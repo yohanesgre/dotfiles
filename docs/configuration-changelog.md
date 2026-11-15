@@ -4,6 +4,15 @@ Dated entries for `config/opencode/CONFIGURATION.md`, newest first. Moved out of
 
 ## Dated entries (newest first)
 
+## 2026-11-16 — Hermes yohanes: Spotify plugin + OpenCode Go default/DeepSeek fallback
+
+User: "i need agentic assistant for spotify" and "lets add opencode-go as default then deepseek official api as fallback".
+
+- `config/hermes/profiles/yohanes/config.yaml`: `model` now `opencode-go` / `deepseek-v4.1-flash` at `https://opencode.ai/zen/go/v1`; `fallback_providers` = `deepseek` / `deepseek-flash` at `https://api.deepseek.com/v1`. `spotify` added to `platform_toolsets.cli` and `.discord`.
+- Live `yohanes` profile: official `spotify` plugin v2.1.0 installed/enabled; toolset enabled for CLI + Discord; PKCE login (no client secret) with redirect `http://127.0.0.1:43827/spotify/callback`; Spotify developer app renamed `Hermes Yohanes` and the old `:8888` redirect removed.
+- Verified: `hermes -p yohanes status` reports `deepseek-v4.1-flash` / `OpenCode Go`; `hermes fallback list` shows the DeepSeek entry; a one-shot completed on the new default; `spotify_search` and `spotify_playlists list` returned live data; gateway restarted.
+- Note: the Spotify plugin install is Hermes-managed, not dotfiles-managed; rerun `hermes -p yohanes plugins install spotify` on a fresh profile.
+
 ## 2026-11-06 — git-workflow: drop stale `omos/` worktree branch prefix
 
 User: "let's check why gitworkflow creating worktree with omos/"
