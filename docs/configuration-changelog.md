@@ -1505,6 +1505,8 @@ Beta profile deleted: `~/.config/opencode-beta/opencode/`, `~/.local/bin/o2` (us
 
 ## Design Decisions (recent; full history in git)
 
+- 2026-11-16: added `spotify-api` skill (`config/skills/spotify-api`, mirrored into the Hermes `yohanes` profile `productivity/`): legacy `/me/tracks*` write endpoints return 403 for this app — likes go through `PUT|DELETE /me/library?uris=`, checks through `/me/library/contains`, playlist create through `POST /me/playlists` (`/users/{id}/playlists` is 403), and playlist deletion is `DELETE /playlists/{id}/followers`. Bundled `spotify_*` tools remain the default for playback and single-track playlist edits.
+
 - 2026-09-09: deleted 7 omo-era skills (codemap, clonedeps, worktrees, deepwork, simplify, reflect, verification-planning); dropped `simplify` from AGENTS.md refactor template, removed dead slim Check 4 from validate.sh, debranded SOUL.md. Lane isolation covered by `using-git-worktrees`; no live cross-refs remain.
 
 - 2026-09-06: v2 migration — archived v1 (opencode.json, omo-slim, gmicloud preset/provider, remote MCPs), removed plugins (herdr-agent-state restored from beta profile), deleted beta profile + `o2` wrapper, main profile minimal + shell/lsp/compaction/playwright. Custom agents migrated to native V2 (temperature + V1 permission blocks dropped, model-agnostic). Skills back to single root (`config/skills/` canonical, incl. rescued `reflect`). rtk MCP added (`run_command`; auto-rewrite plugin deferred). engram 1.15.7→1.20.0. default.nix activations rewritten for `@opencode-ai/cli@beta`. Compaction migrated to native V2 (`buffer`, dropped ignored `reserved`/`prune`).
