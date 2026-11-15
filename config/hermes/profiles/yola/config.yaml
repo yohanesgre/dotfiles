@@ -117,3 +117,9 @@ known_plugin_toolsets:
 # fallback_model:
 #   provider: openrouter
 #   model: anthropic/claude-sonnet-4
+mcp_servers:
+  homeassistant:
+    url: http://homestation:8123/api/mcp
+    headers:
+      Authorization: Bearer ${MCP_HOMEASSISTANT_API_KEY}
+    enabled: false
