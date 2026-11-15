@@ -32,6 +32,7 @@ tools:
 plugins:
   enabled:
     - model-switcher
+    - spotify
     - whisper-model
   disabled: []
   entries:

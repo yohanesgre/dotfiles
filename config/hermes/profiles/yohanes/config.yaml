@@ -32,6 +32,7 @@ tools:
 plugins:
   enabled:
     - model-switcher
+    - spotify
     - whisper-model
   disabled: []
   entries:
@@ -82,6 +83,7 @@ platform_toolsets:
     - memory
     - session_search
     - skills
+    - spotify
     - terminal
     - todo
     - tts
@@ -100,6 +102,7 @@ platform_toolsets:
     - memory
     - session_search
     - skills
+    - spotify
     - terminal
     - todo
     - tts
@@ -107,9 +110,10 @@ platform_toolsets:
     - web
 known_plugin_toolsets:
   cli:
+    - a2a
     - spotify
   discord:
-    - spotify
+    - a2a
 
 # ── Fallback Model ────────────────────────────────────────────────────
 # Automatic provider failover when primary is unavailable.
@@ -132,6 +136,7 @@ known_plugin_toolsets:
 # fallback_model:
 #   provider: openrouter
 #   model: anthropic/claude-sonnet-4
+    - spotify
 mcp_servers:
   jev:
     command: /home/yohanes/.nix-profile/bin/jev-mcp-keyfile
