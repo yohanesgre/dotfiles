@@ -1,7 +1,7 @@
 model:
-  provider: deepseek
-  base_url: https://api.deepseek.com/v1
-  default: deepseek-flash
+  provider: opencode-go
+  base_url: https://opencode.ai/zen/go/v1
+  default: deepseek-v4.1-flash
   api_mode: chat_completions
 agent:
   max_turns: 150
