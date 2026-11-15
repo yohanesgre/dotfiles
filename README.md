@@ -70,7 +70,13 @@ scripts/                    # bootstrap, install-nix, hm-switch, pacman-sync, in
 
 ## Secrets
 
-`.env.toml` (gitignored) is loaded by `home/modules/env` into the systemd user environment. Never commit secrets; `scripts/check-secrets.sh` guards pre-commit and CI.
+`.env.toml` (gitignored, mode 0600) is loaded by `home/modules/env` into the systemd user environment. Never commit secrets. Enable the tracked pre-commit guard once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+`scripts/check-secrets.sh` scans staged index content before commit and every tracked file in `validate.sh` and CI. `bash scripts/check-secrets.sh --history` audits every reachable blob for a one-off history check. If you ever suspect a leak in history, rotate the key first; deleting the commit is not enough.
 
 ## Workflow
 

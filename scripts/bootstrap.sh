@@ -107,6 +107,11 @@ if [ "$USE_REMOTE" = false ]; then
     fi
 fi
 
+# Activate the tracked secret/validation hooks for this clone.
+if [ -d "$HOME/projects/dotfiles/.git" ]; then
+    git -C "$HOME/projects/dotfiles" config core.hooksPath .githooks
+fi
+
 # 0.5 Ensure .env.toml (private, gitignored) — auto-create from example for easy bootstrap
 if [ ! -f "$HOME/projects/dotfiles/.env.toml" ] && [ ! -f "$HOME/.env.toml" ]; then
     echo -e "${BOLD}Step 0.5: .env.toml (private)${NC}"
@@ -123,10 +128,16 @@ if [ ! -f "$HOME/projects/dotfiles/.env.toml" ] && [ ! -f "$HOME/.env.toml" ]; t
     fi
     if [ -n "$EXAMPLE" ]; then
         echo -e "  ${CYAN}→ cp $EXAMPLE -> $DEST${NC}"
-        cp "$EXAMPLE" "$DEST" 2>&1 && echo -e "  ${GREEN}✓ created $DEST (edit to fill secrets)${NC}" || echo -e "  ${YELLOW}⚠ copy failed${NC}"
+        if cp "$EXAMPLE" "$DEST" 2>&1; then
+            chmod 600 "$DEST" 2>/dev/null || true
+            echo -e "  ${GREEN}✓ created $DEST (edit to fill secrets)${NC}"
+        else
+            echo -e "  ${YELLOW}⚠ copy failed${NC}"
+        fi
     else
         echo -e "  ${CYAN}→ curl .env.toml.example -> $DEST${NC}"
         if curl -fsSL https://raw.githubusercontent.com/yohanesgre/dotfiles/main/.env.toml.example -o "$DEST" 2>&1; then
+            chmod 600 "$DEST" 2>/dev/null || true
             echo -e "  ${GREEN}✓ created $DEST (edit to fill secrets)${NC}"
         else
             echo -e "  ${YELLOW}⚠ curl failed, create manually: cp .env.toml.example .env.toml${NC}"
@@ -136,8 +147,10 @@ if [ ! -f "$HOME/projects/dotfiles/.env.toml" ] && [ ! -f "$HOME/.env.toml" ]; t
     echo ""
 else
     if [ -f "$HOME/projects/dotfiles/.env.toml" ]; then
+        chmod 600 "$HOME/projects/dotfiles/.env.toml" 2>/dev/null || true
         echo -e "  ${CYAN}→ .env.toml exists: ~/projects/dotfiles/.env.toml${NC}"
     elif [ -f "$HOME/.env.toml" ]; then
+        chmod 600 "$HOME/.env.toml" 2>/dev/null || true
         echo -e "  ${CYAN}→ .env.toml exists: ~/.env.toml${NC}"
     fi
 fi

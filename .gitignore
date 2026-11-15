@@ -9,11 +9,31 @@
 # chezmoi local config (machine-specific)
 .chezmoi.toml
 
-# Private / local env — never commit secrets (TOML only)
-.env.toml
-.env.toml.local
-*.env.toml.local
+# Private / local env — never commit secrets
+.env
+.env.*
+!.env.example
+!.env.toml.example
 config/private/
+.git-credentials
+.npmrc
+.pypirc
+.netrc
+auth.json
+
+# Key material — never commit (public keys are fine)
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+*.kdbx
+*.age
+id_rsa*
+id_ed25519*
+id_ecdsa*
+id_dsa*
 
 # Python
 __pycache__/
