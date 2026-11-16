@@ -300,6 +300,22 @@
         "jev"
       ],
       "notes": "TypeSafe Jev judgment-tool skill for the jev-mcp MCP server (registered for omp in config/omp/mcp.json as `npx -y @jkudish/jev-mcp`). Teaches when to call jev_verify/jev_noul/jev_gate/etc. instead of reading. Global install: `scripts/skills-sync.sh --global --source jkudish-jev-mcp` -> ~/.agents/skills/jev. Requires TYPESAFE_API_KEY (key file ~/.config/typesafe/key)."
+    },
+    {
+      "id": "el4cteo-blender-skills",
+      "repo": "el4cteo/blender-skills",
+      "scope": "project",
+      "skills": [
+        "blender-core",
+        "blender-scene-setup",
+        "blender-hardsurface-modeling",
+        "blender-pbr-materials",
+        "blender-retopology-uv",
+        "blender-asset-qa",
+        "blender-export-pipelines",
+        "blender-game-optimization"
+      ],
+      "notes": "Headless bpy pipeline for Blender 5.2 LTS / 5.3 (MIT, 1.3k stars, test suite in-repo). Unlike the other Blender skill repos this one ships executable scripts, not prose: blender-core/scripts/run_in_blender.py (headless wrapper, prints @@JSON@@), blender-asset-qa/scripts/qa_check.py + review_shots.py (geometry gate + multi-angle renders), blender-export-pipelines/scripts/export_asset.py (verified Unity/Godot/web presets), blender-game-optimization/scripts/mesh_stats.py + make_lods.py. No blender-mcp required. Repo has 23 skills total; only the pipeline subset is listed above, since the art-direction ones (character-artist, genre-*, *-style) are prose and cost context on every turn. Install: `scripts/skills-sync.sh --global --source el4cteo-blender-skills` -> ~/.agents/skills/blender-*. Pin Blender >= 5.2: pacman ships 5.2.3."
     }
   ]
 }
